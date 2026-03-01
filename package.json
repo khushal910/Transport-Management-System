@@ -1,0 +1,17 @@
+{
+  "name": "transport-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khushal910/Transport-Management-System.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.8.1"
+  }
+}
