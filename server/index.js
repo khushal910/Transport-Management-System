@@ -2,11 +2,16 @@ import 'dotenv/config';
 import express from 'express';
 import dbConnect from './src/config/dbConnection.js';
 import cors from 'cors';
+import authRouter from './src/routers/auth.route.js';
 
 const app = express();
 
 app.use(express.json());
 app.use(cors()); // For local development
+
+
+// API
+app.use('/api/auth', authRouter)
 
 const port = process.env.PORT || 3000;
 
