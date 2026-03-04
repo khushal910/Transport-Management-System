@@ -9,16 +9,10 @@ const userRegister = async (req, res) => {
     const { error, value } = authValidatorSchema.validate(req.body);
 
     if (error) {
-      return response(res, 400, false, 'Invalid Registration Data');
+      return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
 
-    const { email, password } = value;
-
-    // Check email already exists
-    const isEmailExist = await User.findOne({ email });
-    if (isEmailExist) {
-      return response(res, 400, false, 'Email already exists');
-    }
+    const { password } = value;
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
@@ -38,6 +32,11 @@ const userRegister = async (req, res) => {
       role: userCreated.role,
     });
   } catch (err) {
+
+    if (err.code === 11000) {
+      return response(res, 400, false, "Email already exists");
+    }
+
     console.error('User registration error:', err);
     return response(res, 500, false, 'Failed to register');
   }
