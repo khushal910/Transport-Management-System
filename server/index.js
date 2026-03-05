@@ -5,6 +5,7 @@ import cors from 'cors';
 import authRouter from './src/routers/auth.route.js';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import vehicleRoute from './src/routers/vehicle.route.js';
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(morgan('dev'))
 
 // API
 app.use('/api/auth', authRouter)
+app.use('/api/vehicle', vehicleRoute)
 
 const port = process.env.PORT || 3000;
 
