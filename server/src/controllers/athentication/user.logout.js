@@ -1,4 +1,4 @@
-import response from '../response/response.js';
+import response from '../../response/response.js';
 
 const userLogout = (req, res) => {
   try {

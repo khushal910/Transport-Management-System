@@ -1,6 +1,6 @@
-import User from '../models/user.schema.js';
-import response from '../response/response.js';
-import authValidatorSchema from '../validations/auth.validator.js';
+import User from '../../models/user.schema.js';
+import response from '../../response/response.js';
+import authValidatorSchema from '../../validations/auth.validator.js';
 import bcrypt from 'bcryptjs';
 
 const userRegister = async (req, res) => {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import userRegister from '../controllers/user.registration.js';
-import userLogin from '../controllers/user.login.js';
-import userLogout from '../controllers/user.logout.js';
+import userRegister from '../controllers/athentication/user.registration.js';
+import userLogin from '../controllers/athentication/user.login.js';
+import userLogout from '../controllers/athentication/user.logout.js';
 
 const authRouter = Router();
 

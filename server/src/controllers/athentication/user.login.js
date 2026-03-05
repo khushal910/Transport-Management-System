@@ -1,6 +1,6 @@
-import response from '../response/response.js';
-import loginValidatorSchema from '../validations/login.validator.js';
-import User from '../models/user.schema.js';
+import response from '../../response/response.js';
+import loginValidatorSchema from '../../validations/login.validator.js';
+import User from '../../models/user.schema.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
