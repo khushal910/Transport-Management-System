@@ -33,6 +33,13 @@ const vehicleSchema = new mongoose.Schema(
       enum: ['available', 'on_trip', 'in_shop', 'retired'],
       default: 'available',
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      immutable: true,
+      index: true,
+    },
   },
   { timestamps: true }
 );
