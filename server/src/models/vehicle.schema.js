@@ -11,6 +11,10 @@ const vehicleSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    model: {
+      type: String,
+      required: true,
+    },
     vehicleType: {
       type: String,
       enum: ['truck', 'van', 'bike'],
@@ -23,10 +27,6 @@ const vehicleSchema = new mongoose.Schema(
     odometer: {
       type: Number,
       default: 0,
-    },
-    acquisitionCost: {
-      type: Number,
-      required: true,
     },
     status: {
       type: String,
