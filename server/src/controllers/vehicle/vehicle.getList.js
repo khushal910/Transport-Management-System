@@ -3,13 +3,13 @@ import response from '../../response/response.js';
 
 const getVehicleList = async (req, res) => {
   try {
-    const userID = req.user.id;
+    const userID = req.user?.id;
     if (!userID) {
       return response(res, 401, false, 'User ID is required');
     }
-
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+   
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip = (page - 1) * limit;
 
     const listOfVehicles = await Vehicle.find({ createdBy: userID })
