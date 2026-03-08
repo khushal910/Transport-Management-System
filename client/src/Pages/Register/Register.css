@@ -1,0 +1,188 @@
+/* Register.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  overflow-x: hidden;
+}
+
+.register-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0a0e1a;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(59, 91, 219, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(99, 130, 255, 0.06) 0%, transparent 50%);
+  font-family: 'Inter', sans-serif;
+  padding: 1.5rem;  
+  overflow: hidden;
+}
+
+
+.register-container h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: -0.5px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.register-container h2::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b5bdb, #6382ff);
+  border-radius: 2px;
+  margin: 0.75rem auto 0;
+}
+
+.register-container form {
+  width: 100%;
+  max-width: 500px;
+  min-height: 420px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 2.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.15rem;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.register-container input,
+.register-container select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.register-container select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236382ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.register-container select option {
+  background: #0f1424;
+  color: #e2e8f0;
+}
+
+.register-container input:focus,
+.register-container select:focus {
+  border-color: #3b5bdb;
+  background: rgba(59, 91, 219, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.2);
+}
+
+.register-container input::placeholder {
+  color: #4a5568;
+}
+
+.register-container button {
+  width: 100%;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, #3b5bdb 0%, #5a7bff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.25s;
+  box-shadow: 0 4px 16px rgba(59, 91, 219, 0.3);
+  margin-top: 0.5rem;
+}
+
+.register-container button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(59, 91, 219, 0.45);
+}
+
+.register-container button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.register-container p {
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #718096;
+  text-align: center;
+}
+
+.register-container p a,
+.register-container p span {
+  color: #6382ff;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.register-container p a:hover,
+.register-container p span:hover {
+  color: #8da2ff;
+  text-decoration: underline;
+}
+
+.input-label{
+  margin-bottom: 8px;
+}
+
+.input-label h3{
+  color: #d1d5db;     /* light gray text */
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.input-group{
+  margin-bottom: 16px;
+}
+/* Toast container */
+/* Toast container */
+
+
+/* Toast box */
+.Toastify__toast {
+  background: #111827 !important;
+  color: #e5e7eb !important;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* Success toast */
+
+
+/* Progress bar *//* Toast container */
+.Toastify__toast-container {
+  top: 20px;
+  right: 20px;
+}
