@@ -6,6 +6,7 @@ import authRouter from './src/routers/auth.route.js';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import vehicleRoute from './src/routers/vehicle.route.js';
+import tripRouter from './src/routers/trip.route.js';
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(morgan('dev'))
 // API
 app.use('/api/auth', authRouter)
 app.use('/api/vehicle', vehicleRoute)
+app.use('/api/trip', tripRouter)
 
 const port = process.env.PORT || 3000;
 
