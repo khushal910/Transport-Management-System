@@ -49,7 +49,7 @@ function Register() {
       <h2>FleetFlow Registration</h2>
 
       <form onSubmit={handleSubmit}>
-        <div class="input-label">
+        <div className="input-label">
           <h3>Full Name:</h3>
        </div>
 
@@ -60,7 +60,7 @@ function Register() {
           required
           onChange={handleChange}
         />
-           <div class="input-label">
+           <div className="input-label">
               <h3>Email:</h3>
             </div>
 
@@ -71,7 +71,7 @@ function Register() {
           required
           onChange={handleChange}
         />
-          <div class="input-label">
+          <div className="input-label">
              <h3>Password:</h3>
           </div>
 
@@ -83,7 +83,7 @@ function Register() {
           required
           onChange={handleChange}
         />
-        <div class="input-label">
+        <div className="input-label">
            <h3>Role:</h3>
         </div>
         <select

@@ -37,7 +37,7 @@ function Login() {
       
      <h2>Login FleetFlow</h2>
    <form onSubmit={handleSubmit}>
-    <div class="email-label">
+    <div className="email-label">
   <h3>Email:</h3>
 </div>
      <input 
@@ -47,7 +47,7 @@ function Login() {
       >
 
       </input>
-      <div class="input-label">
+      <div className="input-label">
   <h3>Password:</h3>
 </div>
       <input
