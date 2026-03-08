@@ -14,6 +14,11 @@ const userRegister = async (req, res) => {
 
     const { password } = value;
 
+    const isUserExist = await User.findOne({ email: value.email });
+    if (isUserExist) {
+      return response(res, 400, false, "Email already exists");
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
