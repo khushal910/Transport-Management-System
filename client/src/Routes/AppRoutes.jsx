@@ -1,7 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "../Pages/Login/Login.jsx";
-import Register from "../Pages/Register/Register";
-import Dashbord from "../Pages/Dashboard/Dashboard.jsx";
+import Dashboard from "../Pages/Dashboard/Dashboard.jsx";
+import Register from "../Pages/Register/Register.jsx";
+
+
+
 
 export const AppRoutes = () => {
   return (
@@ -9,7 +12,7 @@ export const AppRoutes = () => {
        <Route path="/" element={<Login />} />
 
       <Route path="/register" element={<Register />} />
-      <Route path="/dashboard" element={<Dashbord />} />
+      <Route path="/dashboard" element={<Dashboard />}/>
     </Routes>  
   )
 }

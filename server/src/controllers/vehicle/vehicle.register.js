@@ -14,7 +14,17 @@ const vehicleRegister = async (req, res) => {
         error.details[0].message.replace(/["]/g, '')
       );
     }
-    
+
+    const isVehicleExist = await Vehicle.findOne({ licensePlate: value.licensePlate });
+    if (isVehicleExist) {
+      return response(
+        res,
+        400,
+        false,
+        'Vehicle with this license plate already exists'
+      );
+    }
+
     const vechicleRegisterData = {
       ...value,
       createdBy: req.user.id

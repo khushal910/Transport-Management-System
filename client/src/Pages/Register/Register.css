@@ -166,10 +166,7 @@ body {
 }
 /* Toast container */
 /* Toast container */
-.Toastify__toast-container {
-  top: 20px;
-  right: 20px;
-}
+
 
 /* Toast box */
 .Toastify__toast {
