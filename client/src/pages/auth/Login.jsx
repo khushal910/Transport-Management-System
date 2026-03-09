@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -14,6 +14,8 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
 
+  const navigate = useNavigate();
+
   const handleLogin = async (e) => {
     e.preventDefault();
     const data = {
@@ -25,6 +27,7 @@ export default function Login() {
       const response = await authBaseURL.post('/login', data);
       if (response.status == 200) {
         toast.success(response.data.message);
+        navigate('/main/dashboard');
       } 
     } catch (error) {
       console.error(error);
