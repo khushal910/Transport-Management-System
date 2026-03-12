@@ -5,6 +5,7 @@ import Error from '../pages/error/Error';
 import AuthLayout from '../layout/AuthLayout';
 import MainLayout from '../layout/MainLayout';
 import Dashboard from '../pages/dashboard/Dashboard';
+import Vehicle from '../pages/vehicle/vehicle';
 
 export const router = createBrowserRouter([
   {
@@ -32,7 +33,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'vehicle-registry',
-        element: <div>Vehicle Registry</div>,
+        element: <Vehicle />,
       },
       {
         path: 'trip-dispatcher',
