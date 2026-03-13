@@ -44,5 +44,13 @@ const vehicleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// TEXT INDEX
+vehicleSchema.index({
+  name: "text",
+  model: "text",
+  licensePlate: "text",
+  vehicleType: "text",
+});
+
 const Vehicle = mongoose.model('Vehicle', vehicleSchema);
 export default Vehicle;
