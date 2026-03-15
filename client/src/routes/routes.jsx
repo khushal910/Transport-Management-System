@@ -6,6 +6,7 @@ import AuthLayout from '../layout/AuthLayout';
 import MainLayout from '../layout/MainLayout';
 import Dashboard from '../pages/dashboard/Dashboard';
 import Vehicle from '../pages/vehicle/vehicle';
+import Trip from '../pages/trip/trip';
 
 export const router = createBrowserRouter([
   {
@@ -37,7 +38,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'trip-dispatcher',
-        element: <div>Trip Dispatcher</div>,
+        element: <Trip />,
       },
       { 
         path: 'maintenance',
