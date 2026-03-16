@@ -47,7 +47,8 @@ const addEmployee = async (req, res) => {
       return response(res, 400, false, 'Email already exists');
     }
 
-    console.error('Add employee error:', err);
+    console.error('Add employee error:', err.message);
+    
     return response(res, 500, false, 'Failed to add employee');
   }
 };
