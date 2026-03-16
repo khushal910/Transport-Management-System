@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 
 const tripSchema = new mongoose.Schema(
   {
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: true,
+      index: true,
+    },
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vehicle',

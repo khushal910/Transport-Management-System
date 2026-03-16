@@ -9,7 +9,14 @@ export default function Register() {
     name: '',
     email: '',
     password: '',
-    role: '',
+    role: 'manager', // Default to manager
+    company: {
+      name: '',
+      registrationNumber: '',
+      address: '',
+      phone: '',
+      email: '',
+    },
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +30,7 @@ export default function Register() {
       email: registrationData.email,
       password: registrationData.password,
       role: registrationData.role,
+      company: registrationData.company,
     };
 
     try {
@@ -41,9 +49,13 @@ export default function Register() {
       toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
     }
   };
+  
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Register</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Currently, only managers can register directly. Other roles will be added by their manager.
+      </p>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <input
@@ -89,26 +101,84 @@ export default function Register() {
           </button>
         </div>
 
-        <select
-          className="w-full border p-2 rounded"
-          value={registrationData.role}
-          onChange={(e) =>
-            setRegistrationData({ ...registrationData, role: e.target.value })
-          }
-        >
-          <option value="">Select Role</option>
-          <option value="manager">Manager</option>
-          <option value="driver">Driver</option>
-          <option value="dispatcher">Dispatcher</option>
-          <option value="safety_officer">Safety Officer</option>
-          <option value="financial_analyst">Financial Analyst</option>
-        </select>
+        <div>
+          <label className="text-sm text-gray-600">Role: Manager</label>
+          <p className="text-xs text-gray-500 mt-1">
+            Managers can invite other employees after registration
+          </p>
+        </div>
+
+        {/* Company Details Section */}
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-lg font-semibold mb-3">Company Details</h3>
+          
+          <input
+            placeholder="Company Name"
+            className="w-full border p-2 rounded mb-3"
+            value={registrationData.company.name}
+            onChange={(e) =>
+              setRegistrationData({
+                ...registrationData,
+                company: { ...registrationData.company, name: e.target.value },
+              })
+            }
+          />
+
+          <input
+            placeholder="Registration Number"
+            className="w-full border p-2 rounded mb-3"
+            value={registrationData.company.registrationNumber}
+            onChange={(e) =>
+              setRegistrationData({
+                ...registrationData,
+                company: { ...registrationData.company, registrationNumber: e.target.value },
+              })
+            }
+          />
+
+          <input
+            placeholder="Company Address"
+            className="w-full border p-2 rounded mb-3"
+            value={registrationData.company.address}
+            onChange={(e) =>
+              setRegistrationData({
+                ...registrationData,
+                company: { ...registrationData.company, address: e.target.value },
+              })
+            }
+          />
+
+          <input
+            placeholder="Company Phone"
+            className="w-full border p-2 rounded mb-3"
+            value={registrationData.company.phone}
+            onChange={(e) =>
+              setRegistrationData({
+                ...registrationData,
+                company: { ...registrationData.company, phone: e.target.value },
+              })
+            }
+          />
+
+          <input
+            placeholder="Company Email"
+            type="email"
+            className="w-full border p-2 rounded mb-3"
+            value={registrationData.company.email}
+            onChange={(e) =>
+              setRegistrationData({
+                ...registrationData,
+                company: { ...registrationData.company, email: e.target.value },
+              })
+            }
+          />
+        </div>
 
         <button
           type="submit"
           className="w-full bg-green-600 text-white p-2 rounded"
         >
-          Register
+          Register as Manager
         </button>
       </form>
 

@@ -15,9 +15,14 @@ const createTrip = async (req, res) => {
     }
     
     const { vehiclePlateNumber, driverEmail, cargoWeight, startLocation, endLocation, revenue } = value;
+    const companyId = req.user.companyId;
 
-    // Check if vehicle exists and is available
-    const isVehicleExist = await Vehicle.findOne({ licensePlate: vehiclePlateNumber, }, "_id status maxCapacity");
+    // Check if vehicle exists and is available and belongs to the same company
+    const isVehicleExist = await Vehicle.findOne({ 
+      licensePlate: vehiclePlateNumber,
+      company: companyId 
+    }, "_id status maxCapacity");
+    
     if(!isVehicleExist ){
       return response(res, 404, false, 'Vehicle not found');
     }
@@ -31,8 +36,13 @@ const createTrip = async (req, res) => {
       return response(res, 400, false, 'Cargo weight exceeds vehicle capacity');
     }
 
-    // Check if driver exists 
-    const isDriverExist = await User.findOne({ email: driverEmail, role: 'driver' }).lean();
+    // Check if driver exists and belongs to the same company
+    const isDriverExist = await User.findOne({ 
+      email: driverEmail, 
+      role: 'driver',
+      company: companyId 
+    }).lean();
+    
     if (!isDriverExist) {
       return response(res, 404, false, 'Driver not found');
     }
@@ -40,12 +50,17 @@ const createTrip = async (req, res) => {
     /* 
        If the driver is assigned to another trip with status draft or dispatched, it means they are currently on a trip and cannot be assigned to a new one until the current trip is completed or cancelled.
     */
-    const isDriverAvailable = await Trip.findOne({ driver: isDriverExist._id, status: { $in: ['draft', 'dispatched'] } });
+    const isDriverAvailable = await Trip.findOne({ 
+      driver: isDriverExist._id, 
+      status: { $in: ['draft', 'dispatched'] } 
+    });
+    
     if (isDriverAvailable) {
       return response(res, 400, false, 'Driver is currently assigned to another trip');
     }
 
     const tripData = {
+      company: companyId,
       vehicle: isVehicleExist._id,
       driver: isDriverExist._id,
       cargoWeight,

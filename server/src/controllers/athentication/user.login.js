@@ -1,6 +1,7 @@
 import response from '../../response/response.js';
 import loginValidatorSchema from '../../validations/login.validator.js';
 import User from '../../models/user.schema.js';
+import Company from '../../models/company.schema.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -15,7 +16,7 @@ const userLogin = async (req, res) => {
 
     const { email, password } = value;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate('company', 'name _id');
 
     if (!user) {
       return response(res, 401, false, 'Invalid Email or Password ');
@@ -27,8 +28,13 @@ const userLogin = async (req, res) => {
       return response(res, 401, false, 'Invalid Email or Password ');
     }
 
-    // create jwt
-    const payload = { id: user._id, role: user.role };
+    // If user doesn't have a company (shouldn't happen if company is required), return error
+    if (!user.company) {
+      return response(res, 400, false, 'User company not found');
+    }
+
+    // create jwt with company ID
+    const payload = { id: user._id, role: user.role, companyId: user.company._id };
     const token = jwt.sign(payload, process.env.SECRET_KEY, {
       expiresIn: '1h',
     });
@@ -48,6 +54,8 @@ const userLogin = async (req, res) => {
           id: user._id,
           name: user.name,
           role: user.role,
+          companyId: user.company._id,
+          company: user.company,
         },
       });
   } catch (err) {

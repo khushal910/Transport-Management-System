@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 
 const vehicleSchema = new mongoose.Schema(
   {
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,
@@ -38,7 +44,6 @@ const vehicleSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
       immutable: true,
-      index: true,
     },
   },
   { timestamps: true }

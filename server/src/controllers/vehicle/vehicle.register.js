@@ -25,13 +25,14 @@ const vehicleRegister = async (req, res) => {
       );
     }
 
-    const vechicleRegisterData = {
+    const vehicleRegisterData = {
       ...value,
+      company: req.user.companyId,
       createdBy: req.user.id
     };
 
-    const vehicleRegister = await Vehicle.create(vechicleRegisterData);
-    return response(res, 201, true, 'Vehicle registered successfully');
+    const vehicleRegister = await Vehicle.create(vehicleRegisterData);
+    return response(res, 201, true, 'Vehicle registered successfully', vehicleRegister);
   
   } catch (err) {
     if (err.code === 11000) {
@@ -43,6 +44,7 @@ const vehicleRegister = async (req, res) => {
       );
     }
 
+    console.error('Vehicle registration error:', err);
     return response(res, 500, false, 'Vehicle registration failed');
   }
 };

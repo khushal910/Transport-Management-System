@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema(
       ],
       required: true,
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+    },
   },
   { timestamps: true }
 );

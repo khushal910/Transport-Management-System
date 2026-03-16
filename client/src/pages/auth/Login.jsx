@@ -26,6 +26,22 @@ export default function Login() {
     try {
       const response = await authBaseURL.post('/login', data);
       if (response.status == 200) {
+        // Store user and company information in localStorage
+        const userData = response.data.data;
+        if (!userData) {
+          toast.error('Invalid response from server');
+          return;
+        }
+        localStorage.setItem('user', JSON.stringify({
+          id: userData.id,
+          name: userData.name,
+          role: userData.role,
+          companyId: userData.companyId,
+        }));
+        
+        if (userData.company) {
+          localStorage.setItem('company', JSON.stringify(userData.company));
+        }
         toast.success(response.data.message);
         navigate('/main/dashboard');
       } 

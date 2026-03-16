@@ -4,25 +4,26 @@ import Vehicle from '../../models/vehicle.schema.js';
 const deleteVehicle = async (req, res) => {
   try {
     const vehicleId = req.params.vehicleId;
+    const companyId = req.user.companyId;
+
     if (!vehicleId) {
       return response(res, 400, false, 'Vehicle ID is required');
     }
 
-    const userID = req.user.id;
-    if (!userID) {
-      return response(res, 401, false, 'Unauthorized');
+    if (!companyId) {
+      return response(res, 403, false, 'User is not associated with a company');
     }
-
     const deletedVehicle = await Vehicle.findOneAndDelete({
       _id: vehicleId,
-      createdBy: userID,
+      company: companyId,
     });
+
     if (!deletedVehicle) {
       return response(
         res,
         404,
         false,
-        'Vehicle not found or you do not have permission to delete it'
+        'Vehicle not found or does not belong to your company'
       );
     }
 

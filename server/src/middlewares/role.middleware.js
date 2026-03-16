@@ -12,12 +12,17 @@ const requiredRole = (...allowedRole) => {
 
       const decoded = jwt.verify(token, process.env.SECRET_KEY);
       const role = decoded.role;
+      const companyId = decoded.companyId;
 
       if (!allowedRole.includes(role)) {
         return response(res, 403, false, 'Forbidden: Access denied');
       }
 
-      req.user = decoded;
+      req.user = {
+        id: decoded.id,
+        role: decoded.role,
+        companyId: companyId,
+      };
 
       next();
     } catch (err) {
