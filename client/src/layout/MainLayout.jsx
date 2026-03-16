@@ -90,12 +90,6 @@ const MainLayout = () => {
             to="/main/employee/add"
             className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
           >
-            Add Employee
-          </Link>
-          <Link
-            to="/main/employee/list"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-          >
             Employees
           </Link>
         </div>

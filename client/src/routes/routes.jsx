@@ -8,7 +8,6 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import Vehicle from '../pages/vehicle/vehicle';
 import Trip from '../pages/trip/trip';
 import AddEmployee from '../pages/employee/AddEmployee';
-import EmployeeList from '../pages/employee/EmployeeList';
 
 export const router = createBrowserRouter([
   {
@@ -45,10 +44,6 @@ export const router = createBrowserRouter([
       {
         path: 'employee/add',
         element: <AddEmployee />,
-      },
-      {
-        path: 'employee/list',
-        element: <EmployeeList />,
       },
       { 
         path: 'maintenance',
