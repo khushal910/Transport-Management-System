@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 
 export default function Login() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({
     email: location.state?.email || '',
@@ -14,7 +15,18 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const navigate = useNavigate();
+  // Auto-login if user data exists in localStorage
+  useEffect(() => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+
+      if (storedUser?.id) {
+        navigate('/main/dashboard');
+      }
+    } catch {
+      localStorage.removeItem('user');
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
