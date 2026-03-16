@@ -4,6 +4,8 @@ import userLogin from '../controllers/athentication/user.login.js';
 import userLogout from '../controllers/athentication/user.logout.js';
 import addEmployee from '../controllers/employee/add.employee.js';
 import getEmployees from '../controllers/employee/get.employees.js';
+import updateEmployee from '../controllers/employee/update.employee.js';
+import deleteEmployee from '../controllers/employee/delete.employee.js';
 import requiredRole from '../middlewares/role.middleware.js';
 
 const authRouter = Router();
@@ -13,5 +15,7 @@ authRouter.post('/login', userLogin);
 authRouter.post('/logout', userLogout);
 authRouter.post('/add-employee', requiredRole('manager'), addEmployee);
 authRouter.get('/employees', requiredRole('manager'), getEmployees);
+authRouter.put('/employee/:employeeId', requiredRole('manager'), updateEmployee);
+authRouter.delete('/employee/:employeeId', requiredRole('manager'), deleteEmployee);
 
 export default authRouter;
