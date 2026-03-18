@@ -38,7 +38,11 @@ export default function EmployeeManagement() {
     name: '',
     email: '',
     password: '',
-    role: 'driver',
+    role: 'dispatcher',
+    // Driver-specific fields
+    licenseNumber: '',
+    licenseExpiry: '',
+    licenseCategory: '',
   });
 
   // Fetch employees
@@ -86,6 +90,28 @@ export default function EmployeeManagement() {
       errors.password = 'Password is required';
     } else if (employeeForm.password && employeeForm.password.length < 2) {
       errors.password = 'Password must be at least 2 characters';
+    }
+
+    // Validate driver-specific fields
+    if (employeeForm.role === 'driver') {
+      if (!employeeForm.licenseNumber.trim()) {
+        errors.licenseNumber = 'License number is required';
+      } else if (!/^[A-Z0-9]+$/i.test(employeeForm.licenseNumber)) {
+        errors.licenseNumber = 'License number must contain only alphanumeric characters';
+      }
+
+      if (!employeeForm.licenseExpiry) {
+        errors.licenseExpiry = 'License expiry date is required';
+      } else {
+        const expiryDate = new Date(employeeForm.licenseExpiry);
+        if (expiryDate <= new Date()) {
+          errors.licenseExpiry = 'License expiry date must be in the future';
+        }
+      }
+
+      if (!employeeForm.licenseCategory) {
+        errors.licenseCategory = 'License category is required';
+      }
     }
 
     setFormErrors(errors);
@@ -188,7 +214,10 @@ export default function EmployeeManagement() {
       name: '',
       email: '',
       password: '',
-      role: 'driver',
+      role: 'dispatcher',
+      licenseNumber: '',
+      licenseExpiry: '',
+      licenseCategory: '',
     });
     setFormErrors({});
     setShowPassword(false);
@@ -209,6 +238,13 @@ export default function EmployeeManagement() {
 
       if (employeeForm.password) {
         payload.password = employeeForm.password;
+      }
+
+      // Include driver fields if role is driver
+      if (employeeForm.role === 'driver') {
+        payload.licenseNumber = employeeForm.licenseNumber.trim().toUpperCase();
+        payload.licenseExpiry = employeeForm.licenseExpiry;
+        payload.licenseCategory = employeeForm.licenseCategory;
       }
 
       const response = isUpdate
@@ -575,6 +611,80 @@ export default function EmployeeManagement() {
                   <option value="financial_analyst">Financial Analyst</option>
                 </select>
               </div>
+
+              {/* Driver-specific fields - shown only when role is 'driver' */}
+              {employeeForm.role === 'driver' && (
+                <>
+                  <div className="border-t pt-4 mt-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">Driver Information</p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700">
+                      License Number
+                    </label>
+                    <input
+                      type="text"
+                      name="licenseNumber"
+                      id="licenseNumber"
+                      value={employeeForm.licenseNumber}
+                      onChange={handleFormChange}
+                      placeholder="e.g., DL1234567"
+                      className={`w-full border p-2 rounded mt-1 ${
+                        formErrors.licenseNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      }`}
+                      required={employeeForm.role === 'driver'}
+                    />
+                    {formErrors.licenseNumber && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.licenseNumber}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="licenseExpiry" className="block text-sm font-medium text-gray-700">
+                      License Expiry Date
+                    </label>
+                    <input
+                      type="date"
+                      name="licenseExpiry"
+                      id="licenseExpiry"
+                      value={employeeForm.licenseExpiry}
+                      onChange={handleFormChange}
+                      className={`w-full border p-2 rounded mt-1 ${
+                        formErrors.licenseExpiry ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      }`}
+                      required={employeeForm.role === 'driver'}
+                    />
+                    {formErrors.licenseExpiry && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.licenseExpiry}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="licenseCategory" className="block text-sm font-medium text-gray-700">
+                      License Category
+                    </label>
+                    <select
+                      name="licenseCategory"
+                      id="licenseCategory"
+                      value={employeeForm.licenseCategory}
+                      onChange={handleFormChange}
+                      className={`w-full border p-2 rounded mt-1 ${
+                        formErrors.licenseCategory ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      }`}
+                      required={employeeForm.role === 'driver'}
+                    >
+                      <option value="">Select Category</option>
+                      <option value="truck">Truck</option>
+                      <option value="van">Van</option>
+                      <option value="bike">Bike</option>
+                    </select>
+                    {formErrors.licenseCategory && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.licenseCategory}</p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button

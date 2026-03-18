@@ -1,4 +1,5 @@
 import User from "../../models/user.schema.js";
+import Driver from "../../models/driver.schema.js";
 import Vehicle from "../../models/vehicle.schema.js";
 import response from "../../response/response.js";
 import tripCreateSchema from "../../validations/trip.create.validator.js";
@@ -37,14 +38,32 @@ const createTrip = async (req, res) => {
     }
 
     // Check if driver exists and belongs to the same company
-    const isDriverExist = await User.findOne({ 
+    const isDriverUser = await User.findOne({ 
       email: driverEmail, 
       role: 'driver',
       company: companyId 
-    }).lean();
+    }, "_id").lean();
     
-    if (!isDriverExist) {
+    if (!isDriverUser) {
       return response(res, 404, false, 'Driver not found');
+    }
+
+    // Check if driver record exists in Driver table
+    const isDriverExist = await Driver.findOne({
+      user: isDriverUser._id,
+    }, "_id status");
+
+    if (!isDriverExist) {
+      return response(res, 404, false, 'Driver record not found. Driver must be properly registered.');
+    }
+
+    // Check if driver is available (not on_trip or suspended)
+    if (isDriverExist.status === 'suspended') {
+      return response(res, 400, false, 'Driver is suspended and cannot be assigned to trips');
+    }
+
+    if (isDriverExist.status === 'on_trip') {
+      return response(res, 400, false, 'Driver is currently on a trip');
     }
     
     /* 
@@ -73,6 +92,9 @@ const createTrip = async (req, res) => {
     
     // change vehicle status to assigned after creating the trip
     await Vehicle.findByIdAndUpdate(isVehicleExist._id, {status: 'assigned'});
+
+    // Update driver status to on_trip when trip is created
+    await Driver.findByIdAndUpdate(isDriverExist._id, {status: 'on_trip'});
         
     return response(res, 201, true, 'Trip created successfully', newTrip);
 

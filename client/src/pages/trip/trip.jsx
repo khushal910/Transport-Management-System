@@ -69,8 +69,8 @@ const validateFilterState = (filters) => {
 const normalizeTrip = (trip) => ({
   ...trip,
   vehiclePlateNumber: trip.vehiclePlateNumber || trip.vehicle?.licensePlate || trip.vehicle?.name || "N/A",
-  driverName: trip.driver?.name || trip.driverName || "N/A",
-  driverEmail: trip.driverEmail || trip.driver?.email || "N/A",
+  driverName: trip.driver?.user?.name || trip.driverName || "N/A",
+  driverEmail: trip.driverEmail || trip.driver?.user?.email || "N/A",
   startLocation: trip.startLocation || "N/A",
   endLocation: trip.endLocation || "N/A",
   status: trip.status || "draft",

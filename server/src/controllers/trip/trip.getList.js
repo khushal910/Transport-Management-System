@@ -84,7 +84,7 @@ const groupTrips = (trips, groupField) => {
     }
 
     if (groupField === "driver") {
-      groupKey = trip.driver?.name || trip.driver?.email || "Unknown Driver";
+      groupKey = trip.driver?.user?.name || trip.driver?.user?.email || "Unknown Driver";
     }
 
     if (groupField === "vehicle") {
@@ -151,7 +151,14 @@ const getTripList = async (req, res) => {
       const total = await Trip.countDocuments(filter);
       const trips = await Trip.find(filter)
         .populate("vehicle", "name licensePlate model vehicleType status")
-        .populate("driver", "name email")
+        .populate({
+          path: "driver",
+          select: "licenseNumber licenseCategory licenseExpiry safetyScore status user",
+          populate: {
+            path: "user",
+            select: "name email",
+          },
+        })
         .sort(sort)
         .skip(skip)
         .limit(limit)
