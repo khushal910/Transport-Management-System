@@ -8,6 +8,7 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import Vehicle from '../pages/vehicle/vehicle';
 import Trip from '../pages/trip/trip';
 import AddEmployee from '../pages/employee/AddEmployee';
+import MaintenancePage from '../pages/maintenance/Maintenance';
 
 export const router = createBrowserRouter([
   {
@@ -47,7 +48,7 @@ export const router = createBrowserRouter([
       },
       { 
         path: 'maintenance',
-        element: <div>Maintenance</div>,
+        element: <MaintenancePage />,
       },
       { 
         path: 'trip-expense',
