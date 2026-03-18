@@ -9,6 +9,7 @@ import Vehicle from '../pages/vehicle/vehicle';
 import Trip from '../pages/trip/trip';
 import AddEmployee from '../pages/employee/AddEmployee';
 import MaintenancePage from '../pages/maintenance/Maintenance';
+import Expense from '../pages/expense/Expense';
 
 export const router = createBrowserRouter([
   {
@@ -52,7 +53,7 @@ export const router = createBrowserRouter([
       },
       { 
         path: 'trip-expense',
-        element: <div>Trip & Expense</div>,
+        element: <Expense />,
       },
       { 
         path: 'performance',

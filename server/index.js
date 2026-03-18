@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import vehicleRoute from './src/routers/vehicle.route.js';
 import tripRouter from './src/routers/trip.route.js';
 import maintenanceRouter from './src/routers/maintenance.route.js';
+import expenseRouter from './src/routers/expense.route.js';
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/vehicle', vehicleRoute)
 app.use('/api/trip', tripRouter)
 app.use('/api/maintenance', maintenanceRouter)
+app.use('/api/expense', expenseRouter)
 
 const port = process.env.PORT || 3000;
 
