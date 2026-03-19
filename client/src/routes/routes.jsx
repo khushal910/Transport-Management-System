@@ -10,6 +10,7 @@ import Trip from '../pages/trip/trip';
 import AddEmployee from '../pages/employee/AddEmployee';
 import MaintenancePage from '../pages/maintenance/Maintenance';
 import Expense from '../pages/expense/Expense';
+import Performance from '../pages/performance/Performance';
 
 export const router = createBrowserRouter([
   {
@@ -57,7 +58,7 @@ export const router = createBrowserRouter([
       },
       { 
         path: 'performance',
-        element: <div>Performance</div>,
+        element: <Performance />,
       },
       { 
         path: 'analytics',

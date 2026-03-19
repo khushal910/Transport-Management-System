@@ -32,6 +32,17 @@ const driverSchema = new mongoose.Schema(
       enum: ['on_duty', 'off_duty', 'on_trip', 'suspended'],
       default: 'off_duty',
     },
+    complaints: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    completionRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
   },
   { timestamps: true }
 );
