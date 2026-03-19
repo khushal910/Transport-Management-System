@@ -13,6 +13,32 @@ const deleteVehicle = async (req, res) => {
     if (!companyId) {
       return response(res, 403, false, 'User is not associated with a company');
     }
+
+    // First, fetch the vehicle to check its status
+    const vehicle = await Vehicle.findOne({
+      _id: vehicleId,
+      company: companyId,
+    });
+
+    if (!vehicle) {
+      return response(
+        res,
+        404,
+        false,
+        'Vehicle not found or does not belong to your company'
+      );
+    }
+
+    // Validate vehicle status - can only delete if status is "retired" or "available"
+    if (vehicle.status !== 'retired' && vehicle.status !== 'available') {
+      return response(
+        res,
+        400,
+        false,
+        `Cannot delete vehicle with status ${vehicle.status}`
+      );
+    }
+
     const deletedVehicle = await Vehicle.findOneAndDelete({
       _id: vehicleId,
       company: companyId,
