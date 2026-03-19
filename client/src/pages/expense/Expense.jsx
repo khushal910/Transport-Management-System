@@ -13,6 +13,7 @@ const Expense = () => {
   // Form state
   const [expenseForm, setExpenseForm] = useState({
     tripId: '',
+    tripSearch: '',
     fuelCost: '',
     miscExpense: '',
     distance: '',
@@ -45,7 +46,9 @@ const Expense = () => {
 
   // Available trips for autocomplete
   const [availableTrips, setAvailableTrips] = useState([]);
-  const [showTripDropdown, setShowTripDropdown] = useState(false);
+  const [tripSuggestions, setTripSuggestions] = useState([]);
+  const [showTripSuggestions, setShowTripSuggestions] = useState(false);
+  const tripInputRef = useRef(null);
 
   const normalizeExpense = (expense) => ({
     ...expense,
@@ -108,9 +111,10 @@ const Expense = () => {
   // Fetch available trips for autocomplete
   const fetchAvailableTrips = useCallback(async () => {
     try {
-      const response = await tripBaseURL.get('/list?page=1&limit=50');
-      if (response.data.success) {
-        setAvailableTrips(response.data.data.trips || []);
+      const response = await tripBaseURL.get('/get?page=1&limit=100');
+      if (response.data.success && response.data.data?.trips) {
+        setAvailableTrips(response.data.data.trips);
+        console.log('Trips loaded:', response.data.data.trips);
       }
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -137,6 +141,8 @@ const Expense = () => {
   const handleCloseModal = (event) => {
     if (event.target === event.currentTarget) {
       setShowModal(false);
+      setShowTripSuggestions(false);
+      setTripSuggestions([]);
     }
   };
 
@@ -144,6 +150,44 @@ const Expense = () => {
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setExpenseForm((prev) => ({ ...prev, [name]: value }));
+
+    // Handle trip search
+    if (name === 'tripSearch') {
+      if (value.trim()) {
+        const filtered = availableTrips.filter((trip) => {
+          const tripDriver = trip.driver?.user?.name || trip.driverName || '';
+          const tripVehicle = trip.vehicle?.name || trip.vehicle?.licensePlate || trip.vehiclePlateNumber || '';
+          const searchText = (
+            trip._id +
+            ' ' +
+            (trip.startLocation || '') +
+            ' ' +
+            (trip.endLocation || '') +
+            ' ' +
+            tripDriver +
+            ' ' +
+            tripVehicle
+          ).toLowerCase();
+          return searchText.includes(value.toLowerCase());
+        });
+        setTripSuggestions(filtered);
+        setShowTripSuggestions(true);
+      } else {
+        setTripSuggestions([]);
+        setShowTripSuggestions(false);
+      }
+    }
+  };
+
+  // Select trip from suggestions
+  const selectTrip = (trip) => {
+    setExpenseForm((prev) => ({
+      ...prev,
+      tripId: trip._id,
+      tripSearch: `${trip.startLocation} → ${trip.endLocation} (${trip.driver?.user?.name || 'N/A'})`,
+    }));
+    setShowTripSuggestions(false);
+    setTripSuggestions([]);
   };
 
   // Validate form
@@ -188,7 +232,7 @@ const Expense = () => {
       const response = await expenseBaseURL.post('/create', payload);
       if (response.data.success) {
         toast.success('Expense created successfully');
-        setExpenseForm({ tripId: '', fuelCost: '', miscExpense: '', distance: '' });
+        setExpenseForm({ tripId: '', tripSearch: '', fuelCost: '', miscExpense: '', distance: '' });
         setShowModal(false);
         fetchExpenses();
       }
@@ -230,6 +274,8 @@ const Expense = () => {
         setShowSortPanel(false);
       if (groupMenuRef.current && !groupMenuRef.current.contains(e.target))
         setShowGroupPanel(false);
+      if (tripInputRef.current && !tripInputRef.current.contains(e.target))
+        setShowTripSuggestions(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -249,15 +295,7 @@ const Expense = () => {
     }
   };
 
-  const filteredTripsList = availableTrips.filter((trip) => {
-    const query = expenseForm.tripId.toLowerCase().trim();
-    if (!query) return false;
-    return (
-      trip._id.includes(query) ||
-      trip._id.slice(-3).includes(query) ||
-      (trip.startLocation?.toLowerCase().includes(query) && query.length > 0)
-    );
-  });
+
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -467,33 +505,41 @@ const Expense = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Create Expense Log</h2>
 
             <div className="space-y-4">
-              {/* Trip ID with autocomplete */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Trip ID</label>
+              {/* Trip Search with Autocomplete */}
+              <div ref={tripInputRef} className="relative">
+                <label htmlFor="tripSearch" className="block text-sm font-medium text-gray-700 mb-2">
+                  Trip
+                </label>
                 <input
                   type="text"
-                  name="tripId"
-                  value={expenseForm.tripId}
-                  onChange={(e) => {
-                    handleFormChange(e);
-                    setShowTripDropdown(e.target.value.length > 0);
+                  name="tripSearch"
+                  id="tripSearch"
+                  value={expenseForm.tripSearch}
+                  onChange={handleFormChange}
+                  onFocus={() => {
+                    if (expenseForm.tripSearch.trim() === '') {
+                      // Show all trips when field is empty
+                      setTripSuggestions(availableTrips);
+                    }
+                    setShowTripSuggestions(true);
                   }}
-                  placeholder="Enter Trip ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Search trip..."
+                  className="w-full border p-2 rounded border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoComplete="off"
                 />
-                {showTripDropdown && filteredTripsList.length > 0 && (
-                  <div className="absolute mt-1 w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                    {filteredTripsList.slice(0, 5).map((trip) => (
+                {showTripSuggestions && tripSuggestions.length > 0 && (
+                  <div className="absolute top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {tripSuggestions.map((trip) => (
                       <button
                         key={trip._id}
                         type="button"
-                        onClick={() => {
-                          setExpenseForm((prev) => ({ ...prev, tripId: trip._id }));
-                          setShowTripDropdown(false);
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b text-sm"
+                        onClick={() => selectTrip(trip)}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-100 border-b last:border-b-0"
                       >
-                        {trip._id.slice(-3)} - {trip.startLocation} → {trip.endLocation}
+                        <div className="font-medium">{trip.startLocation} → {trip.endLocation}</div>
+                        <div className="text-xs text-gray-600">
+                          {trip.driver?.user?.name || 'N/A'} • {trip.vehicle?.name || 'N/A'}
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -551,7 +597,7 @@ const Expense = () => {
               <button
                 onClick={() => {
                   setShowModal(false);
-                  setExpenseForm({ tripId: '', fuelCost: '', miscExpense: '' });
+                  setExpenseForm({ tripId: '', tripSearch: '', fuelCost: '', miscExpense: '', distance: '' });
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
               >
