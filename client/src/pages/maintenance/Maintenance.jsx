@@ -9,6 +9,7 @@ const INITIAL_FORM = {
   description: "",
   serviceDate: "",
   cost: "",
+  distance: "",
 };
 
 const INITIAL_FILTERS = {
@@ -282,6 +283,10 @@ export default function MaintenancePage() {
       errors.cost = "Cost cannot be negative";
     }
 
+    if (maintenanceForm.distance && (isNaN(maintenanceForm.distance) || Number(maintenanceForm.distance) < 0)) {
+      errors.distance = "Distance must be a valid positive number";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -299,6 +304,7 @@ export default function MaintenancePage() {
         description: maintenanceForm.description.trim(),
         serviceDate: maintenanceForm.serviceDate,
         cost: Number(maintenanceForm.cost),
+        distance: maintenanceForm.distance ? Number(maintenanceForm.distance) : undefined,
       };
 
       const response = await fetch(`${API_URL}/create`, {
@@ -808,6 +814,53 @@ export default function MaintenancePage() {
                 {formErrors.serviceDate && (
                   <p className="text-red-500 text-sm mt-1">{formErrors.serviceDate}</p>
                 )}
+              </div>
+
+              {/* Cost */}
+              <div>
+                <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-2">
+                  Cost ($)
+                </label>
+                <input
+                  type="number"
+                  name="cost"
+                  id="cost"
+                  value={maintenanceForm.cost}
+                  onChange={handleFormChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className={`w-full border p-2 rounded ${
+                    formErrors.cost ? "border-red-500 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.cost && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.cost}</p>
+                )}
+              </div>
+
+              {/* Distance */}
+              <div>
+                <label htmlFor="distance" className="block text-sm font-medium text-gray-700 mb-2">
+                  Distance (KM) - Optional
+                </label>
+                <input
+                  type="number"
+                  name="distance"
+                  id="distance"
+                  value={maintenanceForm.distance}
+                  onChange={handleFormChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className={`w-full border p-2 rounded ${
+                    formErrors.distance ? "border-red-500 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.distance && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.distance}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">Leave empty to auto-calculate from vehicle odometer</p>
               </div>
 
               {/* Buttons */}

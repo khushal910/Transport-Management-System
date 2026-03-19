@@ -23,5 +23,12 @@ export const expenseCreateSchema = Joi.object({
       'number.base': 'Misc Expense must be a number',
       'number.min': 'Misc Expense cannot be negative',
     }),
+  distance: Joi.number()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Distance must be a number',
+      'number.min': 'Distance cannot be negative',
+    }),
 });
 

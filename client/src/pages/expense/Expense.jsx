@@ -15,6 +15,7 @@ const Expense = () => {
     tripId: '',
     fuelCost: '',
     miscExpense: '',
+    distance: '',
   });
 
   // UI state
@@ -163,6 +164,10 @@ const Expense = () => {
       toast.error('Misc Expense must be a valid positive number');
       return false;
     }
+    if (expenseForm.distance && (isNaN(expenseForm.distance) || Number(expenseForm.distance) < 0)) {
+      toast.error('Distance must be a valid positive number');
+      return false;
+    }
     return true;
   };
 
@@ -177,12 +182,13 @@ const Expense = () => {
         tripId: expenseForm.tripId,
         fuelCost: Number(expenseForm.fuelCost),
         miscExpense: Number(expenseForm.miscExpense) || 0,
+        distance: expenseForm.distance ? Number(expenseForm.distance) : undefined,
       };
 
       const response = await expenseBaseURL.post('/create', payload);
       if (response.data.success) {
         toast.success('Expense created successfully');
-        setExpenseForm({ tripId: '', fuelCost: '', miscExpense: '' });
+        setExpenseForm({ tripId: '', fuelCost: '', miscExpense: '', distance: '' });
         setShowModal(false);
         fetchExpenses();
       }
@@ -522,6 +528,22 @@ const Expense = () => {
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              {/* Distance */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Distance (KM) - Optional</label>
+                <input
+                  type="number"
+                  name="distance"
+                  value={expenseForm.distance}
+                  onChange={handleFormChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty to auto-calculate from trip odometer</p>
               </div>
             </div>
 

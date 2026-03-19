@@ -22,6 +22,11 @@ const maintenanceSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    distance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     serviceDate: {
       type: Date,
       required: true,

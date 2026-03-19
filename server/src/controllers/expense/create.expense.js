@@ -11,7 +11,7 @@ export const createExpense = async (req, res) => {
       return response(res, 400, false, error.details[0]?.message || 'Validation failed');
     }
 
-    const { tripId, fuelCost, miscExpense } = value;
+    const { tripId, fuelCost, miscExpense, distance } = value;
     const companyId = req.user?.companyId;
 
     if (!companyId) {
@@ -27,10 +27,10 @@ export const createExpense = async (req, res) => {
       return response(res, 404, false, 'Trip not found');
     }
 
-    // Calculate distance if odometer values exist
-    let distance = 0;
-    if (trip.startOdometer && trip.endOdometer) {
-      distance = trip.endOdometer - trip.startOdometer;
+    // Use provided distance or calculate from odometer if available
+    let calculatedDistance = distance || 0;
+    if (!distance && trip.startOdometer && trip.endOdometer) {
+      calculatedDistance = trip.endOdometer - trip.startOdometer;
     }
 
     // Create expense log
@@ -41,7 +41,7 @@ export const createExpense = async (req, res) => {
       vehicle: trip.vehicle._id,
       fuelCost: Number(fuelCost),
       miscExpense: Number(miscExpense) || 0,
-      distance: distance,
+      distance: calculatedDistance,
       status: 'pending',
       date: new Date(),
     });

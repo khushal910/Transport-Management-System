@@ -7,6 +7,10 @@ const maintenanceCreateSchema = joi.object({
     'date.min': 'Service date must be in the future',
   }),
   cost: joi.number().min(0).required(),
+  distance: joi.number().min(0).optional().messages({
+    'number.base': 'Distance must be a number',
+    'number.min': 'Distance cannot be negative',
+  }),
 });
 
 export default maintenanceCreateSchema;

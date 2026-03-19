@@ -11,7 +11,7 @@ const createMaintenance = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
 
-    const { vehicleName, description, serviceDate, cost } = value;
+    const { vehicleName, description, serviceDate, cost, distance } = value;
     const companyId = req.user.companyId;
 
     if (!companyId) {
@@ -36,6 +36,7 @@ const createMaintenance = async (req, res) => {
       serviceDate: new Date(serviceDate),
       status: "pending",
       cost: Number(cost),
+      distance: Number(distance) || 0,
     });
 
     return response(res, 201, true, "Maintenance service created successfully", {
@@ -45,6 +46,7 @@ const createMaintenance = async (req, res) => {
       serviceDate: maintenanceLog.serviceDate,
       status: maintenanceLog.status,
       cost: maintenanceLog.cost,
+      distance: maintenanceLog.distance,
     });
   } catch (error) {
     console.error("Error creating maintenance:", error);
