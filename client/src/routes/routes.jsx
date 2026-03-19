@@ -11,6 +11,7 @@ import AddEmployee from '../pages/employee/AddEmployee';
 import MaintenancePage from '../pages/maintenance/Maintenance';
 import Expense from '../pages/expense/Expense';
 import Performance from '../pages/performance/Performance';
+import Analytics from '../pages/analytics/Analytics';
 
 export const router = createBrowserRouter([
   {
@@ -62,7 +63,7 @@ export const router = createBrowserRouter([
       },
       { 
         path: 'analytics',
-        element: <div>Analytics</div>,
+        element: <Analytics />,
       },
     ],
   },
