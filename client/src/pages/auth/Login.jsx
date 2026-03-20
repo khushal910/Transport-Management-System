@@ -15,16 +15,10 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  // Auto-login if user data exists in localStorage
+  // Redirect if user is already logged in
   useEffect(() => {
-    try {
-      const storedUser = JSON.parse(localStorage.getItem('user'));
-
-      if (storedUser?.id) {
-        navigate('/main/dashboard');
-      }
-    } catch {
-      localStorage.removeItem('user');
+    if (localStorage.getItem('user')) {
+      navigate('/main/dashboard');
     }
   }, [navigate]);
 
@@ -38,12 +32,14 @@ export default function Login() {
     try {
       const response = await authBaseURL.post('/login', data);
       if (response.status == 200) {
-        // Store user and company information in localStorage
+        // Extract and validate user data
         const userData = response.data.data;
         if (!userData) {
           toast.error('Invalid response from server');
           return;
         }
+
+        // Store user information
         localStorage.setItem('user', JSON.stringify({
           id: userData.id,
           name: userData.name,
@@ -51,6 +47,7 @@ export default function Login() {
           companyId: userData.companyId,
         }));
         
+        // Store company information in localStorage
         if (userData.company) {
           localStorage.setItem('company', JSON.stringify(userData.company));
         }

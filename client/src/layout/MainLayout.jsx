@@ -4,18 +4,18 @@ import { toast } from 'react-toastify'
 
 const MainLayout = () => {
   const navigate = useNavigate()
-  
+
   const user = () => {
     try {
-      const userData = localStorage.getItem('user');
-      return userData ? JSON.parse(userData) : null;
+      const userData = localStorage.getItem('user')
+      return userData ? JSON.parse(userData) : null
     } catch (error) {
-      console.error('Failed to parse stored auth data:', error);
-      localStorage.removeItem('user');
-      return null;
+      console.error('Failed to parse stored auth data:', error)
+      localStorage.removeItem('user')
+      return null
     }
-  };
-  
+  }
+
   const company = () => {
     try {
       const companyData = localStorage.getItem('company')

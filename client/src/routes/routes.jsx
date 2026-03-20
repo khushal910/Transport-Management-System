@@ -12,6 +12,7 @@ import MaintenancePage from '../pages/maintenance/Maintenance';
 import Expense from '../pages/expense/Expense';
 import Performance from '../pages/performance/Performance';
 import Analytics from '../pages/analytics/Analytics';
+import PrivateRoute from '../components/PrivateRoute';
 
 export const router = createBrowserRouter([
   {
@@ -31,7 +32,8 @@ export const router = createBrowserRouter([
   },
   {
     path: '/main',
-    element: <MainLayout />,
+    element: <PrivateRoute><MainLayout /></PrivateRoute>,
+    errorElement: <Error />,
     children: [
       {
         path: 'dashboard',
@@ -39,7 +41,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'vehicle-registry',
-        element: <Vehicle />,
+        element: <PrivateRoute requiredRoles={['manager', 'admin']}><Vehicle /></PrivateRoute>,
       },
       {
         path: 'trip-dispatcher',
@@ -47,11 +49,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'employee/add',
-        element: <AddEmployee />,
+        element: <PrivateRoute requiredRoles={['manager', 'admin']}><AddEmployee /></PrivateRoute>,
       },
       { 
         path: 'maintenance',
-        element: <MaintenancePage />,
+        element: <PrivateRoute requiredRoles={['manager', 'admin']}><MaintenancePage /></PrivateRoute>,
       },
       { 
         path: 'trip-expense',
@@ -59,11 +61,11 @@ export const router = createBrowserRouter([
       },
       { 
         path: 'performance',
-        element: <Performance />,
+        element: <PrivateRoute requiredRoles={['manager', 'admin']}><Performance /></PrivateRoute>,
       },
       { 
         path: 'analytics',
-        element: <Analytics />,
+        element: <PrivateRoute requiredRoles={['manager', 'admin']}><Analytics /></PrivateRoute>,
       },
     ],
   },
