@@ -388,6 +388,40 @@ export default function MaintenancePage() {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  const handleUpdateStatus = async (maintenanceId, newStatus) => {
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch(`${API_URL}/status/${maintenanceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        toast.error(data.message || "Failed to update maintenance status");
+        return;
+      }
+
+      toast.success(data.message || "Maintenance status updated successfully");
+      fetchMaintenanceLogs(currentPage);
+    } catch (error) {
+      toast.error("Error updating maintenance status");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const canUpdateStatus = (status) => {
+    return status !== "completed" && status !== "cancelled";
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -645,6 +679,30 @@ export default function MaintenancePage() {
                                   {log.status?.toUpperCase()}
                                 </span>
                               </td>
+                              <td className="px-4 py-3 text-sm flex gap-2">
+                                {canUpdateStatus(log.status) && (
+                                  <>
+                                    {log.status === "pending" && (
+                                      <>
+                                        <button
+                                          onClick={() => handleUpdateStatus(log._id, "completed")}
+                                          disabled={isSubmitting}
+                                          className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
+                                        >
+                                          Complete
+                                        </button>
+                                        <button
+                                          onClick={() => handleUpdateStatus(log._id, "cancelled")}
+                                          disabled={isSubmitting}
+                                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -667,6 +725,7 @@ export default function MaintenancePage() {
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Cost</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -685,6 +744,30 @@ export default function MaintenancePage() {
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(log.status)}`}>
                             {log.status?.toUpperCase()}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm flex gap-2">
+                          {canUpdateStatus(log.status) && (
+                            <>
+                              {log.status === "pending" && (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateStatus(log._id, "completed")}
+                                    disabled={isSubmitting}
+                                    className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
+                                  >
+                                    Complete
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateStatus(log._id, "cancelled")}
+                                    disabled={isSubmitting}
+                                    className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}

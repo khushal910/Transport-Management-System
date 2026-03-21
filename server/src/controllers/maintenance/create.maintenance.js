@@ -39,6 +39,9 @@ const createMaintenance = async (req, res) => {
       distance: Number(distance) || 0,
     });
 
+    // Update vehicle status to in_shop
+    await Vehicle.findByIdAndUpdate(vehicle._id, { status: "in_shop" });
+
     return response(res, 201, true, "Maintenance service created successfully", {
       logId: maintenanceLog._id,
       vehicle: vehicleName,
