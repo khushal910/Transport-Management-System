@@ -22,10 +22,15 @@ const createMaintenance = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       name: vehicleName,
       company: companyId,
-    }, "_id");
+    }, "_id status");
 
     if (!vehicle) {
       return response(res, 404, false, "Vehicle not found");
+    }
+
+    // Prevent service creation for vehicles with restricted statuses
+    if (vehicle.status === "assigned" || vehicle.status === "on_trip" ) {
+      return response(res, 400, false, `Cannot create service for vehicle with status '${vehicle.status}'`);
     }
 
     // Create maintenance log
