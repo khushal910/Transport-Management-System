@@ -101,6 +101,7 @@ const Trip = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showSortPanel, setShowSortPanel] = useState(false);
   const [showGroupPanel, setShowGroupPanel] = useState(false);
@@ -118,6 +119,8 @@ const Trip = () => {
     totalPages: 1,
   });
   const [tripForm, setTripForm] = useState(INITIAL_FORM);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [vehicleSuggestions, setVehicleSuggestions] = useState([]);
@@ -459,6 +462,131 @@ const Trip = () => {
     }
   };
 
+  const handleDeleteTrip = async (tripId) => {
+    if (!window.confirm("Are you sure you want to delete this trip?")) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+
+      const response = await tripBaseURL.delete(`/delete/${tripId}`);
+
+      if (!response.data?.success) {
+        toast.error(response.data?.message || "Unable to delete trip");
+        return;
+      }
+
+      setTripList((prev) => prev.filter((trip) => trip._id !== tripId));
+      setGroupedTrips((prev) => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach((key) => {
+          updated[key] = updated[key].filter((trip) => trip._id !== tripId);
+        });
+        return updated;
+      });
+
+      toast.success(response.data?.message || "Trip deleted successfully");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to delete trip");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditTrip = (trip) => {
+    setSelectedTrip(trip);
+    setTripForm({
+      vehiclePlateNumber: trip.vehiclePlateNumber,
+      driverEmail: trip.driverEmail,
+      cargoWeight: trip.cargoWeight,
+      startLocation: trip.startLocation,
+      endLocation: trip.endLocation,
+      revenue: trip.revenue,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateTrip = async (event) => {
+    event.preventDefault();
+
+    if (!selectedTrip || !selectedTrip._id) {
+      toast.error("Unable to identify trip for update");
+      return;
+    }
+
+    const payload = {
+      vehiclePlateNumber: tripForm.vehiclePlateNumber.trim(),
+      driverEmail: tripForm.driverEmail.trim(),
+      cargoWeight: Number(tripForm.cargoWeight),
+      startLocation: tripForm.startLocation.trim(),
+      endLocation: tripForm.endLocation.trim(),
+      revenue: Number(tripForm.revenue),
+    };
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await tripBaseURL.put(`/update/${selectedTrip._id}`, payload);
+
+      if (!response.data?.success) {
+        toast.error(response.data?.message || "Unable to update trip");
+        return;
+      }
+
+      const updatedTrip = response.data?.data || {};
+
+      setTripList((prev) =>
+        prev.map((trip) =>
+          trip._id === selectedTrip._id
+            ? {
+                ...updatedTrip,
+                vehiclePlateNumber: payload.vehiclePlateNumber,
+                driverEmail: payload.driverEmail,
+                startLocation: payload.startLocation,
+                endLocation: payload.endLocation,
+                cargoWeight: payload.cargoWeight,
+                revenue: payload.revenue,
+              }
+            : trip
+        )
+      );
+
+      setGroupedTrips((prev) => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach((key) => {
+          updated[key] = updated[key].map((trip) =>
+            trip._id === selectedTrip._id
+              ? {
+                  ...updatedTrip,
+                  vehiclePlateNumber: payload.vehiclePlateNumber,
+                  driverEmail: payload.driverEmail,
+                  startLocation: payload.startLocation,
+                  endLocation: payload.endLocation,
+                  cargoWeight: payload.cargoWeight,
+                  revenue: payload.revenue,
+                }
+              : trip
+          );
+        });
+        return updated;
+      });
+
+      toast.success(response.data?.message || "Trip updated successfully");
+      setTripForm(INITIAL_FORM);
+      setSelectedTrip(null);
+      setIsEditModalOpen(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to update trip");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const canManageTrip = (tripStatus) => {
+    return ["draft", "dispatched"].includes(tripStatus);
+  };
+
   return (
     <div className="p-6 bg-white rounded-lg shadow">
 
@@ -769,6 +897,7 @@ const Trip = () => {
                       <th className="px-4 py-2 text-left">Cargo</th>
                       <th className="px-4 py-2 text-left">Revenue</th>
                       <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -783,6 +912,25 @@ const Trip = () => {
                         <td className="px-4 py-2">{trip.cargoWeight ?? "N/A"}</td>
                         <td className="px-4 py-2">{trip.revenue ?? "N/A"}</td>
                         <td className="px-4 py-2 capitalize">{trip.status}</td>
+                        <td className="px-4 py-2 flex gap-2">
+                          {canManageTrip(trip.status) && (
+                            <>
+                              <button
+                                onClick={() => handleEditTrip(trip)}
+                                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTrip(trip._id)}
+                                disabled={isDeleting}
+                                className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -801,12 +949,13 @@ const Trip = () => {
                 <th className="px-4 py-2 text-left">Cargo</th>
                 <th className="px-4 py-2 text-left">Revenue</th>
                 <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredTrips.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     No trips found.
                   </td>
                 </tr>
@@ -822,6 +971,25 @@ const Trip = () => {
                     <td className="px-4 py-2">{trip.cargoWeight ?? "N/A"}</td>
                     <td className="px-4 py-2">{trip.revenue ?? "N/A"}</td>
                     <td className="px-4 py-2 capitalize">{trip.status}</td>
+                    <td className="px-4 py-2 flex gap-2">
+                      {canManageTrip(trip.status) && (
+                        <>
+                          <button
+                            onClick={() => handleEditTrip(trip)}
+                            className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTrip(trip._id)}
+                            disabled={isDeleting}
+                            className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -978,6 +1146,145 @@ const Trip = () => {
                   className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Creating..." : "Create Trip"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditModalOpen && selectedTrip && (
+        <div
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsEditModalOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-xl">
+            <h2 className="text-xl font-semibold mb-4">Update Trip</h2>
+            <p className="mt-1 text-sm text-gray-500 mb-4">
+              Update trip details. Only draft or dispatched trips can be modified.
+            </p>
+
+            <form onSubmit={handleUpdateTrip} className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="relative" ref={vehicleInputRef}>
+                <input
+                  name="vehiclePlateNumber"
+                  type="text"
+                  placeholder="Vehicle Plate Number"
+                  value={tripForm.vehiclePlateNumber}
+                  onChange={handleFormChange}
+                  onFocus={() => tripForm.vehiclePlateNumber && setShowVehicleSuggestions(true)}
+                  className="w-full border px-3 py-2 rounded"
+                  required
+                />
+                {showVehicleSuggestions && vehicleSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                    {vehicleSuggestions.map((vehicle) => (
+                      <div
+                        key={vehicle._id}
+                        onClick={() => selectVehicle(vehicle)}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                      >
+                        <div className="font-semibold">{vehicle.licensePlate}</div>
+                        <div className="text-xs text-gray-600">
+                          {vehicle.name} ({vehicle.vehicleType})
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative" ref={driverInputRef}>
+                <input
+                  name="driverEmail"
+                  type="email"
+                  placeholder="Driver Email"
+                  value={tripForm.driverEmail}
+                  onChange={handleFormChange}
+                  onFocus={() => tripForm.driverEmail && setShowDriverSuggestions(true)}
+                  className="w-full border px-3 py-2 rounded"
+                  required
+                />
+                {showDriverSuggestions && driverSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                    {driverSuggestions.map((driver) => (
+                      <div
+                        key={driver._id}
+                        onClick={() => selectDriver(driver)}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                      >
+                        <div className="font-semibold">{driver.email}</div>
+                        <div className="text-xs text-gray-600">{driver.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <input
+                name="cargoWeight"
+                type="number"
+                placeholder="Cargo Weight"
+                min="1"
+                value={tripForm.cargoWeight}
+                onChange={handleFormChange}
+                className="w-full border px-3 py-2 rounded"
+                required
+              />
+
+              <input
+                name="revenue"
+                type="number"
+                placeholder="Revenue"
+                min="0"
+                value={tripForm.revenue}
+                onChange={handleFormChange}
+                className="w-full border px-3 py-2 rounded"
+                required
+              />
+
+              <input
+                name="startLocation"
+                type="text"
+                placeholder="Start Location"
+                value={tripForm.startLocation}
+                onChange={handleFormChange}
+                className="w-full border px-3 py-2 rounded"
+                required
+              />
+
+              <input
+                name="endLocation"
+                type="text"
+                placeholder="End Location"
+                value={tripForm.endLocation}
+                onChange={handleFormChange}
+                className="w-full border px-3 py-2 rounded"
+                required
+              />
+
+              <div className="col-span-1 mt-2 flex gap-3 sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedTrip(null);
+                    setTripForm(INITIAL_FORM);
+                  }}
+                  className="w-full border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? "Updating..." : "Update Trip"}
                 </button>
               </div>
             </form>
