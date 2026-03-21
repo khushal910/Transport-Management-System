@@ -1,4 +1,5 @@
 import Trip from "../../models/trip.schema.js";
+import Driver from "../../models/driver.schema.js";
 import response from "../../response/response.js";
 import tripListQuerySchema from "../../validations/trip.list.validator.js";
 
@@ -103,6 +104,8 @@ const groupTrips = (trips, groupField) => {
 const getTripList = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
+    const userRole = req.user?.role;
+    const userId = req.user?.userId;
 
     if (!companyId) {
       return response(res, 401, false, "Company ID is required");
@@ -145,6 +148,26 @@ const getTripList = async (req, res) => {
 
     try {
       const filter = buildFilterObject(value, companyId);
+
+      // If user is a driver, only show their assigned trips
+      if (userRole === "driver") {
+        const driverRecord = await Driver.findOne({ user: userId });
+        if (driverRecord) {
+          filter.driver = driverRecord._id;
+        } else {
+          // Driver has no record yet
+          return response(res, 200, true, "Trip list fetched successfully", {
+            trips: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+            },
+          });
+        }
+      }
+
       const sortParam = value.sort || "createdAt:desc";
       const sort = parseSort(sortParam);
 

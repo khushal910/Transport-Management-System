@@ -587,6 +587,57 @@ const Trip = () => {
     return ["draft", "dispatched"].includes(tripStatus);
   };
 
+  const handleUpdateStatus = async (tripId, newStatus) => {
+    try {
+      setIsSubmitting(true);
+
+      const response = await tripBaseURL.patch(`/status/${tripId}`, { status: newStatus });
+
+      if (!response.data?.success) {
+        toast.error(response.data?.message || "Unable to update trip status");
+        return;
+      }
+
+      const updatedTrip = response.data?.data || {};
+
+      setTripList((prev) =>
+        prev.map((trip) =>
+          trip._id === tripId
+            ? {
+                ...trip,
+                ...updatedTrip,
+                vehiclePlateNumber: trip.vehiclePlateNumber,
+                driverEmail: trip.driverEmail,
+              }
+            : trip
+        )
+      );
+
+      setGroupedTrips((prev) => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach((key) => {
+          updated[key] = updated[key].map((trip) =>
+            trip._id === tripId
+              ? {
+                  ...trip,
+                  ...updatedTrip,
+                  vehiclePlateNumber: trip.vehiclePlateNumber,
+                  driverEmail: trip.driverEmail,
+                }
+              : trip
+          );
+        });
+        return updated;
+      });
+
+      toast.success(response.data?.message || "Trip status updated successfully");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to update trip status");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-6 bg-white rounded-lg shadow">
 
@@ -930,6 +981,24 @@ const Trip = () => {
                               </button>
                             </>
                           )}
+                          {trip.status === "draft" && (
+                            <button
+                              onClick={() => handleUpdateStatus(trip._id, "dispatched")}
+                              disabled={isSubmitting}
+                              className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
+                            >
+                              Dispatch
+                            </button>
+                          )}
+                          {trip.status === "dispatched" && (
+                            <button
+                              onClick={() => handleUpdateStatus(trip._id, "completed")}
+                              disabled={isSubmitting}
+                              className="px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-purple-300"
+                            >
+                              Complete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -988,6 +1057,24 @@ const Trip = () => {
                             Delete
                           </button>
                         </>
+                      )}
+                      {trip.status === "draft" && (
+                        <button
+                          onClick={() => handleUpdateStatus(trip._id, "dispatched")}
+                          disabled={isSubmitting}
+                          className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
+                        >
+                          Dispatch
+                        </button>
+                      )}
+                      {trip.status === "dispatched" && (
+                        <button
+                          onClick={() => handleUpdateStatus(trip._id, "completed")}
+                          disabled={isSubmitting}
+                          className="px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-purple-300"
+                        >
+                          Complete
+                        </button>
                       )}
                     </td>
                   </tr>
