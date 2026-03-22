@@ -1,9 +1,14 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import authBaseURL from '../api/authBaseURL'
 import { toast } from 'react-toastify'
 
 const MainLayout = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const isActive = (path) => {
+    return location.pathname === path
+  }
 
   const user = () => {
     try {
@@ -46,49 +51,81 @@ const MainLayout = () => {
         <div className="flex justify-center items-center gap-6">
           <Link
             to="/main/dashboard"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/dashboard')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Dashboard
           </Link>
           <Link
             to="/main/vehicle-registry"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/vehicle-registry')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Vehicle Registry
           </Link>
           <Link
-            to="/main/Trip-Dispatcher"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            to="/main/trip-dispatcher"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/trip-dispatcher')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Trip Dispatcher
           </Link>
           <Link
             to="/main/maintenance"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/maintenance')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Maintenance
           </Link>
           <Link
-            to="/main/Trip-Expense"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            to="/main/trip-expense"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/trip-expense')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Trip & Expense
           </Link>
           <Link
-            to="/main/Performance"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            to="/main/performance"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/performance')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Performance
           </Link>
           <Link
-            to="/main/Analytics"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            to="/main/analytics"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/analytics')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Analytics
           </Link>
           <Link
             to="/main/employee/add"
-            className="hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              isActive('/main/employee/add')
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-gray-700 text-white'
+            }`}
           >
             Employees
           </Link>
