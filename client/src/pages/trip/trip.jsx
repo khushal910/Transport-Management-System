@@ -464,32 +464,55 @@ const Trip = () => {
   };
 
   const handleDeleteTrip = async (tripId) => {
-    if (!window.confirm("Are you sure you want to delete this trip?")) {
+    if (!window.confirm("Are you sure you want to cancel this trip?")) {
       return;
     }
 
     try {
       setIsDeleting(true);
 
-      const response = await tripBaseURL.delete(`/delete/${tripId}`);
+      const response = await tripBaseURL.patch(`/status/${tripId}`, { status: "cancelled" });
 
       if (!response.data?.success) {
-        toast.error(response.data?.message || "Unable to delete trip");
+        toast.error(response.data?.message || "Unable to cancel trip");
         return;
       }
 
-      setTripList((prev) => prev.filter((trip) => trip._id !== tripId));
+      const updatedTrip = response.data?.data || {};
+
+      setTripList((prev) =>
+        prev.map((trip) =>
+          trip._id === tripId
+            ? {
+                ...trip,
+                ...updatedTrip,
+                vehiclePlateNumber: trip.vehiclePlateNumber,
+                driverEmail: trip.driverEmail,
+              }
+            : trip
+        )
+      );
+
       setGroupedTrips((prev) => {
         const updated = { ...prev };
         Object.keys(updated).forEach((key) => {
-          updated[key] = updated[key].filter((trip) => trip._id !== tripId);
+          updated[key] = updated[key].map((trip) =>
+            trip._id === tripId
+              ? {
+                  ...trip,
+                  ...updatedTrip,
+                  vehiclePlateNumber: trip.vehiclePlateNumber,
+                  driverEmail: trip.driverEmail,
+                }
+              : trip
+          );
         });
         return updated;
       });
 
-      toast.success(response.data?.message || "Trip deleted successfully");
+      toast.success(response.data?.message || "Trip cancelled successfully");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to delete trip");
+      toast.error(error.response?.data?.message || "Unable to cancel trip");
     } finally {
       setIsDeleting(false);
     }
@@ -978,7 +1001,7 @@ const Trip = () => {
                                 disabled={isDeleting}
                                 className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
                               >
-                                Delete
+                                Cancel
                               </button>
                             </>
                           )}
@@ -1055,7 +1078,7 @@ const Trip = () => {
                             disabled={isDeleting}
                             className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
                           >
-                            Delete
+                            Cancel
                           </button>
                         </>
                       )}

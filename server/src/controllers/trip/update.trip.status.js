@@ -63,6 +63,26 @@ const updateTripStatus = async (req, res) => {
         );
       }
     }
+    // Handle any status -> cancelled transition (only Manager or Dispatcher)
+    else if (status === "cancelled") {
+      if (!["manager", "dispatcher"].includes(userRole)) {
+        return response(
+          res,
+          403,
+          false,
+          "Only manager or dispatcher can cancel trips"
+        );
+      }
+      // Don't allow cancelling completed trips
+      if (currentStatus === "completed") {
+        return response(
+          res,
+          400,
+          false,
+          "Cannot cancel trips that are already completed"
+        );
+      }
+    }
     // Handle other transitions
     else if (currentStatus !== status) {
       return response(
