@@ -39,7 +39,8 @@ const VehicleRegistry = () => {
     vehicleType: "truck",
     maxCapacity: "",
     odometer: "",
-    status: "available",
+    // Status is managed through system lifecycle only (trips, maintenance, etc.)
+    // Not included in manual edits
   });
 
 
@@ -148,13 +149,13 @@ const VehicleRegistry = () => {
       vehicleType: "truck",
       maxCapacity: "",
       odometer: "",
-      status: "available",
     });
   };
 
   const handleCreateOrUpdateVehicle = async (e) => {
     e.preventDefault();
 
+    // Status is managed through system lifecycle only (trips, maintenance, etc.)
     const payload = {
       name: vehicleForm.name,
       licensePlate: vehicleForm.licensePlate,
@@ -162,7 +163,7 @@ const VehicleRegistry = () => {
       vehicleType: vehicleForm.vehicleType,
       maxCapacity: Number(vehicleForm.maxCapacity),
       odometer: Number(vehicleForm.odometer),
-      status: vehicleForm.status,
+      // Status intentionally excluded - managed through lifecycle events
     };
 
     try {
@@ -201,7 +202,7 @@ const VehicleRegistry = () => {
       vehicleType: vehicle.vehicleType,
       maxCapacity: vehicle.maxCapacity,
       odometer: vehicle.odometer,
-      status: vehicle.status,
+      // Status not included - managed through system lifecycle
     });
     setIsModalOpen(true);
   };
@@ -610,17 +611,25 @@ const VehicleRegistry = () => {
                 required
               />
 
-              <select
-                className="w-full border px-3 py-2 rounded"
-                name="status"
-                value={vehicleForm.status}
-                onChange={handleFormChange}
-              >
-                <option value="available">Available</option>
-                <option value="on_trip">On Trip</option>
-                <option value="in_shop">In Shop</option>
-                <option value="retired">Retired</option>
-              </select>
+              {/* Status is managed through system lifecycle events only:
+                  - available: default when vehicle is created
+                  - on_trip: automatically set when trip is created
+                  - in_shop: managed through maintenance system
+                  - retired: contact administrator to retire vehicles
+                  Status cannot be manually changed here */}
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Status Management:</span>
+                  <br />
+                  Vehicle status is automatically managed by the system through:
+                  <br />
+                  • Trip creation/completion
+                  <br />
+                  • Maintenance workflows
+                  <br />
+                  • System lifecycle events
+                </p>
+              </div>
 
               <button
                 type="button"

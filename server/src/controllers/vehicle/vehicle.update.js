@@ -37,8 +37,14 @@ const vehicleUpdate = async (req, res) => {
     }
 
     // Only allow editing vehicles with 'available' or 'retired' status
+    // Status changes are managed through system lifecycle (trips, maintenance, etc.), not manual updates
     if (vehicle.status !== 'available' && vehicle.status !== 'retired') {
-      return response(res, 403, false, `Cannot edit vehicle with status: '${vehicle.status}'. Only vehicles with 'available' or 'retired' status can be edited.`);
+      return response(res, 403, false, `Cannot edit vehicle with status: '${vehicle.status}'. Only vehicles with 'available' or 'retired' status can be edited. Status is managed through system lifecycle events.`);
+    }
+
+    // Ensure status is never manually updated (only through lifecycle events)
+    if (updateData.status) {
+      return response(res, 403, false, 'Vehicle status cannot be manually changed. Status is managed through system lifecycle events (trips, maintenance, etc.).');
     }
 
     const updatedVehicle = await Vehicle.findByIdAndUpdate(vehicleId, value, {
