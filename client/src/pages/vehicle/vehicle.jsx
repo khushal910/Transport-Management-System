@@ -291,7 +291,13 @@ const VehicleRegistry = () => {
 
           <button
             onClick={() => handleEdit(vehicle)}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 mouser-pointer: cursor-pointer "
+            disabled={vehicle.status !== 'available' && vehicle.status !== 'retired'}
+            className={`px-3 py-1 text-sm rounded cursor-pointer transition-colors ${
+              vehicle.status === 'available' || vehicle.status === 'retired'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+            }`}
+            title={vehicle.status !== 'available' && vehicle.status !== 'retired' ? 'Can only edit Available or Retired vehicles' : 'Edit this vehicle'}
           >
             Edit
           </button>

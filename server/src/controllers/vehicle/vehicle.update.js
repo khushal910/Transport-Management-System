@@ -36,6 +36,11 @@ const vehicleUpdate = async (req, res) => {
       return response(res, 404, false, 'Vehicle not found or does not belong to your company');
     }
 
+    // Only allow editing vehicles with 'available' or 'retired' status
+    if (vehicle.status !== 'available' && vehicle.status !== 'retired') {
+      return response(res, 403, false, `Cannot edit vehicle with status: '${vehicle.status}'. Only vehicles with 'available' or 'retired' status can be edited.`);
+    }
+
     const updatedVehicle = await Vehicle.findByIdAndUpdate(vehicleId, value, {
       returnDocument: "after",
       runValidators: true,
