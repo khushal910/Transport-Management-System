@@ -233,8 +233,9 @@ export default function MaintenancePage() {
     // Handle vehicle search
     if (name === "vehicleName") {
       if (value.trim()) {
+        // Filter vehicles: exclude those already in service (in_shop status)
         const filtered = vehicles.filter((v) =>
-          (v.name || "").toLowerCase().includes(value.toLowerCase())
+          (v.name || "").toLowerCase().includes(value.toLowerCase()) && v.status !== "in_shop"
         );
         setVehicleSuggestions(filtered);
         setShowVehicleSuggestions(true);
@@ -250,6 +251,22 @@ export default function MaintenancePage() {
   };
 
   const selectVehicle = (vehicleName) => {
+    const selectedVehicle = vehicles.find((v) => v.name === vehicleName);
+    
+    // Prevent selection if vehicle is already in maintenance
+    if (selectedVehicle?.status === "in_shop") {
+      toast.error(`${vehicleName} is already under maintenance. Please select another vehicle.`);
+      setShowVehicleSuggestions(false);
+      return;
+    }
+    
+    // Prevent selection if vehicle is on trip or assigned
+    if (selectedVehicle?.status === "on_trip" || selectedVehicle?.status === "assigned") {
+      toast.error(`${vehicleName} is currently ${selectedVehicle.status}. Please select another vehicle.`);
+      setShowVehicleSuggestions(false);
+      return;
+    }
+    
     setMaintenanceForm((prev) => ({ ...prev, vehicleName }));
     setShowVehicleSuggestions(false);
     setVehicleSuggestions([]);
@@ -260,6 +277,14 @@ export default function MaintenancePage() {
 
     if (!maintenanceForm.vehicleName.trim()) {
       errors.vehicleName = "Vehicle is required";
+    } else {
+      // Validate selected vehicle status before submission
+      const selectedVehicle = vehicles.find((v) => v.name === maintenanceForm.vehicleName.trim());
+      if (selectedVehicle && selectedVehicle.status === "in_shop") {
+        errors.vehicleName = `Cannot add ${selectedVehicle.name} to maintenance. This vehicle is already under maintenance.`;
+      } else if (selectedVehicle && (selectedVehicle.status === "on_trip" || selectedVehicle.status === "assigned")) {
+        errors.vehicleName = `Cannot add ${selectedVehicle.name} to maintenance. Vehicle status: ${selectedVehicle.status}.`;
+      }
     }
 
     if (!maintenanceForm.description.trim()) {
@@ -829,7 +854,7 @@ export default function MaintenancePage() {
                   value={maintenanceForm.vehicleName}
                   onChange={handleFormChange}
                   onFocus={() => setShowVehicleSuggestions(maintenanceForm.vehicleName.trim().length > 0)}
-                  placeholder="Search vehicle..."
+                  placeholder="Search vehicle (vehicles already in service are hidden)..."
                   className={`w-full border p-2 rounded ${
                     formErrors.vehicleName ? "border-red-500 bg-red-50" : "border-gray-300"
                   }`}
@@ -846,9 +871,18 @@ export default function MaintenancePage() {
                         key={vehicle._id}
                         type="button"
                         onClick={() => selectVehicle(vehicle.name)}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-100 border-b last:border-b-0"
+                        className={`w-full text-left px-4 py-2 border-b last:border-b-0 ${
+                          vehicle.status === "in_shop"
+                            ? "bg-red-100 text-red-700 cursor-not-allowed opacity-50"
+                            : "hover:bg-blue-100"
+                        }`}
+                        disabled={vehicle.status === "in_shop"}
+                        title={vehicle.status === "in_shop" ? "Vehicle is already under maintenance" : ""}
                       >
-                        <div className="font-medium">{vehicle.name}</div>
+                        <div className="font-medium">
+                          {vehicle.name}
+                          {vehicle.status === "in_shop" && <span className="ml-2 text-xs">⚠️ In Service</span>}
+                        </div>
                         <div className="text-xs text-gray-600">
                           {vehicle.licensePlate} • {vehicle.vehicleType}
                         </div>

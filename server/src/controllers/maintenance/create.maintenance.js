@@ -29,8 +29,8 @@ const createMaintenance = async (req, res) => {
     }
 
     // Prevent service creation for vehicles with restricted statuses
-    if (vehicle.status === "assigned" || vehicle.status === "on_trip" ) {
-      return response(res, 400, false, `Cannot create service for vehicle with status '${vehicle.status}'`);
+    if (vehicle.status === "assigned" || vehicle.status === "on_trip" || vehicle.status === "in_shop") {
+      return response(res, 400, false, `Cannot create service for vehicle with status '${vehicle.status}'. Vehicle must be available to add to maintenance.`);
     }
 
     // Create maintenance log
