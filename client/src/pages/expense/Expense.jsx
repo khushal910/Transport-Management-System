@@ -53,15 +53,23 @@ const Expense = () => {
   const normalizeExpense = (expense) => ({
     ...expense,
     tripIdShort: expense.tripId?.slice(-3) || expense.tripId || 'N/A',
+    vehicleLicensePlate: expense.vehicleLicensePlate || 'N/A',
+    startLocation: expense.startLocation || 'N/A',
+    endLocation: expense.endLocation || 'N/A',
   });
 
+  // Enhanced search: full trip ID, vehicle name, license plate, driver, location, status
   const isExpenseMatchingSearch = (expense, query) => {
     if (!query.trim()) return true;
     const lowerQuery = query.toLowerCase();
     return (
-      expense.tripIdShort?.toLowerCase()?.includes(lowerQuery) ||
+      expense.tripId?.toLowerCase()?.includes(lowerQuery) || // Full trip ID
+      expense.tripIdShort?.toLowerCase()?.includes(lowerQuery) || // Last 3 chars
       expense.driverName?.toLowerCase()?.includes(lowerQuery) ||
       expense.vehicleName?.toLowerCase()?.includes(lowerQuery) ||
+      expense.vehicleLicensePlate?.toLowerCase()?.includes(lowerQuery) ||
+      expense.startLocation?.toLowerCase()?.includes(lowerQuery) ||
+      expense.endLocation?.toLowerCase()?.includes(lowerQuery) ||
       expense.status?.toLowerCase()?.includes(lowerQuery)
     );
   };
@@ -311,7 +319,7 @@ const Expense = () => {
           {/* Search Bar */}
           <input
             type="text"
-            placeholder="Search by Trip ID, Driver, Vehicle, or Status..."
+            placeholder="Search by full/partial trip ID, vehicle name, license plate, driver, location, or status..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 min-w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

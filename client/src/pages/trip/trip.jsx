@@ -68,6 +68,8 @@ const validateFilterState = (filters) => {
 
 const normalizeTrip = (trip) => ({
   ...trip,
+  vehicleName: trip.vehicle?.name || "N/A",
+  vehicleId: trip.vehicle?._id || "N/A",
   vehiclePlateNumber: trip.vehiclePlateNumber || trip.vehicle?.licensePlate || trip.vehicle?.name || "N/A",
   driverName: trip.driver?.user?.name || trip.driverName || "N/A",
   driverEmail: trip.driverEmail || trip.driver?.user?.email || "N/A",
@@ -76,21 +78,20 @@ const normalizeTrip = (trip) => ({
   status: trip.status || "draft",
 });
 
+// Enhanced search: vehicle name, license plate, driver, location, trip ID, status
 const isTripMatchingSearch = (trip, query) => {
-  const searchableText = [
-    trip.vehiclePlateNumber,
-    trip.driverName,
-    trip.driverEmail,
-    trip.startLocation,
-    trip.endLocation,
-    trip.status,
-    trip._id,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return searchableText.includes(query);
+  if (!query.trim()) return true;
+  const lowerQuery = query.toLowerCase();
+  return (
+    trip.vehicleName?.toLowerCase()?.includes(lowerQuery) ||
+    trip.vehiclePlateNumber?.toLowerCase()?.includes(lowerQuery) ||
+    trip.driverName?.toLowerCase()?.includes(lowerQuery) ||
+    trip.driverEmail?.toLowerCase()?.includes(lowerQuery) ||
+    trip.startLocation?.toLowerCase()?.includes(lowerQuery) ||
+    trip.endLocation?.toLowerCase()?.includes(lowerQuery) ||
+    trip.status?.toLowerCase()?.includes(lowerQuery) ||
+    trip._id?.toLowerCase()?.includes(lowerQuery)
+  );
 };
 
 const Trip = () => {
@@ -644,7 +645,7 @@ const Trip = () => {
       <div className="flex flex-wrap gap-4 items-center justify-between mb-8">
         <input
           type="text"
-          placeholder="Search trip..."
+          placeholder="Search by vehicle name, license plate, driver, location, or trip ID..."
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           className="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"

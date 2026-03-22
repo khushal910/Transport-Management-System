@@ -58,18 +58,18 @@ const normalizeMaintenance = (log) => ({
   logId: log._id || "N/A",
 });
 
+// Enhanced search: vehicle name, license plate, model, description, status
 const isLogMatchingSearch = (log, query) => {
-  const searchableText = [
-    log.plateNumber,
-    log.model,
-    log.description,
-    log.status,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return searchableText.includes(query);
+  if (!query.trim()) return true;
+  const lowerQuery = query.toLowerCase();
+  return (
+    log.vehicleName?.toLowerCase()?.includes(lowerQuery) ||
+    log.plateNumber?.toLowerCase()?.includes(lowerQuery) ||
+    log.model?.toLowerCase()?.includes(lowerQuery) ||
+    log.description?.toLowerCase()?.includes(lowerQuery) ||
+    log.status?.toLowerCase()?.includes(lowerQuery) ||
+    log.logId?.toLowerCase()?.includes(lowerQuery)
+  );
 };
 
 export default function MaintenancePage() {
@@ -432,7 +432,7 @@ export default function MaintenancePage() {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Search by Log ID, Vehicle, Description, or Status..."
+            placeholder="Search by vehicle name, license plate, model, description, or status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
