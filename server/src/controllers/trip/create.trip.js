@@ -93,8 +93,24 @@ const createTrip = async (req, res) => {
     // change vehicle status to assigned after creating the trip
     await Vehicle.findByIdAndUpdate(isVehicleExist._id, {status: 'assigned'});
 
-    // Update driver status to on_trip when trip is created
-    await Driver.findByIdAndUpdate(isDriverExist._id, {status: 'on_trip'});
+    // Update driver: increment assignedTrips, set status to on_trip, and recalculate completion rate
+    const updatedDriver = await Driver.findByIdAndUpdate(
+      isDriverExist._id,
+      {
+        $inc: { assignedTrips: 1 },
+        status: 'on_trip'
+      },
+      { new: true }
+    );
+
+    // Recalculate and update completion rate for the driver
+    if (updatedDriver.assignedTrips > 0) {
+      const completionRate = (updatedDriver.completedTrips / updatedDriver.assignedTrips) * 100;
+      await Driver.findByIdAndUpdate(
+        isDriverExist._id,
+        { completionRate: parseFloat(completionRate.toFixed(2)) }
+      );
+    }
         
     return response(res, 201, true, 'Trip created successfully', newTrip);
 

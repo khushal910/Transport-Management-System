@@ -739,14 +739,20 @@ const Performance = () => {
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-green-500"
+                          className={`h-full ${
+                            driver.completionRate >= 80
+                              ? "bg-green-500"
+                              : driver.completionRate >= 50
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
+                          }`}
                           style={{
                             width: `${driver.completionRate}%`,
                           }}
                         ></div>
                       </div>
                       <span className="text-gray-900 font-medium min-w-12">
-                        {driver.completionRate}%
+                        {driver.completionRate.toFixed(1)}%
                       </span>
                     </div>
                   </td>
@@ -863,14 +869,20 @@ const Performance = () => {
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-green-500"
+                                className={`h-full ${
+                                  driver.completionRate >= 80
+                                    ? "bg-green-500"
+                                    : driver.completionRate >= 50
+                                    ? "bg-yellow-500"
+                                    : "bg-red-500"
+                                }`}
                                 style={{
                                   width: `${driver.completionRate}%`,
                                 }}
                               ></div>
                             </div>
                             <span className="text-gray-900 font-medium min-w-12">
-                              {driver.completionRate}%
+                              {driver.completionRate.toFixed(1)}%
                             </span>
                           </div>
                         </td>

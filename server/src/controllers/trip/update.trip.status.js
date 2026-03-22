@@ -80,7 +80,25 @@ const updateTripStatus = async (req, res) => {
     // Update vehicle status and handle expense logic based on new status
     if (status === "completed") {
       await Vehicle.findByIdAndUpdate(trip.vehicle, { status: "available" });
-      await Driver.findByIdAndUpdate(trip.driver._id, { status: "off_duty" });
+      
+      // Increment completedTrips and update driver status to off_duty
+      const updatedDriver = await Driver.findByIdAndUpdate(
+        trip.driver._id,
+        {
+          $inc: { completedTrips: 1 },
+          status: "off_duty"
+        },
+        { new: true }
+      );
+
+      // Recalculate and update completion rate for the driver
+      if (updatedDriver.assignedTrips > 0) {
+        const completionRate = (updatedDriver.completedTrips / updatedDriver.assignedTrips) * 100;
+        await Driver.findByIdAndUpdate(
+          trip.driver._id,
+          { completionRate: parseFloat(completionRate.toFixed(2)) }
+        );
+      }
 
       // AUTO-CREATE EXPENSE LOG when trip is completed
       // Calculate distance from trip odometers if available
@@ -112,6 +130,31 @@ const updateTripStatus = async (req, res) => {
         { trip: tripId, status: { $ne: "completed" } },
         { status: "cancelled" }
       );
+
+      // Decrement assignedTrips for driver and set status to off_duty
+      const cancelledDriver = await Driver.findByIdAndUpdate(
+        trip.driver._id,
+        {
+          $inc: { assignedTrips: -1 },
+          status: "off_duty"
+        },
+        { new: true }
+      );
+
+      // Recalculate and update completion rate for driver
+      if (cancelledDriver.assignedTrips > 0) {
+        const completionRate = (cancelledDriver.completedTrips / cancelledDriver.assignedTrips) * 100;
+        await Driver.findByIdAndUpdate(
+          trip.driver._id,
+          { completionRate: parseFloat(completionRate.toFixed(2)) }
+        );
+      } else {
+        // If no more assigned trips, reset completion rate to 0
+        await Driver.findByIdAndUpdate(trip.driver._id, { completionRate: 0 });
+      }
+
+      // Set vehicle status back to available
+      await Vehicle.findByIdAndUpdate(trip.vehicle, { status: "available" });
     }
 
     // Update the trip status

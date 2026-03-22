@@ -88,10 +88,46 @@ const updateTrip = async (req, res) => {
         return response(res, 400, false, "Driver is already assigned to another trip");
       }
 
-      // If changing driver, revert the old driver status
-      await Driver.findByIdAndUpdate(existingTrip.driver, { status: "off_duty" });
-      // Set new driver status to on_trip
-      await Driver.findByIdAndUpdate(newDriver._id, { status: "on_trip" });
+      // If changing driver, revert the old driver status and metrics
+      const oldDriver = await Driver.findByIdAndUpdate(
+        existingTrip.driver,
+        {
+          $inc: { assignedTrips: -1 },
+          status: "off_duty"
+        },
+        { new: true }
+      );
+
+      // Recalculate completion rate for old driver
+      if (oldDriver.assignedTrips > 0) {
+        const newCompletionRate = (oldDriver.completedTrips / oldDriver.assignedTrips) * 100;
+        await Driver.findByIdAndUpdate(
+          existingTrip.driver,
+          { completionRate: parseFloat(newCompletionRate.toFixed(2)) }
+        );
+      } else {
+        // If no more assigned trips, reset completion rate to 0
+        await Driver.findByIdAndUpdate(existingTrip.driver, { completionRate: 0 });
+      }
+
+      // Increment assignedTrips for new driver and set status to on_trip
+      const updatedNewDriver = await Driver.findByIdAndUpdate(
+        newDriver._id,
+        {
+          $inc: { assignedTrips: 1 },
+          status: "on_trip"
+        },
+        { new: true }
+      );
+
+      // Recalculate completion rate for new driver
+      if (updatedNewDriver.assignedTrips > 0) {
+        const newCompletionRate = (updatedNewDriver.completedTrips / updatedNewDriver.assignedTrips) * 100;
+        await Driver.findByIdAndUpdate(
+          newDriver._id,
+          { completionRate: parseFloat(newCompletionRate.toFixed(2)) }
+        );
+      }
     }
 
     // If changing vehicle, revert the old vehicle status

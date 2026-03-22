@@ -37,6 +37,16 @@ const driverSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    assignedTrips: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    completedTrips: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     completionRate: {
       type: Number,
       default: 0,
