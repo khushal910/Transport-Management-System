@@ -2,6 +2,7 @@ import response from "../../response/response.js";
 import Trip from "../../models/trip.schema.js";
 import Driver from "../../models/driver.schema.js";
 import Vehicle from "../../models/vehicle.schema.js";
+import FuelLog from "../../models/fuel.schema.js";
 
 const updateTripStatus = async (req, res) => {
   try {
@@ -76,10 +77,41 @@ const updateTripStatus = async (req, res) => {
       return response(res, 200, true, "Trip already has this status", trip);
     }
 
-    // Update vehicle status if transitioning to completed
+    // Update vehicle status and handle expense logic based on new status
     if (status === "completed") {
       await Vehicle.findByIdAndUpdate(trip.vehicle, { status: "available" });
       await Driver.findByIdAndUpdate(trip.driver._id, { status: "off_duty" });
+
+      // AUTO-CREATE EXPENSE LOG when trip is completed
+      // Calculate distance from trip odometers if available
+      let distance = 0;
+      if (trip.startOdometer && trip.endOdometer) {
+        distance = trip.endOdometer - trip.startOdometer;
+      }
+
+      // Create FuelLog (Expense) record with pending status
+      const expenseLog = await FuelLog.create({
+        company: companyId,
+        trip: tripId,
+        driver: trip.driver._id,
+        vehicle: trip.vehicle._id,
+        fuelCost: 0, // User will fill this
+        miscExpense: 0, // User will fill this
+        distance: distance,
+        status: "pending", // Will be updated to completed when user fills data
+        date: new Date(),
+      });
+
+      console.info(`Auto-created expense log for trip ${tripId}: ${expenseLog._id}`);
+    }
+
+    // Handle cancelled trips - mark expenses as cancelled if they exist
+    if (status === "cancelled") {
+      // Mark any existing expenses for this trip as cancelled
+      await FuelLog.updateMany(
+        { trip: tripId, status: { $ne: "completed" } },
+        { status: "cancelled" }
+      );
     }
 
     // Update the trip status
