@@ -32,9 +32,14 @@ const getAnalytics = async (req, res) => {
 
     // Set date range (default: last 12 months)
     const endDate = value.endDate ? new Date(value.endDate) : new Date();
+    // Set end date to end of day (23:59:59.999) to include all records from that day
+    endDate.setHours(23, 59, 59, 999);
+    
     const startDate = value.startDate
       ? new Date(value.startDate)
       : new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000);
+    // Set start date to beginning of day (00:00:00.000)
+    startDate.setHours(0, 0, 0, 0);
 
     const companyObjectId = new mongoose.Types.ObjectId(companyId);
 

@@ -412,20 +412,38 @@ const Analytics = () => {
         {/* Fuel Efficiency Trend */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Fuel Efficiency Trend (KM/L)</h3>
-          <Line data={fuelEfficiencyChartData} options={chartOptions} />
+          {analyticsData.fuelEfficiency && analyticsData.fuelEfficiency.length > 0 ? (
+            <Line data={fuelEfficiencyChartData} options={chartOptions} />
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-500">
+              <p>No fuel efficiency data available for selected period</p>
+            </div>
+          )}
         </div>
 
         {/* Top 5 Costliest Vehicles */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Top 5 Costliest Vehicles</h3>
-          <Bar data={topCostliestChartData} options={chartOptions} />
+          {analyticsData.topCostliestVehicles && analyticsData.topCostliestVehicles.length > 0 ? (
+            <Bar data={topCostliestChartData} options={chartOptions} />
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-500">
+              <p>No vehicle expense data available for selected period</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Monthly Financial Trend */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Monthly Financial Trend</h3>
-        <Line data={monthlyChartData} options={chartOptions} />
+        {analyticsData.monthlyFinancial && analyticsData.monthlyFinancial.length > 0 ? (
+          <Line data={monthlyChartData} options={chartOptions} />
+        ) : (
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            <p>No monthly financial data available for selected period</p>
+          </div>
+        )}
       </div>
 
       {/* Financial Summary Table */}

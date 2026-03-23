@@ -5,6 +5,11 @@
  * @returns {Array} Top costliest vehicles
  */
 const getTopCostliestVehicles = (vehicleROI, limit = 5) => {
+  // Handle empty or null data
+  if (!vehicleROI || vehicleROI.length === 0) {
+    return [];
+  }
+
   const topCostliest = vehicleROI
     .sort((a, b) => b.totalExpense - a.totalExpense)
     .slice(0, limit);
