@@ -10,6 +10,8 @@ const calculateVehicleROI = (trips, fuelLogs, maintenanceLogs) => {
 
   // Calculate revenue per vehicle from trips
   trips.forEach((trip) => {
+    // Skip trips with null vehicle reference
+    if (!trip.vehicle) return;
     const vehicleId = trip.vehicle._id.toString();
     if (!roiMap.has(vehicleId)) {
       roiMap.set(vehicleId, {

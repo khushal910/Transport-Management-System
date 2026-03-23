@@ -101,6 +101,7 @@ const getAnalytics = async (req, res) => {
     );
   } catch (err) {
     console.error('Analytics error:', err.message);
+    console.error('Analytics stack:', err.stack);
     return response(res, 500, false, 'Failed to fetch analytics data');
   }
 };

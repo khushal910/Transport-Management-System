@@ -10,7 +10,7 @@ const calculateUtilizationRate = (trips, vehicles) => {
   vehicles.forEach((vehicle) => {
     const vehicleId = vehicle._id.toString();
     const vehicleTrips = trips.filter(
-      (t) => t.vehicle._id.toString() === vehicleId
+      (t) => t.vehicle && t.vehicle._id.toString() === vehicleId
     );
 
     utilizationMap.set(vehicleId, {
