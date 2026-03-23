@@ -23,9 +23,8 @@ const calculateFuelEfficiency = (fuelLogs, vehicles) => {
   });
 
   const fuelEfficiency = Array.from(fuelEfficiencyMap.values()).map((data) => {
-    const vehicle = vehicles.find(
-      (v) => v._id.toString() === data.vehicleId.toString()
-    );
+    const vehicle = new Map(vehicles.map((v) => [v._id.toString(), v]));
+    
     const kmPerLiter =
       data.totalFuelCost > 0
         ? (data.totalDistance / (data.totalFuelCost / 50)) * 100
@@ -33,8 +32,8 @@ const calculateFuelEfficiency = (fuelLogs, vehicles) => {
 
     return {
       vehicleId: data.vehicleId,
-      vehicleName: vehicle?.name || 'Unknown',
-      licensePlate: vehicle?.licensePlate,
+      vehicleName: vehicle?.get(data.vehicleId)?.name || 'Unknown',
+      licensePlate: vehicle?.get(data.vehicleId)?.licensePlate,
       totalDistance: data.totalDistance,
       totalFuelCost: data.totalFuelCost,
       kmPerLiter: Math.round(kmPerLiter * 100) / 100,
