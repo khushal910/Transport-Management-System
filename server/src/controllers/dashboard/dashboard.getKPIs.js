@@ -29,11 +29,11 @@ const getDashboardKPIs = async (req, res) => {
       company: companyObjectId,
     };
 
-    // If status filter is applied, use it; otherwise show dispatched (active) trips
+    // If status filter is applied, use it; otherwise show draft and dispatched (active) trips
     if (value.status) {
       tripsQuery.status = value.status.toLowerCase();
     } else {
-      tripsQuery.status = 'dispatched';
+      tripsQuery.status = { $in: ['draft', 'dispatched'] };
     }
 
     const [vehicles, trips, maintenancePendingCount] = await Promise.all([
