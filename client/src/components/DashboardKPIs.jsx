@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DashboardKPIs = ({ kpis, isLoading }) => {
+const DashboardKPIs = ({ kpis, isLoading, onCardClick }) => {
   const kpiCards = [
     {
       id: 'activeFleet',
@@ -65,7 +65,8 @@ const DashboardKPIs = ({ kpis, isLoading }) => {
       {kpiCards.map((card) => (
         <div
           key={card.id}
-          className={`bg-gradient-to-br ${card.bgGradient} border-2 ${card.borderColor} rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow`}
+          onClick={() => onCardClick && onCardClick(card.id)}
+          className={`bg-gradient-to-br ${card.bgGradient} border-2 ${card.borderColor} rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform transition-transform`}
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">

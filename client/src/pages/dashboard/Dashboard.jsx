@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
@@ -18,6 +19,7 @@ const TRIP_STATUS_LABELS = {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [kpis, setKpis] = useState(null);
   const [trips, setTrips] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,6 +141,26 @@ const Dashboard = () => {
     setShowGroupPanel(false);
   };
 
+  // Handle KPI card navigation
+  const handleKPICardClick = (cardId) => {
+    switch (cardId) {
+      case 'activeFleet':
+        navigate('/main/vehicle-registry');
+        break;
+      case 'maintenanceAlerts':
+        navigate('/main/maintenance');
+        break;
+      case 'utilizationRate':
+        navigate('/main/analytics');
+        break;
+      case 'pendingCargo':
+        navigate('/main/trip-dispatcher');
+        break;
+      default:
+        break;
+    }
+  };
+
   // Filter and search trips
   let filteredTrips = trips.filter((trip) => {
     const searchableText = [
@@ -211,7 +233,7 @@ const Dashboard = () => {
       </div>
 
       {/* KPI Cards */}
-      <DashboardKPIs kpis={kpis} isLoading={isLoading} />
+      <DashboardKPIs kpis={kpis} isLoading={isLoading} onCardClick={handleKPICardClick} />
 
       {/* Search and Filter Controls */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-8">
