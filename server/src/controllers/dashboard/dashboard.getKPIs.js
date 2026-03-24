@@ -65,14 +65,6 @@ const getDashboardKPIs = async (req, res) => {
 
     const maintenanceAlertsCount = maintenancePendingCount;
 
-    const utilizationRate = vehicles.length > 0
-      ? Math.round(
-          (vehicles.filter((v) => v.status === 'on_trip').length /
-            vehicles.length) *
-            100
-        )
-      : 0;
-
     // Count pending cargo (trips in draft or dispatched status)
     const pendingCargoCount = await Trip.countDocuments({
       company: companyObjectId,
@@ -115,7 +107,6 @@ const getDashboardKPIs = async (req, res) => {
       kpis: {
         activeFleet: activeFleetCount,
         maintenanceAlerts: maintenanceAlertsCount,
-        utilizationRate: utilizationRate,
         pendingCargo: pendingCargoCount,
       },
       trips: tripsData,

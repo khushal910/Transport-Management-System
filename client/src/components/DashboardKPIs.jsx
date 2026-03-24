@@ -23,16 +23,6 @@ const DashboardKPIs = ({ kpis, isLoading, onCardClick }) => {
       icon: '⚠️',
     },
     {
-      id: 'utilizationRate',
-      label: 'Utilization Rate',
-      value: kpis?.utilizationRate || 0,
-      unit: '%',
-      bgGradient: 'from-green-50 to-green-100',
-      borderColor: 'border-green-400',
-      textColor: 'text-green-800',
-      icon: '📊',
-    },
-    {
       id: 'pendingCargo',
       label: 'Pending Cargo',
       value: kpis?.pendingCargo || 0,

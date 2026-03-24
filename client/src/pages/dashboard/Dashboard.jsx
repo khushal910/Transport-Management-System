@@ -150,9 +150,6 @@ const Dashboard = () => {
       case 'maintenanceAlerts':
         navigate('/main/maintenance');
         break;
-      case 'utilizationRate':
-        navigate('/main/analytics');
-        break;
       case 'pendingCargo':
         navigate('/main/trip-dispatcher');
         break;
