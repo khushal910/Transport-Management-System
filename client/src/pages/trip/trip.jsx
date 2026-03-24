@@ -103,6 +103,7 @@ const Trip = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showSortPanel, setShowSortPanel] = useState(false);
   const [showGroupPanel, setShowGroupPanel] = useState(false);
@@ -121,6 +122,7 @@ const Trip = () => {
   });
   const [tripForm, setTripForm] = useState(INITIAL_FORM);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [detailTrip, setDetailTrip] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -529,6 +531,18 @@ const Trip = () => {
       revenue: trip.revenue,
     });
     setIsEditModalOpen(true);
+  };
+
+  const handleViewTripDetails = (trip) => {
+    setDetailTrip(trip);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = (event) => {
+    if (event.target === event.currentTarget) {
+      setIsDetailModalOpen(false);
+      setDetailTrip(null);
+    }
   };
 
   const handleUpdateTrip = async (event) => {
@@ -977,7 +991,7 @@ const Trip = () => {
                   </thead>
                   <tbody>
                     {filteredGroupedTrips[groupName].map((trip, index) => (
-                      <tr key={trip._id || `${groupName}-${index}`} className="hover:bg-gray-50 transition">
+                      <tr key={trip._id || `${groupName}-${index}`} onClick={() => handleViewTripDetails(trip)} className="hover:bg-gray-100 transition cursor-pointer">
                         <td className="px-4 py-2 text-sm text-gray-700">{index + 1}</td>
                         <td className="px-4 py-2 font-medium text-gray-900">{trip.vehiclePlateNumber}</td>
                         <td className="px-4 py-2">{trip.driverEmail}</td>
@@ -987,23 +1001,15 @@ const Trip = () => {
                         <td className="px-4 py-2">{trip.cargoWeight ?? "N/A"}</td>
                         <td className="px-4 py-2">{trip.revenue ?? "N/A"}</td>
                         <td className="px-4 py-2 capitalize">{trip.status}</td>
-                        <td className="px-4 py-2 flex gap-2">
+                        <td className="px-4 py-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                           {canManageTrip(trip.status) && (
-                            <>
-                              <button
-                                onClick={() => handleEditTrip(trip)}
-                                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTrip(trip._id)}
-                                disabled={isDeleting}
-                                className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
-                              >
-                                Cancel
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleDeleteTrip(trip._id)}
+                              disabled={isDeleting}
+                              className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
+                            >
+                              Cancel
+                            </button>
                           )}
                           {trip.status === "draft" && (
                             <button
@@ -1054,7 +1060,7 @@ const Trip = () => {
                 </tr>
               ) : (
                 filteredTrips.map((trip, index) => (
-                  <tr key={trip._id || `${trip.vehiclePlateNumber}-${index}`} className="hover:bg-gray-50 transition">
+                  <tr key={trip._id || `${trip.vehiclePlateNumber}-${index}`} onClick={() => handleViewTripDetails(trip)} className="hover:bg-gray-100 transition cursor-pointer">
                     <td className="px-4 py-2 text-sm text-gray-700">{index + 1}</td>
                     <td className="px-4 py-2 font-medium text-gray-900">{trip.vehiclePlateNumber}</td>
                     <td className="px-4 py-2">{trip.driverEmail}</td>
@@ -1064,23 +1070,15 @@ const Trip = () => {
                     <td className="px-4 py-2">{trip.cargoWeight ?? "N/A"}</td>
                     <td className="px-4 py-2">{trip.revenue ?? "N/A"}</td>
                     <td className="px-4 py-2 capitalize">{trip.status}</td>
-                    <td className="px-4 py-2 flex gap-2">
+                    <td className="px-4 py-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                       {canManageTrip(trip.status) && (
-                        <>
-                          <button
-                            onClick={() => handleEditTrip(trip)}
-                            className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTrip(trip._id)}
-                            disabled={isDeleting}
-                            className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
-                          >
-                            Cancel
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleDeleteTrip(trip._id)}
+                          disabled={isDeleting}
+                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-red-300"
+                        >
+                          Cancel
+                        </button>
                       )}
                       {trip.status === "draft" && (
                         <button
@@ -1399,6 +1397,163 @@ const Trip = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* TRIP DETAILS MODAL */}
+      {isDetailModalOpen && detailTrip && (
+        <div
+          onClick={handleCloseDetailModal}
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white px-6 pt-6 pb-4 mb-6 border-b border-gray-200 flex items-center justify-between rounded-t-lg">
+              <h2 className="text-2xl font-semibold">Trip Details</h2>
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setDetailTrip(null);
+                }}
+                className="text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full p-2 transition"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-6 pb-6">
+
+            {/* Trip Information */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Trip Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Trip ID</p>
+                  <p className="font-semibold text-gray-900">{detailTrip._id?.substring(0, 12)}...</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className={`font-semibold capitalize px-2 py-1 rounded inline-block ${
+                    detailTrip.status === "completed" ? "bg-green-100 text-green-800" :
+                    detailTrip.status === "dispatched" ? "bg-blue-100 text-blue-800" :
+                    detailTrip.status === "cancelled" ? "bg-red-100 text-red-800" :
+                    "bg-yellow-100 text-yellow-800"
+                  }`}>
+                    {detailTrip.status}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Cargo Weight</p>
+                  <p className="font-semibold text-gray-900">{detailTrip.cargoWeight ?? "N/A"} kg</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Revenue</p>
+                  <p className="font-semibold text-gray-900">${detailTrip.revenue ?? "N/A"}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">Route</p>
+                  <p className="font-semibold text-gray-900">
+                    {detailTrip.startLocation} → {detailTrip.endLocation}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Vehicle Information */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Information</h3>
+              {detailTrip.vehicle ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Name</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.vehicle.name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">License Plate</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.vehicle.licensePlate || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Model</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.vehicle.model || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Type</p>
+                    <p className="font-semibold text-gray-900 capitalize">{detailTrip.vehicle.vehicleType || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Max Capacity</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.vehicle.maxCapacity || "N/A"} kg</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Odometer</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.vehicle.odometer || "N/A"} km</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Vehicle Status</p>
+                    <p className={`font-semibold capitalize px-2 py-1 rounded inline-block text-sm ${
+                      detailTrip.vehicle.status === "available" ? "bg-green-100 text-green-800" :
+                      detailTrip.vehicle.status === "on_trip" ? "bg-blue-100 text-blue-800" :
+                      detailTrip.vehicle.status === "in_shop" ? "bg-orange-100 text-orange-800" :
+                      "bg-gray-100 text-gray-800"
+                    }`}>
+                      {detailTrip.vehicle.status || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">Vehicle information not available</p>
+              )}
+            </div>
+
+            {/* Driver Information */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Driver Information</h3>
+              {detailTrip.driver && detailTrip.driver.user ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Name</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.driver.user.name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="font-semibold text-gray-900 break-all">{detailTrip.driver.user.email || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">License Number</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.driver.licenseNumber || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">License Category</p>
+                    <p className="font-semibold text-gray-900 capitalize">{detailTrip.driver.licenseCategory || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">License Expiry</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.driver.licenseExpiry ? new Date(detailTrip.driver.licenseExpiry).toLocaleDateString() : "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Safety Score</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.driver.safetyScore ?? "N/A"} / 100</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Driver Status</p>
+                    <p className={`font-semibold capitalize px-2 py-1 rounded inline-block text-sm ${
+                      detailTrip.driver.status === "on_duty" ? "bg-green-100 text-green-800" :
+                      detailTrip.driver.status === "off_duty" ? "bg-gray-100 text-gray-800" :
+                      detailTrip.driver.status === "on_trip" ? "bg-blue-100 text-blue-800" :
+                      "bg-red-100 text-red-800"
+                    }`}>
+                      {detailTrip.driver.status || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">Driver information not available</p>
+              )}
+            </div>
+
+            </div>
           </div>
         </div>
       )}
