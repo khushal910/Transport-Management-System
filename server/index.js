@@ -11,6 +11,7 @@ import maintenanceRouter from './src/routers/maintenance.route.js';
 import expenseRouter from './src/routers/expense.route.js';
 import driverRouter from './src/routers/driver.route.js';
 import analyticsRouter from './src/routers/analytics.route.js';
+import dashboardRouter from './src/routers/dashboard.route.js';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/maintenance', maintenanceRouter)
 app.use('/api/expense', expenseRouter)
 app.use('/api/driver', driverRouter)
 app.use('/api/analytics', analyticsRouter)
+app.use('/api/dashboard', dashboardRouter)
 
 const port = process.env.PORT || 3000;
 
