@@ -18,6 +18,7 @@ const deleteVehicle = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       _id: vehicleId,
       company: companyId,
+      isDeleted: false,
     });
 
     if (!vehicle) {
@@ -39,10 +40,16 @@ const deleteVehicle = async (req, res) => {
       );
     }
 
-    const deletedVehicle = await Vehicle.findOneAndDelete({
-      _id: vehicleId,
-      company: companyId,
-    });
+    // Soft delete: mark as deleted instead of hard deleting
+    const deletedVehicle = await Vehicle.findOneAndUpdate(
+      {
+        _id: vehicleId,
+        company: companyId,
+        isDeleted: false,
+      },
+      { isDeleted: true },
+      { new: true }
+    );
 
     if (!deletedVehicle) {
       return response(

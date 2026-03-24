@@ -41,7 +41,7 @@ const updateTrip = async (req, res) => {
 
     // Check if vehicle exists and belongs to the same company
     const newVehicle = await Vehicle.findOne(
-      { licensePlate: vehiclePlateNumber, company: companyId },
+      { licensePlate: vehiclePlateNumber, company: companyId, isDeleted: false },
       "_id status maxCapacity"
     );
 

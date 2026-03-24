@@ -99,7 +99,10 @@ const updateTripStatus = async (req, res) => {
 
     // Update vehicle status and handle expense logic based on new status
     if (status === "completed") {
-      await Vehicle.findByIdAndUpdate(trip.vehicle, { status: "available" });
+      await Vehicle.findOneAndUpdate(
+        { _id: trip.vehicle, isDeleted: false },
+        { status: "available" }
+      );
       
       // Increment completedTrips and update driver status to off_duty
       const updatedDriver = await Driver.findByIdAndUpdate(
@@ -174,7 +177,10 @@ const updateTripStatus = async (req, res) => {
       }
 
       // Set vehicle status back to available
-      await Vehicle.findByIdAndUpdate(trip.vehicle, { status: "available" });
+      await Vehicle.findOneAndUpdate(
+        { _id: trip.vehicle, isDeleted: false },
+        { status: "available" }
+      );
     }
 
     // Update the trip status

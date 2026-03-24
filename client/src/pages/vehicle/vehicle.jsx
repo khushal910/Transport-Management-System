@@ -7,9 +7,14 @@ const VehicleRegistry = () => {
 
   // vehicle list from backend
   const [vehicleList, setVehicleList] = useState([]);
+  const [deletedVehicleList, setDeletedVehicleList] = useState([]);
+
+  // tab state
+  const [activeTab, setActiveTab] = useState("active");
 
   // search state
   const [searchTerm, setSearchTerm] = useState("");
+  const [deletedSearchTerm, setDeletedSearchTerm] = useState("");
 
   // filter state
   const [filterStatus, setFilterStatus] = useState("");
@@ -232,6 +237,40 @@ const VehicleRegistry = () => {
     }
   };
 
+  const handleRecover = async (vehicleId) => {
+    if (!window.confirm('Are you sure you want to recover this vehicle?')) {
+      return;
+    }
+
+    try {
+      const response = await vehicleBaseURL.post(`/recover/${vehicleId}`);
+
+      if (!response.data.success) {
+        toast.error(response.data?.message || 'Recovery failed');
+        return;
+      }
+
+      toast.success(response.data?.message || 'Vehicle recovered successfully');
+      
+      // Refresh both lists
+      const deletedRefresh = await vehicleBaseURL.get(
+        `/deleted/list?page=1&limit=100&search=${encodeURIComponent(deletedSearchTerm)}`
+      );
+      if (deletedRefresh.data.success) {
+        setDeletedVehicleList(deletedRefresh.data.data);
+      }
+
+      const activeRefresh = await vehicleBaseURL.get(
+        `/list?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}`
+      );
+      if (activeRefresh.data.success) {
+        setVehicleList(activeRefresh.data.data);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Recovery failed');
+    }
+  };
+
   useEffect(() => {
     let isActive = true;
 
@@ -262,6 +301,38 @@ const VehicleRegistry = () => {
     };
 
   }, [currentPage, itemsPerPage, searchTerm]);
+
+  // Fetch deleted vehicles
+  useEffect(() => {
+    let isActive = true;
+
+    const run = async () => {
+      try {
+        const response = await vehicleBaseURL.get(
+          `/deleted/list?page=1&limit=100&search=${encodeURIComponent(deletedSearchTerm)}`
+        );
+
+        if (!response.data.success) {
+          toast.error("Failed to fetch deleted vehicles");
+          return;
+        }
+
+        if (isActive) {
+          setDeletedVehicleList(response.data.data);
+        }
+      } catch (error) {
+        console.error("Deleted vehicle fetch error:", error);
+        toast.error("Failed to fetch deleted vehicles");
+      }
+    };
+
+    run();
+
+    return () => {
+      isActive = false;
+    };
+
+  }, [deletedSearchTerm]);
 
 
   const renderVehicleRows = () => {
@@ -316,10 +387,70 @@ const VehicleRegistry = () => {
     ));
   };
 
+  const renderDeletedVehicleRows = () => {
+    return deletedVehicleList.map((vehicle, index) => (
+      <tr
+        key={vehicle._id}
+        className="hover:bg-gray-50 transition"
+      >
+        <td className="px-4 py-2 text-sm text-gray-700">{index + 1}</td>
+        <td className="px-4 py-2">{vehicle.name}</td>
+        <td className="px-4 py-2">{vehicle.licensePlate}</td>
+        <td className="px-4 py-2">{vehicle.model}</td>
+        <td className="px-4 py-2">{vehicle.vehicleType}</td>
+        <td className="px-4 py-2">{vehicle.maxCapacity}</td>
+        <td className="px-4 py-2">{vehicle.odometer}</td>
+        <td className="px-4 py-2 capitalize">{vehicle.status}</td>
+
+        {/* Recovery Button */}
+        <td className="px-4 py-2">
+          <button
+            onClick={() => handleRecover(vehicle._id)}
+            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
+          >
+            Recover
+          </button>
+        </td>
+      </tr>
+    ));
+  };
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow">
 
+      {/* TABS */}
+      <div className="flex gap-4 mb-8 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-4 py-3 font-semibold transition-colors ${
+            activeTab === "active"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-600 hover:text-gray-800"
+          }`}
+        >
+          Active Vehicles
+        </button>
+        <button
+          onClick={() => setActiveTab("deleted")}
+          className={`px-4 py-3 font-semibold transition-colors relative ${
+            activeTab === "deleted"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-600 hover:text-gray-800"
+          }`}
+        >
+          Deleted Vehicles
+          {deletedVehicleList.length > 0 && (
+            <span className="absolute top-2 right-0 bg-red-600 text-white text-xs rounded-full px-2 py-1">
+              {deletedVehicleList.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ACTIVE VEHICLES TAB */}
+      {activeTab === "active" && (
+        <>
       {/* -----------------------------
            SEARCH / ACTION BAR
       ------------------------------*/}
@@ -527,6 +658,54 @@ const VehicleRegistry = () => {
         </button>
 
       </div>
+      </>
+      )}
+
+      {/* DELETED VEHICLES TAB */}
+      {activeTab === "deleted" && (
+        <>
+      {/* Deleted Vehicles Search Bar */}
+      <div className="flex flex-wrap gap-4 items-center justify-between mb-8">
+        <input
+          type="text"
+          placeholder="Search deleted vehicles..."
+          className="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          value={deletedSearchTerm}
+          onChange={(e) => setDeletedSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* Deleted Vehicles Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead className="bg-gray-200 text-gray-700">
+            <tr>
+              <th className="px-4 py-2 text-left">No</th>
+              <th className="px-4 py-2 text-left">Name</th>
+              <th className="px-4 py-2 text-left">License Plate</th>
+              <th className="px-4 py-2 text-left">Model</th>
+              <th className="px-4 py-2 text-left">Vehicle Type</th>
+              <th className="px-4 py-2 text-left">Capacity</th>
+              <th className="px-4 py-2 text-left">Odometer</th>
+              <th className="px-4 py-2 text-left">Status</th>
+              <th className="px-4 py-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deletedVehicleList.length > 0 ? (
+              renderDeletedVehicleRows()
+            ) : (
+              <tr>
+                <td colSpan="9" className="px-4 py-4 text-center text-gray-500">
+                  No deleted vehicles found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+        </>
+      )}
 
 
       {/* -----------------------------

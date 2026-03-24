@@ -31,7 +31,7 @@ const vehicleUpdate = async (req, res) => {
       );
 
     // Verify vehicle belongs to the same company
-    const vehicle = await Vehicle.findOne({ _id: vehicleId, company: companyId });
+    const vehicle = await Vehicle.findOne({ _id: vehicleId, company: companyId, isDeleted: false });
     if (!vehicle) {
       return response(res, 404, false, 'Vehicle not found or does not belong to your company');
     }

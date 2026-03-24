@@ -22,6 +22,7 @@ const createMaintenance = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       name: vehicleName,
       company: companyId,
+      isDeleted: false,
     }, "_id status");
 
     if (!vehicle) {

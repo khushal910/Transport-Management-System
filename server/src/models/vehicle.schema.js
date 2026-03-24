@@ -39,6 +39,11 @@ const vehicleSchema = new mongoose.Schema(
       enum: ['available', 'on_trip', 'in_shop', 'retired'],
       default: 'available',
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -49,12 +54,13 @@ const vehicleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// TEXT INDEX
+// TEXT INDEX + SOFT DELETE
 vehicleSchema.index({
   name: "text",
   model: "text",
   licensePlate: "text",
   vehicleType: "text",
+  isDeleted: 1,
 });
 
 const Vehicle = mongoose.model('Vehicle', vehicleSchema);

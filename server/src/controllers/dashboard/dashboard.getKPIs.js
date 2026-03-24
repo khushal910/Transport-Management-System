@@ -37,7 +37,7 @@ const getDashboardKPIs = async (req, res) => {
     }
 
     const [vehicles, trips, maintenancePendingCount] = await Promise.all([
-      Vehicle.find({ company: companyObjectId }).exec(),
+      Vehicle.find({ company: companyObjectId, isDeleted: false }).exec(),
       Trip.find(tripsQuery)
         .populate({
           path: 'vehicle',

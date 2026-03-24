@@ -21,7 +21,8 @@ const createTrip = async (req, res) => {
     // Check if vehicle exists and is available and belongs to the same company
     const isVehicleExist = await Vehicle.findOne({ 
       licensePlate: vehiclePlateNumber,
-      company: companyId 
+      company: companyId,
+      isDeleted: false
     }, "_id status maxCapacity");
     
     if(!isVehicleExist ){

@@ -51,16 +51,18 @@ const updateMaintenanceStatus = async (req, res) => {
       if (status === "completed") {
         // When service is completed, set vehicle status to available if it was in shop
         if (maintenance.vehicle.status === "in_shop") {
-          await Vehicle.findByIdAndUpdate(maintenance.vehicle._id, {
-            status: "available",
-          });
+          await Vehicle.findOneAndUpdate(
+            { _id: maintenance.vehicle._id, isDeleted: false },
+            { status: "available" }
+          );
         }
       } else if (status === "cancelled") {
         // When cancelled, set vehicle status to available if it was in shop
         if (maintenance.vehicle.status === "in_shop") {
-          await Vehicle.findByIdAndUpdate(maintenance.vehicle._id, {
-            status: "available",
-          });
+          await Vehicle.findOneAndUpdate(
+            { _id: maintenance.vehicle._id, isDeleted: false },
+            { status: "available" }
+          );
         }
       }
     }

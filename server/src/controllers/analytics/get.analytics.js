@@ -63,7 +63,7 @@ const getAnalytics = async (req, res) => {
         serviceDate: { $gte: startDate, $lte: endDate },
         status: 'completed',
       }).exec(),
-      Vehicle.find({ company: companyObjectId }).exec(),
+      Vehicle.find({ company: companyObjectId, isDeleted: false }).exec(),
     ]);
 
     const analyticsData = {};

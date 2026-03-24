@@ -37,7 +37,10 @@ const deleteTrip = async (req, res) => {
     await Trip.findByIdAndDelete(tripId);
 
     // Update vehicle status back to available
-    await Vehicle.findByIdAndUpdate(vehicleId, { status: "available" });
+    await Vehicle.findOneAndUpdate(
+      { _id: vehicleId, isDeleted: false },
+      { status: "available" }
+    );
 
     // Update driver status back to off_duty
     await Driver.findByIdAndUpdate(driverId, { status: "off_duty" });

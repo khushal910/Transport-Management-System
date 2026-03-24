@@ -20,6 +20,7 @@ const getVehicleList = async (req, res) => {
 
     const query = {
       company: companyId,
+      isDeleted: false,
     };
 
     if (search) {
