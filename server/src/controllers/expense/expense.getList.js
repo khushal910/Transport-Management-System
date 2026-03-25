@@ -1,6 +1,7 @@
 import FuelLog from '../../models/fuel.schema.js';
 import response from '../../response/response.js';
 import { expenseListSchema } from '../../validations/expense.list.validator.js';
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig.js';
 
 const buildFilterObject = (filters) => {
   const filterObj = {};
@@ -54,7 +55,7 @@ export const getExpenseList = async (req, res) => {
     const companyId = req.user?.companyId;
     const {
       page = 1,
-      limit = 10,
+      limit = DEFAULT_LIMIT,
       sort = 'date:desc',
       groupBy = '',
       status,
@@ -70,7 +71,7 @@ export const getExpenseList = async (req, res) => {
     }
 
     const pageNum = Math.max(1, parseInt(page));
-    const pageLimit = Math.min(100, parseInt(limit));
+    const pageLimit = Math.min(MAX_LIMIT, parseInt(limit));
     const skip = (pageNum - 1) * pageLimit;
 
     // Build filter

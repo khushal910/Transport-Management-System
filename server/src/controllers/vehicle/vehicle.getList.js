@@ -1,5 +1,6 @@
 import Vehicle from '../../models/vehicle.schema.js';
 import response from '../../response/response.js';
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig.js';
 
 const getVehicleList = async (req, res) => {
   try {
@@ -9,7 +10,7 @@ const getVehicleList = async (req, res) => {
       return response(res, 401, false, 'Unauthorized: Company ID is required');
     }   
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_LIMIT));
     const skip = (page - 1) * limit;
 
     // add search functionality     

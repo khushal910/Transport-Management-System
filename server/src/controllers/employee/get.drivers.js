@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Driver from "../../models/driver.schema.js";
 import response from "../../response/response.js";
 import driverListQuerySchema from "../../validations/driver.list.validator.js";
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig.js';
 
 const parseSort = (sortParam) => {
   const [field, order] = (sortParam || "createdAt:desc").split(":");
@@ -179,7 +180,7 @@ const getDriverList = async (req, res) => {
     }
 
     const page = value.page || 1;
-    const limit = value.limit || 10;
+    const limit = value.limit || DEFAULT_LIMIT;
     const skip = (page - 1) * limit;
 
     const filterObj = buildFilterObject(value);

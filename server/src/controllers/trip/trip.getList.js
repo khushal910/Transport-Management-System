@@ -2,6 +2,7 @@ import Trip from "../../models/trip.schema.js";
 import Driver from "../../models/driver.schema.js";
 import response from "../../response/response.js";
 import tripListQuerySchema from "../../validations/trip.list.validator.js";
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig.js';
 
 const ALLOWED_STATUSES = ["draft", "dispatched", "completed", "cancelled"];
 
@@ -143,7 +144,7 @@ const getTripList = async (req, res) => {
     }
 
     const page = value.page || 1;
-    const limit = value.limit || 10;
+    const limit = value.limit || DEFAULT_LIMIT;
     const skip = (page - 1) * limit;
 
     try {

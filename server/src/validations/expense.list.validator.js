@@ -1,8 +1,9 @@
 import Joi from 'joi';
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../config/paginationConfig.js';
 
 export const expenseListSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT),
   sort: Joi.string()
     .pattern(/^[a-zA-Z]+:(asc|desc)$/)
     .default('date:desc')

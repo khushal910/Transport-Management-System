@@ -1,6 +1,7 @@
 import MaintenanceLog from "../../models/maintenance.schema.js";
 import response from "../../response/response.js";
 import maintenanceListSchema from "../../validations/maintenance.list.validator.js";
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig.js';
 
 const ALLOWED_STATUSES = ["pending", "completed", "cancelled"];
 
@@ -112,7 +113,7 @@ const getMaintenanceList = async (req, res) => {
     }
 
     const page = value.page || 1;
-    const limit = value.limit || 10;
+    const limit = value.limit || DEFAULT_LIMIT;
     const skip = (page - 1) * limit;
 
     try {

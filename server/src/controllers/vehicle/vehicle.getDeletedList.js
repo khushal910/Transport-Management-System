@@ -1,17 +1,21 @@
 import Vehicle from "../../models/vehicle.schema.js";
 import response from "../../response/response.js";
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig.js';
 
 const getDeletedVehicleList = async (req, res) => {
   try {
     const companyId = req.user.companyId;
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const { page = 1, limit = DEFAULT_LIMIT, search = "" } = req.query;
 
     if (!companyId) {
       return response(res, 403, false, "User is not associated with a company");
     }
 
+    // Validate and limit the limit parameter
+    const validLimit = Math.min(MAX_LIMIT, Math.max(1, parseInt(limit, 10)));
+
     // Calculate skip for pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page) - 1) * validLimit;
 
     // Build query for deleted vehicles only
     let query = { company: companyId, isDeleted: true };

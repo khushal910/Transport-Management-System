@@ -1,8 +1,9 @@
 import joi from 'joi';
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../config/paginationConfig.js';
 
 const maintenanceListSchema = joi.object({
   page: joi.number().integer().positive().default(1),
-  limit: joi.number().integer().positive().default(10),
+  limit: joi.number().integer().positive().default(DEFAULT_LIMIT),
   sort: joi
     .string()
     .pattern(/^(serviceDate|cost|status):(asc|desc)$/)
