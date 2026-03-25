@@ -37,6 +37,13 @@ const Expense = () => {
   const [appliedFilters, setAppliedFilters] = useState({});
   const [appliedSort, setAppliedSort] = useState({ field: 'date', order: 'desc' });
   const [appliedGroupBy, setAppliedGroupBy] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
 
   // Refs for closing dropdowns
   const filterMenuRef = useRef(null);
@@ -68,12 +75,12 @@ const Expense = () => {
   };
 
   // Fetch expenses
-  const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
       const queryParams = new URLSearchParams({
-        page: 1,
-        limit: 100,
+        page: pageToFetch,
+        limit: pagination.limit,
         sort: `${appliedSort.field}:${appliedSort.order}`,
         ...(appliedGroupBy && { groupBy: appliedGroupBy }),
         ...appliedFilters,
@@ -82,6 +89,16 @@ const Expense = () => {
       const response = await expenseBaseURL.get(`/list?${queryParams}`);
       if (response.data.success) {
         let data = response.data.data.expenses;
+
+        // Update pagination info
+        if (response.data.data.pagination) {
+          setPagination({
+            page: response.data.data.pagination.page || pageToFetch,
+            limit: response.data.data.pagination.limit || pagination.limit,
+            total: response.data.data.pagination.total || 0,
+            totalPages: response.data.data.pagination.totalPages || 1,
+          });
+        }
 
         // Normalize all expenses
         if (Array.isArray(data)) {
@@ -108,11 +125,16 @@ const Expense = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [appliedSort, appliedGroupBy, appliedFilters, searchQuery]);
+  }, [appliedSort, appliedGroupBy, appliedFilters, searchQuery, pagination.limit, currentPage]);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    fetchExpenses(1);
+  }, [appliedSort, appliedGroupBy, appliedFilters]);
+
+  // Fetch expenses when currentPage changes
+  useEffect(() => {
+    fetchExpenses(currentPage);
+  }, [currentPage, fetchExpenses]);
 
   // Search filter
   useEffect(() => {
@@ -540,7 +562,7 @@ const Expense = () => {
                           <tbody>
                             {items.map((expense, index) => (
                               <tr key={expense._id} className="border-b hover:bg-gray-50">
-                                <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                                <td className="px-4 py-3 text-sm text-gray-900">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">{expense.tripIdShort}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">{expense.driverName}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">{expense.distance} km</td>
@@ -590,7 +612,7 @@ const Expense = () => {
                     <tbody>
                       {filteredExpenses.map((expense, index) => (
                         <tr key={expense._id} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{expense.tripIdShort}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{expense.driverName}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{expense.distance} km</td>
@@ -618,6 +640,31 @@ const Expense = () => {
                   </table>
                 </div>
               )}
+
+              {/* Pagination Controls */}
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Page {pagination.page} of {Math.max(pagination.totalPages, 1)} | Total expenses {pagination.total}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={pagination.page <= 1 || isLoading}
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pagination.page >= pagination.totalPages || isLoading}
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </div>

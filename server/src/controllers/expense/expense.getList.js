@@ -152,7 +152,7 @@ export const getExpenseList = async (req, res) => {
         page: pageNum,
         limit: pageLimit,
         total,
-        pages: Math.ceil(total / pageLimit),
+        totalPages: Math.ceil(total / pageLimit),
       },
       isGrouped: !!groupBy,
     });

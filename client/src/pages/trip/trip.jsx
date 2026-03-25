@@ -992,7 +992,7 @@ const Trip = () => {
                   <tbody>
                     {filteredGroupedTrips[groupName].map((trip, index) => (
                       <tr key={trip._id || `${groupName}-${index}`} onClick={() => handleViewTripDetails(trip)} className="hover:bg-gray-100 transition cursor-pointer">
-                        <td className="px-4 py-2 text-sm text-gray-700">{index + 1}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                         <td className="px-4 py-2 font-medium text-gray-900">{trip.vehiclePlateNumber}</td>
                         <td className="px-4 py-2">{trip.driverEmail}</td>
                         <td className="px-4 py-2">
@@ -1061,7 +1061,7 @@ const Trip = () => {
               ) : (
                 filteredTrips.map((trip, index) => (
                   <tr key={trip._id || `${trip.vehiclePlateNumber}-${index}`} onClick={() => handleViewTripDetails(trip)} className="hover:bg-gray-100 transition cursor-pointer">
-                    <td className="px-4 py-2 text-sm text-gray-700">{index + 1}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                     <td className="px-4 py-2 font-medium text-gray-900">{trip.vehiclePlateNumber}</td>
                     <td className="px-4 py-2">{trip.driverEmail}</td>
                     <td className="px-4 py-2">
@@ -1116,7 +1116,7 @@ const Trip = () => {
             type="button"
             disabled={pagination.page <= 1 || isLoading}
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            className="px-4 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
@@ -1124,7 +1124,7 @@ const Trip = () => {
             type="button"
             disabled={pagination.page >= pagination.totalPages || isLoading}
             onClick={() => setCurrentPage((prev) => prev + 1)}
-            className="px-4 py-2 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>

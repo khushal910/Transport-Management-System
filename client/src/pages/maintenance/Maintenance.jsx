@@ -182,6 +182,11 @@ export default function MaintenancePage() {
     fetchMaintenanceLogs(1);
   }, [fetchMaintenanceLogs]);
 
+  // Fetch maintenance logs when currentPage changes
+  useEffect(() => {
+    fetchMaintenanceLogs(currentPage);
+  }, [currentPage, fetchMaintenanceLogs]);
+
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
@@ -690,7 +695,7 @@ export default function MaintenancePage() {
                         <tbody>
                           {logs.map((log, index) => (
                             <tr key={log._id} className="border-b hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                               <td className="px-4 py-3 text-sm text-gray-600">{log.plateNumber}</td>
                               <td className="px-4 py-3 text-sm text-gray-600">{log.vehicleName}</td>
                               <td className="px-4 py-3 text-sm text-gray-600">{log.model}</td>
@@ -756,7 +761,7 @@ export default function MaintenancePage() {
                   <tbody>
                     {filteredLogs.map((log, index) => (
                       <tr key={log._id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{log.plateNumber}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{log.vehicleName}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{log.model}</td>
@@ -811,14 +816,14 @@ export default function MaintenancePage() {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
                     disabled={currentPage === pagination.totalPages}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>
