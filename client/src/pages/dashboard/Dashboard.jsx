@@ -41,6 +41,8 @@ const Dashboard = () => {
   const [groupByState, setGroupByState] = useState('');
   const [appliedGroupBy, setAppliedGroupBy] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailTrip, setDetailTrip] = useState(null);
 
   const filterMenuRef = useRef();
   const sortMenuRef = useRef();
@@ -155,6 +157,18 @@ const Dashboard = () => {
         break;
       default:
         break;
+    }
+  };
+
+  const handleViewTripDetails = (trip) => {
+    setDetailTrip(trip);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = (event) => {
+    if (event.target === event.currentTarget) {
+      setIsDetailModalOpen(false);
+      setDetailTrip(null);
     }
   };
 
@@ -497,6 +511,7 @@ const Dashboard = () => {
                   {groupTrips.map((trip, idx) => (
                     <tr
                       key={trip.tripId}
+                      onClick={() => handleViewTripDetails(trip)}
                       className={`border-b hover:bg-blue-50 cursor-pointer transition ${
                         idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                       }`}
@@ -547,6 +562,7 @@ const Dashboard = () => {
                 filteredTrips.map((trip, idx) => (
                   <tr
                     key={trip.tripId}
+                    onClick={() => handleViewTripDetails(trip)}
                     className={`border-b hover:bg-blue-50 cursor-pointer transition ${
                       idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                     }`}
@@ -585,6 +601,101 @@ const Dashboard = () => {
         <div className="mt-6 text-sm text-gray-600">
           Showing {filteredTrips.length} trip{filteredTrips.length !== 1 ? 's' : ''}
           {appliedGroupBy && ` grouped by ${appliedGroupBy}`}
+        </div>
+      )}
+
+      {/* TRIP DETAILS MODAL */}
+      {isDetailModalOpen && detailTrip && (
+        <div
+          onClick={handleCloseDetailModal}
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white px-6 pt-6 pb-4 mb-6 border-b border-gray-200 flex items-center justify-between rounded-t-lg">
+              <h2 className="text-2xl font-semibold">Trip Details</h2>
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setDetailTrip(null);
+                }}
+                className="text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full p-2 transition"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-6 pb-6">
+              {/* Trip Information */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">Trip Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Trip Number</p>
+                    <p className="font-semibold text-gray-900">{detailTrip.tripNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <p className={`font-semibold capitalize px-2 py-1 rounded inline-block ${
+                      detailTrip.status === "completed" ? "bg-green-100 text-green-800" :
+                      detailTrip.status === "dispatched" ? "bg-blue-100 text-blue-800" :
+                      detailTrip.status === "cancelled" ? "bg-red-100 text-red-800" :
+                      "bg-yellow-100 text-yellow-800"
+                    }`}>
+                      {detailTrip.status}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Information */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">Vehicle Information</h3>
+                {detailTrip.vehicle ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">License Plate</p>
+                      <p className="font-semibold text-gray-900">{detailTrip.vehicle.licensePlate || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Type</p>
+                      <p className="font-semibold text-gray-900 capitalize">{detailTrip.vehicle.vehicleType || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Model</p>
+                      <p className="font-semibold text-gray-900">{detailTrip.vehicle.model || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Odometer</p>
+                      <p className="font-semibold text-gray-900">{detailTrip.vehicle.odometer || "N/A"} km</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">Vehicle information not available</p>
+                )}
+              </div>
+
+              {/* Driver Information */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">Driver Information</h3>
+                {detailTrip.driver ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Name</p>
+                      <p className="font-semibold text-gray-900">{detailTrip.driver.name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Email</p>
+                      <p className="font-semibold text-gray-900 break-all">{detailTrip.driver.email || "N/A"}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">Driver information not available</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
