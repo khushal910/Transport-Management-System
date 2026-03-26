@@ -16,7 +16,7 @@ const userLogin = async (req, res) => {
 
     const { email, password } = value;
 
-    const user = await User.findOne({ email }).populate('company', 'name _id');
+    const user = await User.findOne({ email }).populate('company', 'name registrationNumber address phone email _id');
 
     if (!user) {
       return response(res, 401, false, 'Invalid Email or Password ');
@@ -53,6 +53,7 @@ const userLogin = async (req, res) => {
         data: {
           id: user._id,
           name: user.name,
+          email: user.email,
           role: user.role,
           companyId: user.company._id,
           company: user.company,
