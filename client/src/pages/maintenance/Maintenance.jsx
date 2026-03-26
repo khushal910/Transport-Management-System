@@ -5,6 +5,7 @@ import vehicleBaseURL from "../../api/vehicleBaseURL";
 const API_URL = "http://localhost:3000/api/maintenance"; // Direct API URL
 
 const INITIAL_FORM = {
+  vehicleId: "",
   vehicleName: "",
   description: "",
   serviceDate: "",
@@ -238,9 +239,12 @@ export default function MaintenancePage() {
     // Handle vehicle search
     if (name === "vehicleName") {
       if (value.trim()) {
-        // Filter vehicles: exclude those already in service (in_shop status)
+        // Filter vehicles: exclude those with restricted statuses (in_shop, assigned, on_trip)
         const filtered = vehicles.filter((v) =>
-          (v.name || "").toLowerCase().includes(value.toLowerCase()) && v.status !== "in_shop"
+          (v.name || "").toLowerCase().includes(value.toLowerCase()) && 
+          v.status !== "in_shop" && 
+          v.status !== "assigned" && 
+          v.status !== "on_trip"
         );
         setVehicleSuggestions(filtered);
         setShowVehicleSuggestions(true);
@@ -255,24 +259,28 @@ export default function MaintenancePage() {
     }
   };
 
-  const selectVehicle = (vehicleName) => {
-    const selectedVehicle = vehicles.find((v) => v.name === vehicleName);
+  const selectVehicle = (vehicleId) => {
+    const selectedVehicle = vehicles.find((v) => v._id === vehicleId);
     
     // Prevent selection if vehicle is already in maintenance
     if (selectedVehicle?.status === "in_shop") {
-      toast.error(`${vehicleName} is already under maintenance. Please select another vehicle.`);
+      toast.error(`${selectedVehicle.name} (${selectedVehicle.licensePlate}) is already under maintenance. Please select another vehicle.`);
       setShowVehicleSuggestions(false);
       return;
     }
     
     // Prevent selection if vehicle is on trip or assigned
     if (selectedVehicle?.status === "on_trip" || selectedVehicle?.status === "assigned") {
-      toast.error(`${vehicleName} is currently ${selectedVehicle.status}. Please select another vehicle.`);
+      toast.error(`${selectedVehicle.name} (${selectedVehicle.licensePlate}) is currently ${selectedVehicle.status}. Please select another vehicle.`);
       setShowVehicleSuggestions(false);
       return;
     }
     
-    setMaintenanceForm((prev) => ({ ...prev, vehicleName }));
+    setMaintenanceForm((prev) => ({ 
+      ...prev, 
+      vehicleId: selectedVehicle._id,
+      vehicleName: selectedVehicle.name 
+    }));
     setShowVehicleSuggestions(false);
     setVehicleSuggestions([]);
   };
@@ -280,11 +288,11 @@ export default function MaintenancePage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!maintenanceForm.vehicleName.trim()) {
+    if (!maintenanceForm.vehicleId.trim()) {
       errors.vehicleName = "Vehicle is required";
     } else {
       // Validate selected vehicle status before submission
-      const selectedVehicle = vehicles.find((v) => v.name === maintenanceForm.vehicleName.trim());
+      const selectedVehicle = vehicles.find((v) => v._id === maintenanceForm.vehicleId);
       if (selectedVehicle && selectedVehicle.status === "in_shop") {
         errors.vehicleName = `Cannot add ${selectedVehicle.name} to maintenance. This vehicle is already under maintenance.`;
       } else if (selectedVehicle && (selectedVehicle.status === "on_trip" || selectedVehicle.status === "assigned")) {
@@ -330,7 +338,7 @@ export default function MaintenancePage() {
 
     try {
       const payload = {
-        vehicleName: maintenanceForm.vehicleName.trim(),
+        vehicleId: maintenanceForm.vehicleId,
         description: maintenanceForm.description.trim(),
         serviceDate: maintenanceForm.serviceDate,
         cost: Number(maintenanceForm.cost),
@@ -859,7 +867,7 @@ export default function MaintenancePage() {
                   value={maintenanceForm.vehicleName}
                   onChange={handleFormChange}
                   onFocus={() => setShowVehicleSuggestions(maintenanceForm.vehicleName.trim().length > 0)}
-                  placeholder="Search vehicle (vehicles already in service are hidden)..."
+                  placeholder="Search vehicle (only available vehicles shown)..."
                   className={`w-full border p-2 rounded ${
                     formErrors.vehicleName ? "border-red-500 bg-red-50" : "border-gray-300"
                   }`}
@@ -875,7 +883,7 @@ export default function MaintenancePage() {
                       <button
                         key={vehicle._id}
                         type="button"
-                        onClick={() => selectVehicle(vehicle.name)}
+                        onClick={() => selectVehicle(vehicle._id)}
                         className={`w-full text-left px-4 py-2 border-b last:border-b-0 ${
                           vehicle.status === "in_shop"
                             ? "bg-red-100 text-red-700 cursor-not-allowed opacity-50"

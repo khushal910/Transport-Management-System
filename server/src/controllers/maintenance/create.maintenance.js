@@ -11,19 +11,19 @@ const createMaintenance = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
 
-    const { vehicleName, description, serviceDate, cost, distance } = value;
+    const { vehicleId, description, serviceDate, cost, distance } = value;
     const companyId = req.user.companyId;
 
     if (!companyId) {
       return response(res, 401, false, "Company ID is required");
     }
 
-    // Find vehicle by name and company
+    // Find vehicle by ID and verify it belongs to the company
     const vehicle = await Vehicle.findOne({
-      name: vehicleName,
+      _id: vehicleId,
       company: companyId,
       isDeleted: false,
-    }, "_id status");
+    }, "_id name status");
 
     if (!vehicle) {
       return response(res, 404, false, "Vehicle not found");
@@ -31,7 +31,7 @@ const createMaintenance = async (req, res) => {
 
     // Prevent service creation for vehicles with restricted statuses
     if (vehicle.status === "assigned" || vehicle.status === "on_trip" || vehicle.status === "in_shop") {
-      return response(res, 400, false, `Cannot create service for vehicle with status '${vehicle.status}'. Vehicle must be available to add to maintenance.`);
+      return response(res, 400, false, `Cannot add ${vehicle.name} to maintenance. Vehicle status: ${vehicle.status}. Vehicle must be available to add to maintenance.`);
     }
 
     // Create maintenance log
@@ -50,7 +50,7 @@ const createMaintenance = async (req, res) => {
 
     return response(res, 201, true, "Maintenance service created successfully", {
       logId: maintenanceLog._id,
-      vehicle: vehicleName,
+      vehicle: vehicle.name,
       description: maintenanceLog.description,
       serviceDate: maintenanceLog.serviceDate,
       status: maintenanceLog.status,
