@@ -580,7 +580,7 @@ const Expense = () => {
                                       onClick={() => handleEditExpense(expense)}
                                       className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs font-medium"
                                     >
-                                      Edit
+                                      Add Expense
                                     </button>
                                   )}
                                 </td>
@@ -630,7 +630,7 @@ const Expense = () => {
                                 onClick={() => handleEditExpense(expense)}
                                 className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs font-medium"
                               >
-                                Edit
+                                Add Expense
                               </button>
                             )}
                           </td>
