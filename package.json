@@ -16,5 +16,8 @@
   "license": "ISC",
   "devDependencies": {
     "prettier": "^3.8.1"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1"
   }
 }
