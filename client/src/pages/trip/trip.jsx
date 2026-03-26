@@ -123,6 +123,7 @@ const Trip = () => {
   const [tripForm, setTripForm] = useState(INITIAL_FORM);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [detailTrip, setDetailTrip] = useState(null);
+  const [tripRowNumber, setTripRowNumber] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -533,8 +534,9 @@ const Trip = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleViewTripDetails = (trip) => {
+  const handleViewTripDetails = (trip, rowNumber) => {
     setDetailTrip(trip);
+    setTripRowNumber(rowNumber);
     setIsDetailModalOpen(true);
   };
 
@@ -542,6 +544,7 @@ const Trip = () => {
     if (event.target === event.currentTarget) {
       setIsDetailModalOpen(false);
       setDetailTrip(null);
+      setTripRowNumber(null);
     }
   };
 
@@ -980,7 +983,7 @@ const Trip = () => {
                   <thead className="bg-gray-200 text-gray-700">
                     <tr>
                       <th className="px-4 py-2 text-left">No</th>
-                      <th className="px-4 py-2 text-left">Vehicle</th>
+                      <th className="px-4 py-2 text-left">License Plate</th>
                       <th className="px-4 py-2 text-left">Driver</th>
                       <th className="px-4 py-2 text-left">Route</th>
                       <th className="px-4 py-2 text-left">Cargo</th>
@@ -990,9 +993,11 @@ const Trip = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredGroupedTrips[groupName].map((trip, index) => (
-                      <tr key={trip._id || `${groupName}-${index}`} onClick={() => handleViewTripDetails(trip)} className="hover:bg-gray-100 transition cursor-pointer">
-                        <td className="px-4 py-2 text-sm text-gray-700">{(pagination.page - 1) * pagination.limit + index + 1}</td>
+                    {filteredGroupedTrips[groupName].map((trip, index) => {
+                      const rowNumber = (pagination.page - 1) * pagination.limit + index + 1;
+                      return (
+                      <tr key={trip._id || `${groupName}-${index}`} onClick={() => handleViewTripDetails(trip, rowNumber)} className="hover:bg-gray-100 transition cursor-pointer">
+                        <td className="px-4 py-2 text-sm text-gray-700">{rowNumber}</td>
                         <td className="px-4 py-2 font-medium text-gray-900">{trip.vehiclePlateNumber}</td>
                         <td className="px-4 py-2">{trip.driverEmail}</td>
                         <td className="px-4 py-2">
@@ -1031,7 +1036,8 @@ const Trip = () => {
                           )}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1042,7 +1048,7 @@ const Trip = () => {
             <thead className="bg-gray-200 text-gray-700">
               <tr>
                 <th className="px-4 py-2 text-left">No</th>
-                <th className="px-4 py-2 text-left">Vehicle</th>
+                <th className="px-4 py-2 text-left">License Plate</th>
                 <th className="px-4 py-2 text-left">Driver</th>
                 <th className="px-4 py-2 text-left">Route</th>
                 <th className="px-4 py-2 text-left">Cargo</th>
@@ -1059,9 +1065,11 @@ const Trip = () => {
                   </td>
                 </tr>
               ) : (
-                filteredTrips.map((trip, index) => (
-                  <tr key={trip._id || `${trip.vehiclePlateNumber}-${index}`} onClick={() => handleViewTripDetails(trip)} className="hover:bg-gray-100 transition cursor-pointer">
-                    <td className="px-4 py-2 text-sm text-gray-700">{(pagination.page - 1) * pagination.limit + index + 1}</td>
+                filteredTrips.map((trip, index) => {
+                  const rowNumber = (pagination.page - 1) * pagination.limit + index + 1;
+                  return (
+                  <tr key={trip._id || `${trip.vehiclePlateNumber}-${index}`} onClick={() => handleViewTripDetails(trip, rowNumber)} className="hover:bg-gray-100 transition cursor-pointer">
+                    <td className="px-4 py-2 text-sm text-gray-700">{rowNumber}</td>
                     <td className="px-4 py-2 font-medium text-gray-900">{trip.vehiclePlateNumber}</td>
                     <td className="px-4 py-2">{trip.driverEmail}</td>
                     <td className="px-4 py-2">
@@ -1100,10 +1108,11 @@ const Trip = () => {
                       )}
                     </td>
                   </tr>
-                ))
+                );
+                })
               )}
             </tbody>
-          </table>
+            </table>
         )}
       </div>
 
@@ -1430,8 +1439,8 @@ const Trip = () => {
               <h3 className="text-lg font-semibold mb-4 text-gray-800">Trip Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Trip ID</p>
-                  <p className="font-semibold text-gray-900">{detailTrip._id?.substring(0, 12)}...</p>
+                  <p className="text-sm text-gray-600">Trip No.</p>
+                  <p className="font-semibold text-gray-900">{tripRowNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
