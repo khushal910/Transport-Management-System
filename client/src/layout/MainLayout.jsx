@@ -7,6 +7,7 @@ const MainLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [showProfilePanel, setShowProfilePanel] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const isActive = (path) => {
     return location.pathname === path
@@ -48,100 +49,132 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col ">
-      <nav className="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
-        <div className="flex justify-center items-center gap-6">
+    <div className="min-h-screen flex">
+      {/* Left Sidebar Navigation */}
+      <nav className={`fixed left-0 top-0 h-screen bg-gray-900 text-white flex flex-col shadow-lg transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'w-64' : 'w-20'
+      }`}>
+        {/* Logo/Title Area and Toggle Button */}
+        <div className="px-4 py-6 border-b border-gray-800 flex items-center justify-between">
+          {sidebarOpen && (
+            <h1 className="text-xl font-bold text-blue-400">Fleet Flow</h1>
+          )}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-shrink-0"
+            title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+          >
+            {sidebarOpen ? (
+              // X Icon (Hide)
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              // Hamburger Icon (Show)
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        {sidebarOpen && (
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
           <Link
             to="/main/dashboard"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/dashboard')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Dashboard
           </Link>
           <Link
             to="/main/vehicle-registry"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/vehicle-registry')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Vehicle Registry
           </Link>
           <Link
             to="/main/trip-dispatcher"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/trip-dispatcher')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Trip Dispatcher
           </Link>
           <Link
             to="/main/maintenance"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/maintenance')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Maintenance
           </Link>
           <Link
             to="/main/trip-expense"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/trip-expense')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Trip & Expense
           </Link>
           <Link
             to="/main/performance"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/performance')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Performance
           </Link>
           <Link
             to="/main/analytics"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/analytics')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Analytics
           </Link>
           <Link
             to="/main/employee/add"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`block px-4 py-3 rounded-md text-sm font-medium transition-colors ${
               isActive('/main/employee/add')
                 ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
             }`}
           >
             Employees
           </Link>
         </div>
+        )}
 
-        <div className="flex items-center gap-4">
+        {/* Profile Section at Bottom */}
+        {sidebarOpen && (
+          <div className="border-t border-gray-800 px-4 py-4 space-y-2">
           <div className="relative">
             <button
               onClick={() => setShowProfilePanel(!showProfilePanel)}
-              className="text-sm flex flex-col hover:text-blue-300 transition-colors text-left cursor-pointer"
+              className="w-full text-sm flex flex-col hover:bg-gray-800 p-2 rounded transition-colors text-left cursor-pointer"
               title="Click to view profile"
             >
-              {user() && <span className="font-semibold">{user().name}</span>}
-              {company() && <span className="text-gray-300 text-xs">{company().name}</span>}
+              {user() && <span className="font-semibold text-white text-xs">{user().name}</span>}
+              {company() && <span className="text-gray-400 text-xs">{company().name}</span>}
             </button>
 
             {/* Profile Dropdown Panel */}
@@ -151,14 +184,14 @@ const MainLayout = () => {
                   onClick={() => setShowProfilePanel(false)}
                   className="fixed inset-0 z-40"
                 />
-                <div className="absolute top-full right-0 z-50 mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 w-96">
+                <div className="absolute bottom-full left-0 z-50 mb-2 bg-white rounded-lg shadow-2xl border border-gray-200 w-80">
                   {/* Panel Header */}
                   <div className="bg-blue-600 text-white px-6 py-4 rounded-t-lg border-b border-blue-700">
                     <h2 className="text-lg font-semibold">Profile Details</h2>
                   </div>
 
                   {/* Panel Body */}
-                  <div className="px-6 py-6 space-y-5">
+                  <div className="px-6 py-6 space-y-5 max-h-96 overflow-y-auto">
                     {/* User Information Section */}
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 pb-2 border-b border-gray-200">User Information</h3>
@@ -231,13 +264,18 @@ const MainLayout = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="hover:bg-red-600 bg-red-500 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            className="w-full hover:bg-red-600 bg-red-500 px-3 py-2 rounded-md text-sm font-medium transition-colors"
           >
             Logout
           </button>
         </div>
+        )}
       </nav>
-      <main className="flex-1 bg-gray-100 p-6">
+
+      {/* Main Content Area */}
+      <main className={`flex-1 bg-gray-100 p-6 transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'ml-64' : 'ml-20'
+      }`}>
         <Outlet />
       </main>
     </div>
