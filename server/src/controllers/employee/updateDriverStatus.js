@@ -93,7 +93,15 @@ const updateDriverStatus = async (req, res) => {
 const getDriverStatusHistory = async (req, res) => {
   try {
     const { driverId } = req.params;
-    const companyId = req.user.companyId;
+    const companyId = req.user?.companyId;
+
+    if (!driverId) {
+      return response(res, 400, false, 'Driver ID is required');
+    }
+
+    if (!companyId) {
+      return response(res, 401, false, 'User is not authenticated or missing company information');
+    }
 
     // Check if driver exists
     const driver = await Driver.findById(driverId)

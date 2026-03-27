@@ -33,7 +33,11 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
 
   // Fetch driver status and history
   useEffect(() => {
-    fetchStatusHistory();
+    if (driverId) {
+      fetchStatusHistory();
+    } else {
+      toast.error('Driver ID is missing');
+    }
   }, [driverId]);
 
   const fetchStatusHistory = async () => {
@@ -43,10 +47,11 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
       if (response.data.success) {
         setCurrentStatus(response.data.data.currentStatus);
         setStatusHistory(response.data.data.statusHistory || []);
+      } else {
+        toast.error(response.data?.message || 'Failed to load driver status');
       }
     } catch (error) {
-      console.error('Error fetching status history:', error);
-      toast.error('Failed to load driver status');
+      toast.error(error.response?.data?.message || 'Failed to load driver status');
     } finally {
       setIsLoading(false);
     }
