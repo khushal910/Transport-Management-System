@@ -3,6 +3,8 @@ import Trip from "../../models/trip.schema.js";
 import Driver from "../../models/driver.schema.js";
 import Vehicle from "../../models/vehicle.schema.js";
 import FuelLog from "../../models/fuel.schema.js";
+import { DRIVER_STATUS } from "../../constants/driverStatus.constants.js";
+import { createStatusChangeRecord } from "../../utils/driverStatusManager.js";
 
 const updateTripStatus = async (req, res) => {
   try {
@@ -104,12 +106,22 @@ const updateTripStatus = async (req, res) => {
         { status: "available" }
       );
       
-      // Increment completedTrips and update driver status to off_duty
+      // Create status change record for audit trail - trip completed, driver back to AVAILABLE
+      const statusChangeRecord = createStatusChangeRecord(
+        DRIVER_STATUS.ON_TRIP,
+        DRIVER_STATUS.AVAILABLE,
+        'automatic_trip_complete',
+        null // System automatic change
+      );
+
+      // Increment completedTrips and update driver status to AVAILABLE
       const updatedDriver = await Driver.findByIdAndUpdate(
         trip.driver._id,
         {
           $inc: { completedTrips: 1 },
-          status: "off_duty"
+          status: DRIVER_STATUS.AVAILABLE,
+          lastStatusChange: new Date(),
+          $push: { statusHistory: statusChangeRecord }
         },
         { new: true }
       );
@@ -154,12 +166,22 @@ const updateTripStatus = async (req, res) => {
         { status: "cancelled" }
       );
 
-      // Decrement assignedTrips for driver and set status to off_duty
+      // Create status change record for audit trail - trip cancelled, driver back to AVAILABLE
+      const statusChangeRecord = createStatusChangeRecord(
+        DRIVER_STATUS.ON_TRIP,
+        DRIVER_STATUS.AVAILABLE,
+        'automatic_trip_cancel',
+        null // System automatic change
+      );
+
+      // Decrement assignedTrips for driver and set status to AVAILABLE
       const cancelledDriver = await Driver.findByIdAndUpdate(
         trip.driver._id,
         {
           $inc: { assignedTrips: -1 },
-          status: "off_duty"
+          status: DRIVER_STATUS.AVAILABLE,
+          lastStatusChange: new Date(),
+          $push: { statusHistory: statusChangeRecord }
         },
         { new: true }
       );

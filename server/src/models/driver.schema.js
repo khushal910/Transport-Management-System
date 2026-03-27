@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { DRIVER_STATUS } from '../constants/driverStatus.constants.js';
 
 const driverSchema = new mongoose.Schema(
   {
@@ -29,9 +30,38 @@ const driverSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['on_duty', 'off_duty', 'on_trip', 'suspended'],
-      default: 'off_duty',
+      enum: [DRIVER_STATUS.AVAILABLE, DRIVER_STATUS.ON_TRIP, DRIVER_STATUS.OFF_DUTY, DRIVER_STATUS.SUSPENDED],
+      default: DRIVER_STATUS.OFF_DUTY,
     },
+    lastStatusChange: {
+      type: Date,
+      default: Date.now,
+    },
+    statusHistory: [
+      {
+        fromStatus: {
+          type: String,
+          enum: [DRIVER_STATUS.AVAILABLE, DRIVER_STATUS.ON_TRIP, DRIVER_STATUS.OFF_DUTY, DRIVER_STATUS.SUSPENDED],
+        },
+        toStatus: {
+          type: String,
+          enum: [DRIVER_STATUS.AVAILABLE, DRIVER_STATUS.ON_TRIP, DRIVER_STATUS.OFF_DUTY, DRIVER_STATUS.SUSPENDED],
+        },
+        reason: {
+          type: String,
+          enum: ['manual_update', 'automatic_trip_assign', 'automatic_trip_complete', 'automatic_trip_cancel'],
+        },
+        changedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          default: null, // null for automatic changes
+        },
+        changedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     complaints: {
       type: Number,
       default: 0,

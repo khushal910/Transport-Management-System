@@ -4,6 +4,8 @@ import Vehicle from "../../models/vehicle.schema.js";
 import response from "../../response/response.js";
 import tripCreateSchema from "../../validations/trip.create.validator.js";
 import Trip from "../../models/trip.schema.js";
+import { DRIVER_STATUS } from "../../constants/driverStatus.constants.js";
+import { validateDriverForAssignment, createStatusChangeRecord } from "../../utils/driverStatusManager.js";
 
 const createTrip = async (req, res) => {
   try { 
@@ -58,13 +60,11 @@ const createTrip = async (req, res) => {
       return response(res, 404, false, 'Driver record not found. Driver must be properly registered.');
     }
 
-    // Check if driver is available (not on_trip or suspended)
-    if (isDriverExist.status === 'suspended') {
-      return response(res, 400, false, 'Driver is suspended and cannot be assigned to trips');
-    }
-
-    if (isDriverExist.status === 'on_trip') {
-      return response(res, 400, false, 'Driver is currently on a trip');
+    // Validate driver can be assigned using strict status control
+    try {
+      validateDriverForAssignment(isDriverExist.status);
+    } catch (error) {
+      return response(res, 400, false, error.message);
     }
     
     /* 
@@ -94,12 +94,22 @@ const createTrip = async (req, res) => {
     // change vehicle status to assigned after creating the trip
     await Vehicle.findByIdAndUpdate(isVehicleExist._id, {status: 'assigned'});
 
-    // Update driver: increment assignedTrips, set status to on_trip, and recalculate completion rate
+    // Update driver: increment assignedTrips, set status to ON_TRIP, and recalculate completion rate
+    // Create status change record for audit trail
+    const statusChangeRecord = createStatusChangeRecord(
+      isDriverExist.status,
+      DRIVER_STATUS.ON_TRIP,
+      'automatic_trip_assign',
+      null // System automatic change
+    );
+
     const updatedDriver = await Driver.findByIdAndUpdate(
       isDriverExist._id,
       {
         $inc: { assignedTrips: 1 },
-        status: 'on_trip'
+        status: DRIVER_STATUS.ON_TRIP,
+        lastStatusChange: new Date(),
+        $push: { statusHistory: statusChangeRecord }
       },
       { new: true }
     );

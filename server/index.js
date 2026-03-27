@@ -10,6 +10,7 @@ import tripRouter from './src/routers/trip.route.js';
 import maintenanceRouter from './src/routers/maintenance.route.js';
 import expenseRouter from './src/routers/expense.route.js';
 import driverRouter from './src/routers/driver.route.js';
+import driverStatusRouter from './src/routers/driverStatus.route.js';
 import analyticsRouter from './src/routers/analytics.route.js';
 import dashboardRouter from './src/routers/dashboard.route.js';
 
@@ -31,6 +32,7 @@ app.use('/api/trip', tripRouter)
 app.use('/api/maintenance', maintenanceRouter)
 app.use('/api/expense', expenseRouter)
 app.use('/api/driver', driverRouter)
+app.use('/api/driver-status', driverStatusRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/dashboard', dashboardRouter)
 

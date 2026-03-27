@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import { FaShieldAlt } from "react-icons/fa";
 import driverBaseURL from "../../api/driverBaseURL";
+import driverStatusBaseURL from "../../api/driverStatusBaseURL";
+import DriverStatusModal from "../../components/DriverStatusModal";
+import DriverStatusBadge from "../../components/DriverStatusBadge";
 
 const INITIAL_FILTERS = {
   status: "",
@@ -154,6 +158,12 @@ const Performance = () => {
     totalPages: 1,
   });
 
+  // Driver status modal state
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState(null);
+  const [selectedDriverName, setSelectedDriverName] = useState(null);
+  const [driverInfo, setDriverInfo] = useState({});
+
   const filterMenuRef = useRef(null);
   const sortMenuRef = useRef(null);
   const groupMenuRef = useRef(null);
@@ -234,6 +244,39 @@ const Performance = () => {
   useEffect(() => {
     fetchDrivers(currentPage);
   }, [currentPage, fetchDrivers]);
+
+  // Fetch driver statuses
+  const fetchDriverStatuses = async (drivers) => {
+    try {
+      const statuses = {};
+
+      for (const driver of drivers) {
+        try {
+          // Fetch status for each driver
+          const statusResponse = await driverStatusBaseURL.get(`?email=${driver.email}`);
+          if (statusResponse.data.success) {
+            statuses[driver._id] = statusResponse.data.data.status;
+          }
+        } catch (error) {
+          // Status fetch error, will show as unknown
+          console.error(`Failed to fetch status for driver ${driver._id}:`, error);
+        }
+      }
+      setDriverInfo(statuses);
+    } catch (error) {
+      console.error('Error fetching driver statuses:', error);
+    }
+  };
+
+  // Fetch statuses when driver list changes
+  useEffect(() => {
+    if (driverList.length > 0) {
+      fetchDriverStatuses(driverList);
+    } else if (Object.keys(groupedDrivers).length > 0) {
+      const allDrivers = Object.values(groupedDrivers).flat();
+      fetchDriverStatuses(allDrivers);
+    }
+  }, [driverList, groupedDrivers]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -711,6 +754,9 @@ const Performance = () => {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                   Status
                 </th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -799,6 +845,19 @@ const Performance = () => {
                       {getStatusLabel(driver.status)}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <button
+                      onClick={() => {
+                        setSelectedDriverId(driver._id);
+                        setSelectedDriverName(driver.name);
+                        setIsStatusModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition duration-200"
+                    >
+                      <FaShieldAlt size={12} />
+                      Status
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -838,6 +897,9 @@ const Performance = () => {
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                         Status
+                      </th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -929,6 +991,19 @@ const Performance = () => {
                             {getStatusLabel(driver.status)}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-sm text-center">
+                          <button
+                            onClick={() => {
+                              setSelectedDriverId(driver._id);
+                              setSelectedDriverName(driver.name);
+                              setIsStatusModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition duration-200"
+                          >
+                            <FaShieldAlt size={12} />
+                            Status
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -994,6 +1069,22 @@ const Performance = () => {
             Page {currentPage} of {pagination.totalPages}
           </span>
         </div>
+      )}
+
+      {/* Driver Status Modal */}
+      {isStatusModalOpen && (
+        <DriverStatusModal
+          driverId={selectedDriverId}
+          driverName={selectedDriverName}
+          onClose={() => {
+            setIsStatusModalOpen(false);
+            setSelectedDriverId(null);
+            setSelectedDriverName(null);
+          }}
+          onStatusUpdated={() => {
+            fetchDrivers(currentPage);
+          }}
+        />
       )}
     </div>
   );

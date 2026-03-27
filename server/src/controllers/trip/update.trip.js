@@ -4,6 +4,8 @@ import User from "../../models/user.schema.js";
 import Driver from "../../models/driver.schema.js";
 import Vehicle from "../../models/vehicle.schema.js";
 import tripCreateSchema from "../../validations/trip.create.validator.js";
+import { DRIVER_STATUS } from "../../constants/driverStatus.constants.js";
+import { validateDriverForAssignment, createStatusChangeRecord } from "../../utils/driverStatusManager.js";
 
 const updateTrip = async (req, res) => {
   try {
@@ -71,9 +73,11 @@ const updateTrip = async (req, res) => {
       return response(res, 404, false, "Driver record not found");
     }
 
-    // Check if driver is available (not suspended)
-    if (newDriver.status === "suspended") {
-      return response(res, 400, false, "Driver is suspended and cannot be assigned to trips");
+    // Validate new driver can be assigned
+    try {
+      validateDriverForAssignment(newDriver.status);
+    } catch (error) {
+      return response(res, 400, false, error.message);
     }
 
     // If changing driver, check if new driver is not already assigned to other trips
@@ -89,11 +93,21 @@ const updateTrip = async (req, res) => {
       }
 
       // If changing driver, revert the old driver status and metrics
+      // Create status change record for audit trail - unassigning from trip
+      const oldDriverStatusChange = createStatusChangeRecord(
+        DRIVER_STATUS.ON_TRIP,
+        DRIVER_STATUS.AVAILABLE,
+        'automatic_trip_update_driver_change',
+        null // System automatic change
+      );
+
       const oldDriver = await Driver.findByIdAndUpdate(
         existingTrip.driver,
         {
           $inc: { assignedTrips: -1 },
-          status: "off_duty"
+          status: DRIVER_STATUS.AVAILABLE,
+          lastStatusChange: new Date(),
+          $push: { statusHistory: oldDriverStatusChange }
         },
         { new: true }
       );
@@ -110,12 +124,22 @@ const updateTrip = async (req, res) => {
         await Driver.findByIdAndUpdate(existingTrip.driver, { completionRate: 0 });
       }
 
-      // Increment assignedTrips for new driver and set status to on_trip
+      // Create status change record for new driver - assigning to trip
+      const newDriverStatusChange = createStatusChangeRecord(
+        newDriver.status,
+        DRIVER_STATUS.ON_TRIP,
+        'automatic_trip_update_driver_assign',
+        null // System automatic change
+      );
+
+      // Increment assignedTrips for new driver and set status to ON_TRIP
       const updatedNewDriver = await Driver.findByIdAndUpdate(
         newDriver._id,
         {
           $inc: { assignedTrips: 1 },
-          status: "on_trip"
+          status: DRIVER_STATUS.ON_TRIP,
+          lastStatusChange: new Date(),
+          $push: { statusHistory: newDriverStatusChange }
         },
         { new: true }
       );
@@ -149,12 +173,14 @@ const updateTrip = async (req, res) => {
         revenue,
       },
       { new: true }
-    );
+    )
+      .populate("vehicle")
+      .populate("driver");
 
     return response(res, 200, true, "Trip updated successfully", updatedTrip);
   } catch (error) {
     console.error("Error updating trip:", error);
-    return response(res, 500, false, "Internal server error");
+    return response(res, 500, false, "Failed to update trip");
   }
 };
 

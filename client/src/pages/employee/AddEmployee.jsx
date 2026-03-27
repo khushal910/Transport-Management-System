@@ -467,7 +467,8 @@ export default function EmployeeManagement() {
                       <td className="px-4 py-3 text-sm">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(employee.role)}`}>
                           {employee.role.replaceAll('_', ' ').toUpperCase()}
-                        </span>                      </td>
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {new Date(employee.createdAt).toLocaleDateString()}
                       </td>
@@ -521,7 +522,7 @@ export default function EmployeeManagement() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Employee Modal */}
       {isModalOpen && (
         <div
           className="fixed inset-0 backdrop-blur-sm bg-black/20 flex items-center justify-center z-50"
