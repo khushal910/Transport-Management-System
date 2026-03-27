@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import vehicleBaseURL from "../../api/vehicleBaseURL";
+import { useFormNavigation } from "../../hooks/useFormNavigation";
 
 const VehicleRegistry = () => {
 
@@ -197,6 +198,12 @@ const VehicleRegistry = () => {
       toast.error(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
     }
   };
+
+  // Use the form navigation hook (5 input fields: name, licensePlate, model, maxCapacity, odometer - excluding vehicleType select)
+  // Must be after handleCreateOrUpdateVehicle is defined
+  const { inputRefs, handleKeyDown } = useFormNavigation(5, () => {
+    handleCreateOrUpdateVehicle({ preventDefault: () => {} });
+  }, isModalOpen);
 
   const handleEdit = (vehicle) => {
     setEditingVehicleId(vehicle._id);
@@ -730,30 +737,39 @@ const VehicleRegistry = () => {
               <input
                 type="text"
                 placeholder="Vehicle Name"
+                autoComplete="off"
                 className="w-full border px-3 py-2 rounded"
                 name="name"
                 value={vehicleForm.name}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 0)}
+                ref={(el) => (inputRefs.current[0] = el)}
                 required
               />
 
               <input
                 type="text"
                 placeholder="License Plate"
+                autoComplete="off"
                 className="w-full border px-3 py-2 rounded"
                 name="licensePlate"
                 value={vehicleForm.licensePlate}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 1)}
+                ref={(el) => (inputRefs.current[1] = el)}
                 required
               />
 
               <input
                 type="text"
                 placeholder="Model"
+                autoComplete="off"
                 className="w-full border px-3 py-2 rounded"
                 name="model"
                 value={vehicleForm.model}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 2)}
+                ref={(el) => (inputRefs.current[2] = el)}
                 required
               />
 
@@ -771,10 +787,13 @@ const VehicleRegistry = () => {
               <input
                 type="number"
                 placeholder="Max Capacity"
+                autoComplete="off"
                 className="w-full border px-3 py-2 rounded"
                 name="maxCapacity"
                 value={vehicleForm.maxCapacity}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 3)}
+                ref={(el) => (inputRefs.current[3] = el)}
                 min="1"
                 required
               />
@@ -782,10 +801,13 @@ const VehicleRegistry = () => {
               <input
                 type="number"
                 placeholder="Odometer"
+                autoComplete="off"
                 className="w-full border px-3 py-2 rounded"
                 name="odometer"
                 value={vehicleForm.odometer}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
+                ref={(el) => (inputRefs.current[4] = el)}
                 min="0"
                 required
               />

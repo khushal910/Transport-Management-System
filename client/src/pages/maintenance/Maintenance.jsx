@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import vehicleBaseURL from "../../api/vehicleBaseURL";
+import { useFormNavigation } from "../../hooks/useFormNavigation";
 
 const API_URL = "http://localhost:3000/api/maintenance"; // Direct API URL
 
@@ -373,6 +374,14 @@ export default function MaintenancePage() {
       setIsSubmitting(false);
     }
   };
+
+  // Use the form navigation hook (5 input fields: vehicleName, description, serviceDate, cost, distance)
+  // Must be after handleCreateMaintenance is defined
+  const { inputRefs, handleKeyDown } = useFormNavigation(5, () => {
+    if (isCreateModalOpen) {
+      handleCreateMaintenance({ preventDefault: () => {} });
+    }
+  }, isCreateModalOpen);
 
   const handleApplyFilters = () => {
     const error = validateFilterState(filterState);
@@ -867,6 +876,8 @@ export default function MaintenancePage() {
                   value={maintenanceForm.vehicleName}
                   onChange={handleFormChange}
                   onFocus={() => setShowVehicleSuggestions(maintenanceForm.vehicleName.trim().length > 0)}
+                  onKeyDown={(e) => handleKeyDown(e, 0)}
+                  ref={(el) => (inputRefs.current[0] = el)}
                   placeholder="Search vehicle (only available vehicles shown)..."
                   className={`w-full border p-2 rounded ${
                     formErrors.vehicleName ? "border-red-500 bg-red-50" : "border-gray-300"
@@ -915,6 +926,8 @@ export default function MaintenancePage() {
                   id="description"
                   value={maintenanceForm.description}
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 1)}
+                  ref={(el) => (inputRefs.current[1] = el)}
                   placeholder="Describe the service or issue..."
                   rows="3"
                   className={`w-full border p-2 rounded ${
@@ -937,6 +950,8 @@ export default function MaintenancePage() {
                   id="serviceDate"
                   value={maintenanceForm.serviceDate}
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 2)}
+                  ref={(el) => (inputRefs.current[2] = el)}
                   className={`w-full border p-2 rounded ${
                     formErrors.serviceDate ? "border-red-500 bg-red-50" : "border-gray-300"
                   }`}
@@ -957,6 +972,8 @@ export default function MaintenancePage() {
                   id="cost"
                   value={maintenanceForm.cost}
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 3)}
+                  ref={(el) => (inputRefs.current[3] = el)}
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -980,6 +997,8 @@ export default function MaintenancePage() {
                   id="distance"
                   value={maintenanceForm.distance}
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 4)}
+                  ref={(el) => (inputRefs.current[4] = el)}
                   placeholder="0.00"
                   min="0"
                   step="0.01"

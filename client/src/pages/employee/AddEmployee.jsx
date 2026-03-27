@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaEye, FaEyeSlash, FaEdit, FaTrash } from 'react-icons/fa';
 import authBaseURL from '../../api/authBaseURL';
+import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function EmployeeManagement() {
   // Employee list from backend
@@ -266,6 +267,13 @@ export default function EmployeeManagement() {
       toast.error(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
     }
   };
+
+  // Calculate the number of input fields based on role
+  // Use the form navigation hook (must be after handleCreateOrUpdateEmployee is defined)
+  const inputFieldCount = employeeForm.role === 'driver' ? 5 : 3;
+  const { inputRefs, handleKeyDown } = useFormNavigation(inputFieldCount, () => {
+    handleCreateOrUpdateEmployee({ preventDefault: () => {} });
+  }, isModalOpen);
 
   const handleEdit = (employee) => {
     setEditingEmployeeId(employee._id);
@@ -537,7 +545,10 @@ export default function EmployeeManagement() {
                   name="name"
                   id="name"
                   value={employeeForm.name}
+                  autoComplete="off"
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 0)}
+                  ref={(el) => (inputRefs.current[0] = el)}
                   placeholder="Employee Name"
                   className={`w-full border p-2 rounded mt-1 ${
                     formErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -556,7 +567,10 @@ export default function EmployeeManagement() {
                   name="email"
                   id="email"
                   value={employeeForm.email}
+                  autoComplete="off"
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 1)}
+                  ref={(el) => (inputRefs.current[1] = el)}
                   placeholder="Employee Email"
                   className={`w-full border p-2 rounded mt-1 ${
                     formErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -576,7 +590,10 @@ export default function EmployeeManagement() {
                     name="password"
                     id="password"
                     value={employeeForm.password}
+                    autoComplete="off"
                     onChange={handleFormChange}
+                    onKeyDown={(e) => handleKeyDown(e, 2)}
+                    ref={(el) => (inputRefs.current[2] = el)}
                     placeholder={editingEmployeeId ? 'New Password (optional)' : 'Password'}
                     className={`w-full border p-2 pr-10 rounded mt-1 ${
                       formErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -628,7 +645,10 @@ export default function EmployeeManagement() {
                       name="licenseNumber"
                       id="licenseNumber"
                       value={employeeForm.licenseNumber}
+                      autoComplete="off"
                       onChange={handleFormChange}
+                      onKeyDown={(e) => handleKeyDown(e, 3)}
+                      ref={(el) => (inputRefs.current[3] = el)}
                       placeholder="e.g., DL1234567"
                       className={`w-full border p-2 rounded mt-1 ${
                         formErrors.licenseNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -650,6 +670,8 @@ export default function EmployeeManagement() {
                       id="licenseExpiry"
                       value={employeeForm.licenseExpiry}
                       onChange={handleFormChange}
+                      onKeyDown={(e) => handleKeyDown(e, 4)}
+                      ref={(el) => (inputRefs.current[4] = el)}
                       className={`w-full border p-2 rounded mt-1 ${
                         formErrors.licenseExpiry ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       }`}

@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import tripBaseURL from "../../api/tripBaseURL";
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import authBaseURL from "../../api/authBaseURL";
+import { useFormNavigation } from "../../hooks/useFormNavigation";
 
 const INITIAL_FORM = {
   vehiclePlateNumber: "",
@@ -136,6 +137,15 @@ const Trip = () => {
   const groupMenuRef = useRef(null);
   const vehicleInputRef = useRef(null);
   const driverInputRef = useRef(null);
+
+  // Use the form navigation hook (6 input fields: vehiclePlateNumber, driverEmail, cargoWeight, startLocation, endLocation, revenue)
+  const { inputRefs, handleKeyDown } = useFormNavigation(6, () => {
+    if (isCreateModalOpen) {
+      handleCreateTrip({ preventDefault: () => {} });
+    } else if (isEditModalOpen) {
+      handleUpdateTrip({ preventDefault: () => {} });
+    }
+  }, (isCreateModalOpen || isEditModalOpen));
 
   const fetchTrips = useCallback(async (pageToFetch = currentPage) => {
     setIsLoading(true);
@@ -1157,9 +1167,12 @@ const Trip = () => {
                   name="vehiclePlateNumber"
                   type="text"
                   placeholder="Vehicle Plate Number"
+                  autoComplete="off"
                   value={tripForm.vehiclePlateNumber}
                   onChange={handleFormChange}
                   onFocus={() => tripForm.vehiclePlateNumber && setShowVehicleSuggestions(true)}
+                  onKeyDown={(e) => handleKeyDown(e, 0)}
+                  ref={(el) => (inputRefs.current[0] = el)}
                   className="w-full border px-3 py-2 rounded"
                   required
                 />
@@ -1186,9 +1199,12 @@ const Trip = () => {
                   name="driverEmail"
                   type="email"
                   placeholder="Driver Email"
+                  autoComplete="off"
                   value={tripForm.driverEmail}
                   onChange={handleFormChange}
                   onFocus={() => tripForm.driverEmail && setShowDriverSuggestions(true)}
+                  onKeyDown={(e) => handleKeyDown(e, 1)}
+                  ref={(el) => (inputRefs.current[1] = el)}
                   className="w-full border px-3 py-2 rounded"
                   required
                 />
@@ -1213,8 +1229,11 @@ const Trip = () => {
                 type="number"
                 placeholder="Cargo Weight"
                 min="1"
+                autoComplete="off"
                 value={tripForm.cargoWeight}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 2)}
+                ref={(el) => (inputRefs.current[2] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1224,8 +1243,11 @@ const Trip = () => {
                 type="number"
                 placeholder="Revenue"
                 min="0"
+                autoComplete="off"
                 value={tripForm.revenue}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 3)}
+                ref={(el) => (inputRefs.current[3] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1234,8 +1256,11 @@ const Trip = () => {
                 name="startLocation"
                 type="text"
                 placeholder="Start Location"
+                autoComplete="off"
                 value={tripForm.startLocation}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
+                ref={(el) => (inputRefs.current[4] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1244,8 +1269,11 @@ const Trip = () => {
                 name="endLocation"
                 type="text"
                 placeholder="End Location"
+                autoComplete="off"
                 value={tripForm.endLocation}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 5)}
+                ref={(el) => (inputRefs.current[5] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1292,9 +1320,12 @@ const Trip = () => {
                   name="vehiclePlateNumber"
                   type="text"
                   placeholder="Vehicle Plate Number"
+                  autoComplete="off"
                   value={tripForm.vehiclePlateNumber}
                   onChange={handleFormChange}
                   onFocus={() => tripForm.vehiclePlateNumber && setShowVehicleSuggestions(true)}
+                  onKeyDown={(e) => handleKeyDown(e, 0)}
+                  ref={(el) => (inputRefs.current[0] = el)}
                   className="w-full border px-3 py-2 rounded"
                   required
                 />
@@ -1321,9 +1352,12 @@ const Trip = () => {
                   name="driverEmail"
                   type="email"
                   placeholder="Driver Email"
+                  autoComplete="off"
                   value={tripForm.driverEmail}
                   onChange={handleFormChange}
                   onFocus={() => tripForm.driverEmail && setShowDriverSuggestions(true)}
+                  onKeyDown={(e) => handleKeyDown(e, 1)}
+                  ref={(el) => (inputRefs.current[1] = el)}
                   className="w-full border px-3 py-2 rounded"
                   required
                 />
@@ -1348,8 +1382,11 @@ const Trip = () => {
                 type="number"
                 placeholder="Cargo Weight"
                 min="1"
+                autoComplete="off"
                 value={tripForm.cargoWeight}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 2)}
+                ref={(el) => (inputRefs.current[2] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1359,8 +1396,11 @@ const Trip = () => {
                 type="number"
                 placeholder="Revenue"
                 min="0"
+                autoComplete="off"
                 value={tripForm.revenue}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 3)}
+                ref={(el) => (inputRefs.current[3] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1369,8 +1409,11 @@ const Trip = () => {
                 name="startLocation"
                 type="text"
                 placeholder="Start Location"
+                autoComplete="off"
                 value={tripForm.startLocation}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 4)}
+                ref={(el) => (inputRefs.current[4] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />
@@ -1379,8 +1422,11 @@ const Trip = () => {
                 name="endLocation"
                 type="text"
                 placeholder="End Location"
+                autoComplete="off"
                 value={tripForm.endLocation}
                 onChange={handleFormChange}
+                onKeyDown={(e) => handleKeyDown(e, 5)}
+                ref={(el) => (inputRefs.current[5] = el)}
                 className="w-full border px-3 py-2 rounded"
                 required
               />

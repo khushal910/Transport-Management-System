@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import expenseBaseURL from '../../api/expenseBaseURL.js';
+import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 const Expense = () => {
   const [expenses, setExpenses] = useState([]);
@@ -230,6 +231,14 @@ const Expense = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Use the form navigation hook (3 input fields: fuelCost, miscExpense, distance)
+  // Must be after handleUpdateExpense is defined
+  const { inputRefs, handleKeyDown } = useFormNavigation(3, () => {
+    if (showEditModal) {
+      handleUpdateExpense({ preventDefault: () => {} });
+    }
+  }, showEditModal);
 
   // Filter handlers
   const handleApplyFilters = () => {
@@ -473,6 +482,8 @@ const Expense = () => {
                     name="fuelCost"
                     value={expenseForm.fuelCost}
                     onChange={handleFormChange}
+                    onKeyDown={(e) => handleKeyDown(e, 0)}
+                    ref={(el) => (inputRefs.current[0] = el)}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -488,6 +499,8 @@ const Expense = () => {
                     name="miscExpense"
                     value={expenseForm.miscExpense}
                     onChange={handleFormChange}
+                    onKeyDown={(e) => handleKeyDown(e, 1)}
+                    ref={(el) => (inputRefs.current[1] = el)}
                     placeholder="0.00"
                     min="0"
                     step="0.01"
@@ -503,6 +516,8 @@ const Expense = () => {
                     name="distance"
                     value={expenseForm.distance}
                     onChange={handleFormChange}
+                    onKeyDown={(e) => handleKeyDown(e, 2)}
+                    ref={(el) => (inputRefs.current[2] = el)}
                     placeholder="0.00"
                     min="0"
                     step="0.01"

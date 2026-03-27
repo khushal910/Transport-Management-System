@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function Login() {
   const location = useLocation();
@@ -61,6 +62,9 @@ export default function Login() {
     }
   };
 
+  // Use the form navigation hook (must be after handleLogin is defined)
+  const { inputRefs, handleKeyDown } = useFormNavigation(2, handleLogin);
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Login</h2>
@@ -71,6 +75,8 @@ export default function Login() {
           placeholder="Email"
           className="w-full border p-2 rounded"
           value={loginData.email}
+          ref={(el) => (inputRefs.current[0] = el)}
+          onKeyDown={(e) => handleKeyDown(e, 0)}
           onChange={(e) =>
             setLoginData({ ...loginData, email: e.target.value })
           }
@@ -82,6 +88,8 @@ export default function Login() {
             placeholder="Password"
             className="w-full border p-2 pr-10 rounded"
             value={loginData.password}
+            ref={(el) => (inputRefs.current[1] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 1)}
             onChange={(e) =>
               setLoginData({ ...loginData, password: e.target.value })
             }

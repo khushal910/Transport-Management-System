@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function Register() {
   const [registrationData, setRegistrationData] = useState({
@@ -49,6 +50,9 @@ export default function Register() {
       toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
     }
   };
+
+  // Use the form navigation hook (8 input fields total - must be after handleSubmit is defined)
+  const { inputRefs, handleKeyDown } = useFormNavigation(8, handleSubmit);
   
   return (
     <div>
@@ -60,8 +64,11 @@ export default function Register() {
       <form className="space-y-4" onSubmit={handleSubmit}>
         <input
           placeholder="Name"
+          autoComplete="off"
           className="w-full border p-2 rounded"
           value={registrationData.name}
+          ref={(el) => (inputRefs.current[0] = el)}
+          onKeyDown={(e) => handleKeyDown(e, 0)}
           onChange={(e) =>
             setRegistrationData({ ...registrationData, name: e.target.value })
           }
@@ -69,8 +76,12 @@ export default function Register() {
 
         <input
           placeholder="Email"
+          type="email"
+          autoComplete="off"
           className="w-full border p-2 rounded"
           value={registrationData.email}
+          ref={(el) => (inputRefs.current[1] = el)}
+          onKeyDown={(e) => handleKeyDown(e, 1)}
           onChange={(e) =>
             setRegistrationData({
               ...registrationData,
@@ -83,8 +94,11 @@ export default function Register() {
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
+            autoComplete="off"
             className="w-full border p-2 pr-10 rounded"
             value={registrationData.password}
+            ref={(el) => (inputRefs.current[2] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 2)}
             onChange={(e) =>
               setRegistrationData({
                 ...registrationData,
@@ -114,8 +128,11 @@ export default function Register() {
           
           <input
             placeholder="Company Name"
+            autoComplete="off"
             className="w-full border p-2 rounded mb-3"
             value={registrationData.company.name}
+            ref={(el) => (inputRefs.current[3] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 3)}
             onChange={(e) =>
               setRegistrationData({
                 ...registrationData,
@@ -126,8 +143,11 @@ export default function Register() {
 
           <input
             placeholder="Registration Number"
+            autoComplete="off"
             className="w-full border p-2 rounded mb-3"
             value={registrationData.company.registrationNumber}
+            ref={(el) => (inputRefs.current[4] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 4)}
             onChange={(e) =>
               setRegistrationData({
                 ...registrationData,
@@ -138,8 +158,11 @@ export default function Register() {
 
           <input
             placeholder="Company Address"
+            autoComplete="off"
             className="w-full border p-2 rounded mb-3"
             value={registrationData.company.address}
+            ref={(el) => (inputRefs.current[5] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 5)}
             onChange={(e) =>
               setRegistrationData({
                 ...registrationData,
@@ -150,8 +173,11 @@ export default function Register() {
 
           <input
             placeholder="Company Phone"
+            autoComplete="off"
             className="w-full border p-2 rounded mb-3"
             value={registrationData.company.phone}
+            ref={(el) => (inputRefs.current[6] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 6)}
             onChange={(e) =>
               setRegistrationData({
                 ...registrationData,
@@ -163,8 +189,11 @@ export default function Register() {
           <input
             placeholder="Company Email"
             type="email"
+            autoComplete="off"
             className="w-full border p-2 rounded mb-3"
             value={registrationData.company.email}
+            ref={(el) => (inputRefs.current[7] = el)}
+            onKeyDown={(e) => handleKeyDown(e, 7)}
             onChange={(e) =>
               setRegistrationData({
                 ...registrationData,
