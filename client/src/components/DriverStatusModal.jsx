@@ -162,77 +162,41 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
             <div className="p-6">
               {activeTab === 'status' ? (
                 <div className="space-y-6">
-                  {/* Current Status Card */}
-                  <div className="border-2 border-blue-200 rounded-lg p-5 bg-blue-50">
-                    <p className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Current Status</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getStatusColor(currentStatus).bg}`}>
-                          <FaCircle className={`text-3xl ${getStatusColor(currentStatus).dot}`} />
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm">Status</p>
-                          <p className={`text-2xl font-bold ${getStatusColor(currentStatus).text}`}>
-                            {statusLabels[currentStatus]}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(currentStatus).bg} ${getStatusColor(currentStatus).text}`}>
-                        {currentStatus.replace(/_/g, ' ').toUpperCase()}
-                      </span>
+                  {/* Current Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
+                    <div className={`px-4 py-3 rounded-lg font-semibold text-center ${getStatusColor(currentStatus).bg} ${getStatusColor(currentStatus).text}`}>
+                      {statusLabels[currentStatus]}
                     </div>
                   </div>
 
                   {/* Status Change Section */}
                   {currentStatus === 'on_trip' ? (
-                    <div className="p-5 bg-amber-50 border-2 border-amber-200 rounded-lg">
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0">
-                          <svg className="h-6 w-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-amber-900">Status Cannot Be Changed</h3>
-                          <p className="text-sm text-amber-700 mt-1">
-                            Driver is currently on a trip. Status will automatically update to "Available (On Duty)" when the trip is completed or cancelled.
-                          </p>
-                        </div>
-                      </div>
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-700">
+                        <strong>Info:</strong> Driver is on a trip. Status will update automatically when trip completes.
+                      </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 mb-4 text-lg">Select New Status</h3>
-                        <div className="grid grid-cols-1 gap-3">
-                          {availableTransitions[currentStatus]?.length > 0 ? (
-                            availableTransitions[currentStatus].map((status) => (
-                              <button
-                                key={status}
-                                onClick={() => handleStatusChange(status)}
-                                disabled={isUpdating}
-                                className={`p-4 rounded-lg border-2 font-medium transition duration-200 flex items-center gap-4 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${
-                                  getStatusColor(status).bg
-                                } border-current ${getStatusColor(status).text}`}
-                              >
-                                <FaCircle className={`text-lg ${getStatusColor(status).dot}`} />
-                                <div className="flex-1 text-left">
-                                  <p className="font-semibold">{statusLabels[status]}</p>
-                                  <p className="text-xs opacity-75">
-                                    {status === 'available' && 'Driver is ready to take trips'}
-                                    {status === 'off_duty' && 'Driver is off from work'}
-                                    {status === 'suspended' && 'Driver has been suspended from duties'}
-                                  </p>
-                                </div>
-                                {isUpdating && (
-                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
-                                )}
-                              </button>
-                            ))
-                          ) : (
-                            <p className="text-gray-500 text-center py-4">No status changes available for current status.</p>
-                          )}
-                        </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Change Status To</label>
+                      <div className="space-y-2">
+                        {availableTransitions[currentStatus]?.length > 0 ? (
+                          availableTransitions[currentStatus].map((status) => (
+                            <button
+                              key={status}
+                              onClick={() => handleStatusChange(status)}
+                              disabled={isUpdating}
+                              className={`w-full px-4 py-2.5 rounded-lg font-medium transition duration-200 ${
+                                getStatusColor(status).bg
+                              } ${getStatusColor(status).text} hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {statusLabels[status]}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-center py-4 text-sm">No status changes available.</p>
+                        )}
                       </div>
                     </div>
                   )}
