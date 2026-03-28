@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import analyticsBaseURL from "../../api/analyticsBaseURL";
+import DateRangePicker from "../../components/DateRangePicker";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -63,13 +64,11 @@ const Analytics = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
-  const handleDateChange = (e) => {
-    const { name, value } = e.target;
-    setDateRange((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleApplyDateRange = () => {
-    fetchAnalytics();
+  const handleDateRangeChange = (dates) => {
+    setDateRange({
+      startDate: dates.startDate,
+      endDate: dates.endDate,
+    });
   };
 
   const exportToExcel = async () => {
@@ -328,39 +327,14 @@ const Analytics = () => {
       </div>
 
       {/* Date Range Filter */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-8">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Start Date
-            </label>
-            <input
-              type="date"
-              name="startDate"
-              value={dateRange.startDate}
-              onChange={handleDateChange}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              End Date
-            </label>
-            <input
-              type="date"
-              name="endDate"
-              value={dateRange.endDate}
-              onChange={handleDateChange}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-          <button
-            onClick={handleApplyDateRange}
-            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
-            Apply Filter
-          </button>
-        </div>
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Date Range</h3>
+        <DateRangePicker
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onDateChange={handleDateRangeChange}
+          onApply={fetchAnalytics}
+        />
       </div>
 
       {/* Export Buttons */}
