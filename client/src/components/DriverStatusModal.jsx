@@ -187,7 +187,7 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
                               key={status}
                               onClick={() => handleStatusChange(status)}
                               disabled={isUpdating}
-                              className={`w-full px-4 py-2.5 rounded-lg font-medium transition duration-200 ${
+                              className={`w-full px-4 py-2.5 rounded-lg font-medium transition duration-200 cursor-pointer ${
                                 getStatusColor(status).bg
                               } ${getStatusColor(status).text} hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
