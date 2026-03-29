@@ -280,40 +280,40 @@ const Analytics = () => {
       </div>
 
       {/* Analytics Report - PDF Export Content */}
-      <div id="analytics-report">
+      <div id="analytics-report" style={{ backgroundColor: "#ffffff", padding: "24px" }}>
         {/* Fleet Flow KPIs */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Fleet Flow</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div style={{ marginBottom: "32px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>Fleet Flow</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
             {/* Total Fuel Cost */}
-            <div className="bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-400 rounded-lg p-6">
-              <p className="text-gray-700 font-semibold text-sm mb-2">Total Fuel Cost</p>
-              <p className="text-3xl font-bold text-blue-800">
+            <div style={{ background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", border: "2px solid #3b82f6", borderRadius: "8px", padding: "24px" }}>
+              <p style={{ color: "#374151", fontWeight: "600", fontSize: "14px", marginBottom: "8px" }}>Total Fuel Cost</p>
+              <p style={{ fontSize: "30px", fontWeight: "bold", color: "#1e3a8a" }}>
                 ₹{kpiData.totalFuelCost.toFixed(1)}
               </p>
             </div>
 
             {/* Fleet ROI */}
-            <div className="bg-linear-to-br from-green-50 to-green-100 border-2 border-green-400 rounded-lg p-6">
-              <p className="text-gray-700 font-semibold text-sm mb-2">Fleet ROI</p>
-              <p className="text-3xl font-bold text-green-800">
+            <div style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", border: "2px solid #22c55e", borderRadius: "8px", padding: "24px" }}>
+              <p style={{ color: "#374151", fontWeight: "600", fontSize: "14px", marginBottom: "8px" }}>Fleet ROI</p>
+              <p style={{ fontSize: "30px", fontWeight: "bold", color: "#166534" }}>
                 {kpiData.fleetROI > 0 ? "+" : ""}{kpiData.fleetROI.toFixed(2)}%
               </p>
             </div>
 
             {/* Utilization Rate */}
-            <div className="bg-linear-to-br from-amber-50 to-amber-100 border-2 border-amber-400 rounded-lg p-6">
-              <p className="text-gray-700 font-semibold text-sm mb-2">Utilization Rate</p>
-              <p className="text-3xl font-bold text-amber-800">{kpiData.averageUtilization}%</p>
+            <div style={{ background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)", border: "2px solid #f59e0b", borderRadius: "8px", padding: "24px" }}>
+              <p style={{ color: "#374151", fontWeight: "600", fontSize: "14px", marginBottom: "8px" }}>Utilization Rate</p>
+              <p style={{ fontSize: "30px", fontWeight: "bold", color: "#92400e" }}>{kpiData.averageUtilization}%</p>
             </div>
           </div>
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px", marginBottom: "32px" }}>
           {/* Fuel Efficiency Trend */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Fuel Efficiency Trend (KM/L)</h3>
+          <div style={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>Fuel Efficiency Trend (KM/L)</h3>
             {analyticsData.fuelEfficiency && analyticsData.fuelEfficiency.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={fuelEfficiencyChartData}>
@@ -333,15 +333,15 @@ const Analytics = () => {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-64 flex items-center justify-center text-gray-500">
+              <div style={{ height: "256px", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
                 <p>No fuel efficiency data available for selected period</p>
               </div>
             )}
           </div>
 
           {/* Top 5 Costliest Vehicles */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Top 5 Costliest Vehicles</h3>
+          <div style={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>Top 5 Costliest Vehicles</h3>
             {analyticsData.topCostliestVehicles && analyticsData.topCostliestVehicles.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={topCostliestChartData}>
@@ -354,7 +354,7 @@ const Analytics = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-64 flex items-center justify-center text-gray-500">
+              <div style={{ height: "256px", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
                 <p>No vehicle expense data available for selected period</p>
               </div>
             )}
@@ -362,8 +362,8 @@ const Analytics = () => {
         </div>
 
         {/* Monthly Financial Trend */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Monthly Financial Trend</h3>
+        <div style={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "24px", marginBottom: "32px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>Monthly Financial Trend</h3>
           {analyticsData.monthlyFinancial && analyticsData.monthlyFinancial.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthlyChartData}>
@@ -396,45 +396,46 @@ const Analytics = () => {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-64 flex items-center justify-center text-gray-500">
+            <div style={{ height: "256px", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
               <p>No monthly financial data available for selected period</p>
             </div>
           )}
         </div>
 
         {/* Financial Summary Table */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Financial Summary of Year</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+        <div style={{ marginBottom: "32px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>Financial Summary of Year</h2>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr className="bg-blue-100 border-b-2 border-blue-400">
-                  <th className="px-4 py-3 text-left text-sm font-bold text-gray-800">Month</th>
-                  <th className="px-4 py-3 text-right text-sm font-bold text-gray-800">Revenue</th>
-                  <th className="px-4 py-3 text-right text-sm font-bold text-gray-800">Fuel Cost</th>
-                  <th className="px-4 py-3 text-right text-sm font-bold text-gray-800">Maintenance</th>
-                  <th className="px-4 py-3 text-right text-sm font-bold text-gray-800">Net Profit</th>
+                <tr style={{ backgroundColor: "#dbeafe", border: "2px solid #3b82f6" }}>
+                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "14px", fontWeight: "bold", color: "#1f2937" }}>Month</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "14px", fontWeight: "bold", color: "#1f2937" }}>Revenue</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "14px", fontWeight: "bold", color: "#1f2937" }}>Fuel Cost</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "14px", fontWeight: "bold", color: "#1f2937" }}>Maintenance</th>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: "14px", fontWeight: "bold", color: "#1f2937" }}>Net Profit</th>
                 </tr>
               </thead>
               <tbody>
                 {analyticsData.monthlyFinancial.map((month, index) => (
                   <tr
                     key={index}
-                    className={`border-b border-gray-300 ${
-                      index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                    } hover:bg-gray-100 transition`}
+                    style={{
+                      borderBottom: "1px solid #d1d5db",
+                      backgroundColor: index % 2 === 0 ? "#f9fafb" : "#ffffff",
+                    }}
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{month.month}</td>
-                    <td className="px-4 py-3 text-sm text-right text-green-700 font-semibold">
+                    <td style={{ padding: "12px 16px", fontSize: "14px", fontWeight: "500", color: "#111827" }}>{month.month}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", fontWeight: "600", color: "#059669" }}>
                       ₹{month.revenue.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right text-red-700 font-semibold">
+                    <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", fontWeight: "600", color: "#dc2626" }}>
                       ₹{month.fuelCost.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right text-orange-700 font-semibold">
+                    <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", fontWeight: "600", color: "#b45309" }}>
                       ₹{month.maintenanceCost.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right font-bold text-blue-800">
+                    <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", fontWeight: "bold", color: "#1e40af" }}>
                       ₹{month.netProfit.toFixed(2)}
                     </td>
                   </tr>
@@ -446,14 +447,14 @@ const Analytics = () => {
 
         {/* Dead Stock Alerts */}
         {analyticsData.deadStock.length > 0 && (
-          <div className="bg-red-50 border-l-4 border-red-400 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-bold text-red-900 mb-3">Dead Stock Alerts</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div style={{ backgroundColor: "#fef2f2", borderLeft: "4px solid #f87171", borderRadius: "8px", padding: "24px", marginBottom: "32px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#7f1d1d", marginBottom: "12px" }}>Dead Stock Alerts</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "16px" }}>
               {analyticsData.deadStock.map((vehicle) => (
-                <div key={vehicle.vehicleId} className="bg-white rounded p-4 border border-red-200">
-                  <p className="font-semibold text-gray-900">{vehicle.vehicleName}</p>
-                  <p className="text-sm text-gray-600">{vehicle.licensePlate}</p>
-                  <p className="text-xs text-red-600 mt-2">No trips in selected period</p>
+                <div key={vehicle.vehicleId} style={{ backgroundColor: "#ffffff", borderRadius: "8px", padding: "16px", border: "1px solid #fecaca" }}>
+                  <p style={{ fontWeight: "600", color: "#111827" }}>{vehicle.vehicleName}</p>
+                  <p style={{ fontSize: "14px", color: "#4b5563", marginTop: "4px" }}>{vehicle.licensePlate}</p>
+                  <p style={{ fontSize: "12px", color: "#dc2626", marginTop: "8px" }}>No trips in selected period</p>
                 </div>
               ))}
             </div>
@@ -461,26 +462,26 @@ const Analytics = () => {
         )}
 
         {/* Additional KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p className="text-gray-600 text-xs font-semibold">Total Trips</p>
-            <p className="text-2xl font-bold text-blue-900 mt-1">{kpiData.totalTrips}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+          <div style={{ backgroundColor: "#eff6ff", borderRadius: "8px", padding: "16px", border: "1px solid #bfdbfe" }}>
+            <p style={{ color: "#374151", fontSize: "12px", fontWeight: "600" }}>Total Trips</p>
+            <p style={{ fontSize: "24px", fontWeight: "bold", color: "#1e3a8a", marginTop: "8px" }}>{kpiData.totalTrips}</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <p className="text-gray-600 text-xs font-semibold">Total Revenue</p>
-            <p className="text-2xl font-bold text-green-900 mt-1">
+          <div style={{ backgroundColor: "#f0fdf4", borderRadius: "8px", padding: "16px", border: "1px solid #bbf7d0" }}>
+            <p style={{ color: "#374151", fontSize: "12px", fontWeight: "600" }}>Total Revenue</p>
+            <p style={{ fontSize: "24px", fontWeight: "bold", color: "#166534", marginTop: "8px" }}>
               ₹{(kpiData.totalRevenue / 100000).toFixed(2)}L
             </p>
           </div>
-          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-            <p className="text-gray-600 text-xs font-semibold">Net Profit</p>
-            <p className="text-2xl font-bold text-purple-900 mt-1">
+          <div style={{ backgroundColor: "#faf5ff", borderRadius: "8px", padding: "16px", border: "1px solid #e9d5ff" }}>
+            <p style={{ color: "#374151", fontSize: "12px", fontWeight: "600" }}>Net Profit</p>
+            <p style={{ fontSize: "24px", fontWeight: "bold", color: "#6b21a8", marginTop: "8px" }}>
               ₹{(kpiData.totalNetProfit / 100000).toFixed(2)}L
             </p>
           </div>
-          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-            <p className="text-gray-600 text-xs font-semibold">Active Vehicles</p>
-            <p className="text-2xl font-bold text-orange-900 mt-1">
+          <div style={{ backgroundColor: "#fffbeb", borderRadius: "8px", padding: "16px", border: "1px solid #fef3c7" }}>
+            <p style={{ color: "#374151", fontSize: "12px", fontWeight: "600" }}>Active Vehicles</p>
+            <p style={{ fontSize: "24px", fontWeight: "bold", color: "#92400e", marginTop: "8px" }}>
               {kpiData.activeVehicles}/{kpiData.totalVehicles}
             </p>
           </div>
