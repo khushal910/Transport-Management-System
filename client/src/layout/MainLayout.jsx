@@ -41,7 +41,7 @@ const MainLayout = () => {
       localStorage.removeItem('user')
       localStorage.removeItem('company')
       toast.success('Logged out successfully')
-      navigate('/login')
+      navigate('/auth/login')
     } catch (error) {
       console.error(error)
       toast.error('Logout failed')

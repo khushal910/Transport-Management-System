@@ -1,9 +1,10 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Registration';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 import SetupPassword from '../pages/auth/SetupPassword';
+import Landing from '../pages/landing/Landing';
 import Error from '../pages/error/Error';
 import AuthLayout from '../layout/AuthLayout';
 import MainLayout from '../layout/MainLayout';
@@ -20,12 +21,17 @@ import PrivateRoute from '../components/PrivateRoute';
 export const router = createBrowserRouter([
   {
     path: '/',
+    element: <Landing />,
+    errorElement: <Error />,
+  },
+  {
+    path: '/auth',
     element: <AuthLayout />,   
     errorElement: <Error />,
     children: [
       {
         index: true,
-        element: <Login />,
+        element: <Navigate to="login" replace />,
       },
       {
         path: 'login',

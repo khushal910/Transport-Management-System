@@ -10,7 +10,7 @@ export default function PrivateRoute({ children, requiredRoles }) {
       position: 'top-right',
       autoClose: 3000,
     });
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   let user;
@@ -24,7 +24,7 @@ export default function PrivateRoute({ children, requiredRoles }) {
       position: 'top-right',
       autoClose: 3000,
     });
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth/login" replace />;
   }
 
   // No role required

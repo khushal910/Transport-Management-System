@@ -42,7 +42,7 @@ export const setupAxiosInterceptors = () => {
 
           // Redirect to login after a short delay
           setTimeout(() => {
-            window.location.href = '/login';
+            window.location.href = '/auth/login';
             isRedirecting = false;
           }, 500);
         }

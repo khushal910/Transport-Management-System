@@ -104,7 +104,7 @@ export default function Login() {
         </div>
 
         <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
+          <Link to="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
             Forgot Password?
           </Link>
         </div>
@@ -119,7 +119,7 @@ export default function Login() {
 
       <p className="mt-4 text-sm">
         Don't have an account?{' '}
-        <Link to="/register" className="text-blue-600">
+        <Link to="/auth/register" className="text-blue-600">
           Register
         </Link>
       </p>

@@ -306,7 +306,7 @@ export default function SetupPassword() {
 
       <p className="mt-6 text-sm text-gray-600 text-center">
         Need help?{' '}
-        <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+        <Link to="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
           Back to Login
         </Link>
       </p>
