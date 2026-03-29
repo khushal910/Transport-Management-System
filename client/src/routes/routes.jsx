@@ -17,6 +17,14 @@ import Expense from '../pages/expense/Expense';
 import Performance from '../pages/performance/Performance';
 import Analytics from '../pages/analytics/Analytics';
 import PrivateRoute from '../components/PrivateRoute';
+// Documentation pages
+import DocsIndex from '../pages/docs/index';
+import GettingStarted from '../pages/docs/getting-started';
+import FleetManagement from '../pages/docs/fleet-management';
+import DriverManagement from '../pages/docs/driver-management';
+import TripManagement from '../pages/docs/trip-management';
+import Maintenance from '../pages/docs/maintenance';
+import Expenses from '../pages/docs/expenses';
 
 export const router = createBrowserRouter([
   {
@@ -91,6 +99,40 @@ export const router = createBrowserRouter([
       { 
         path: 'analytics',
         element: <PrivateRoute requiredRoles={['manager', 'admin']}><Analytics /></PrivateRoute>,
+      },
+    ],
+  },
+  {
+    path: '/docs',
+    errorElement: <Error />,
+    children: [
+      {
+        index: true,
+        element: <DocsIndex />,
+      },
+      {
+        path: 'getting-started',
+        element: <GettingStarted />,
+      },
+      {
+        path: 'fleet-management',
+        element: <FleetManagement />,
+      },
+      {
+        path: 'driver-management',
+        element: <DriverManagement />,
+      },
+      {
+        path: 'trip-management',
+        element: <TripManagement />,
+      },
+      {
+        path: 'maintenance',
+        element: <Maintenance />,
+      },
+      {
+        path: 'expenses',
+        element: <Expenses />,
       },
     ],
   },

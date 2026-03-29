@@ -35,12 +35,12 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <a
-              href="https://docs.fleetflow.io"
+            <Link
+              to="/docs"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Documentation
-            </a>
+            </Link>
           </div>
 
           {/* Desktop CTA Buttons */}
@@ -71,12 +71,12 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden pb-4 border-t border-gray-200 animate-in fade-in slide-in-from-top-4">
-            <a
-              href="https://docs.fleetflow.io"
+            <Link
+              to="/docs"
               className="block py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Documentation
-            </a>
+            </Link>
             <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-200">
               <Link
                 to="/auth/login"
