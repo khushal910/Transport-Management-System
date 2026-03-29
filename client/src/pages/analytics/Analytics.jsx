@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import analyticsBaseURL from "../../api/analyticsBaseURL";
-import DateRangePicker from "../../components/DateRangePicker";
 import {
   LineChart,
   Line,
@@ -186,7 +185,6 @@ const Analytics = () => {
 
   const exportToPDF = () => {
     const element = document.getElementById("analytics-report");
-    console.log(element);
     const opt = {
       margin: 10,
       filename: `Analytics_Report_${new Date().toISOString().split("T")[0]}.pdf`,
@@ -255,12 +253,32 @@ const Analytics = () => {
       {/* Date Range Filter - Not included in PDF */}
       <div className="mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Date Range</h3>
-        <DateRangePicker
-          startDate={dateRange.startDate}
-          endDate={dateRange.endDate}
-          onDateChange={handleDateRangeChange}
-          onApply={fetchAnalytics}
-        />
+        <div className="flex gap-4 items-end flex-wrap">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => handleDateRangeChange({ startDate: e.target.value, endDate: dateRange.endDate })}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => handleDateRangeChange({ startDate: dateRange.startDate, endDate: e.target.value })}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+          <button
+            onClick={fetchAnalytics}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+          >
+            Apply Filter
+          </button>
+        </div>
       </div>
 
       {/* Export Buttons - Not included in PDF */}
