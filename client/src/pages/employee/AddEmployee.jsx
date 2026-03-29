@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FaEye, FaEyeSlash, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import authBaseURL from '../../api/authBaseURL';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
@@ -38,7 +38,6 @@ export default function EmployeeManagement() {
   const [employeeForm, setEmployeeForm] = useState({
     name: '',
     email: '',
-    password: '',
     role: 'dispatcher',
     // Driver-specific fields
     licenseNumber: '',
@@ -87,11 +86,7 @@ export default function EmployeeManagement() {
       errors.email = 'Please enter a valid email';
     }
 
-    if (!editingEmployeeId && !employeeForm.password) {
-      errors.password = 'Password is required';
-    } else if (employeeForm.password && employeeForm.password.length < 2) {
-      errors.password = 'Password must be at least 2 characters';
-    }
+    // Password is set by employee via email, not by manager
 
     // Validate driver-specific fields
     if (employeeForm.role === 'driver') {
@@ -214,7 +209,6 @@ export default function EmployeeManagement() {
     setEmployeeForm({
       name: '',
       email: '',
-      password: '',
       role: 'dispatcher',
       licenseNumber: '',
       licenseExpiry: '',
@@ -236,10 +230,6 @@ export default function EmployeeManagement() {
         email: employeeForm.email.trim().toLowerCase(),
         role: employeeForm.role,
       };
-
-      if (employeeForm.password) {
-        payload.password = employeeForm.password;
-      }
 
       // Include driver fields if role is driver
       if (employeeForm.role === 'driver') {
@@ -270,7 +260,7 @@ export default function EmployeeManagement() {
 
   // Calculate the number of input fields based on role
   // Use the form navigation hook (must be after handleCreateOrUpdateEmployee is defined)
-  const inputFieldCount = employeeForm.role === 'driver' ? 5 : 3;
+  const inputFieldCount = employeeForm.role === 'driver' ? 4 : 2;
   const { inputRefs, handleKeyDown } = useFormNavigation(inputFieldCount, () => {
     handleCreateOrUpdateEmployee({ preventDefault: () => {} });
   }, isModalOpen);
@@ -280,7 +270,6 @@ export default function EmployeeManagement() {
     setEmployeeForm({
       name: employee.name,
       email: employee.email,
-      password: '',
       role: employee.role,
     });
     setIsModalOpen(true);
@@ -582,37 +571,6 @@ export default function EmployeeManagement() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  {editingEmployeeId ? 'Password (Leave empty to keep current)' : 'Password'}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    id="password"
-                    value={employeeForm.password}
-                    autoComplete="off"
-                    onChange={handleFormChange}
-                    onKeyDown={(e) => handleKeyDown(e, 2)}
-                    ref={(el) => (inputRefs.current[2] = el)}
-                    placeholder={editingEmployeeId ? 'New Password (optional)' : 'Password'}
-                    className={`w-full border p-2 pr-10 rounded mt-1 ${
-                      formErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    }`}
-                    required={!editingEmployeeId}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 mt-1"
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
-              </div>
-
-              <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700">
                   Role
                 </label>
@@ -621,6 +579,8 @@ export default function EmployeeManagement() {
                   id="role"
                   value={employeeForm.role}
                   onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 2)}
+                  ref={(el) => (inputRefs.current[2] = el)}
                   className="w-full border border-gray-300 p-2 rounded mt-1"
                 >
                   <option value="driver">Driver</option>

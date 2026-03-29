@@ -3,6 +3,7 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Registration';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
+import SetupPassword from '../pages/auth/SetupPassword';
 import Error from '../pages/error/Error';
 import AuthLayout from '../layout/AuthLayout';
 import MainLayout from '../layout/MainLayout';
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
       {
         path: 'reset-password',
         element: <ResetPassword />,
+      },
+      {
+        path: 'setup-password',
+        element: <SetupPassword />,
       },
     ],
   },

@@ -2,7 +2,9 @@ import User from '../../models/user.schema.js';
 import Driver from '../../models/driver.schema.js';
 import response from '../../response/response.js';
 import addEmployeeValidatorSchema from '../../validations/add.employee.validator.js';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { sendEmployeeSetupEmail } from '../../utils/email.service.js';
 
 const addEmployee = async (req, res) => {
   try {
@@ -12,7 +14,7 @@ const addEmployee = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
 
-    const { name, email, password, role, licenseNumber, licenseExpiry, licenseCategory } = value;
+    const { name, email, role, licenseNumber, licenseExpiry, licenseCategory } = value;
     const managerCompanyId = req.user.companyId;
 
     // Check if user already exists
@@ -29,16 +31,19 @@ const addEmployee = async (req, res) => {
       }
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Generate password setup token (64 character random string)
+    const setupToken = crypto.randomBytes(32).toString('hex');
+    const hashedSetupToken = await bcrypt.hash(setupToken, 10);
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const userData = {
       name,
       email,
-      password: hashedPassword,
+      password: null, // No password until employee sets it
       role,
       company: managerCompanyId,
+      passwordResetToken: hashedSetupToken, // Reuse field for setup token
+      passwordResetExpires: tokenExpiry,
     };
 
     // Create user
@@ -56,7 +61,13 @@ const addEmployee = async (req, res) => {
       });
     }
 
-    return response(res, 201, true, 'Employee added successfully', {
+    // Send password setup email
+    const emailResult = await sendEmployeeSetupEmail(email, name, setupToken);
+    if (!emailResult.success) {
+      console.warn('Failed to send employee setup email:', emailResult.error);
+    }
+
+    return response(res, 201, true, 'Employee added successfully. Setup link sent to email.', {
       id: newEmployee._id,
       name: newEmployee.name,
       email: newEmployee.email,

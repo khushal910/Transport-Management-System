@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      default: null, // Password is set later by employee via email setup
     },
     passwordResetToken: {
       type: String,
