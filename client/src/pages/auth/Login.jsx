@@ -113,15 +113,25 @@ export default function Login() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Login</h2>
+      {/* Page Title */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+        <p className="text-gray-600">Sign in to access your fleet dashboard</p>
+      </div>
 
-      <form className="space-y-4" onSubmit={handleLogin}>
+      <form className="space-y-5" onSubmit={handleLogin}>
+        {/* Email Field */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Email Address
+          </label>
           <input
             type="email"
-            placeholder="Email"
-            className={`w-full border p-2 rounded ${
-              errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            placeholder="you@example.com"
+            className={`w-full px-4 py-3 border-2 rounded-lg transition-colors ${
+              errors.email 
+                ? 'border-red-500 bg-red-50 focus:outline-none focus:ring-red-500' 
+                : 'border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
             }`}
             value={loginData.email}
             ref={(el) => (inputRefs.current[0] = el)}
@@ -133,17 +143,25 @@ export default function Login() {
             disabled={isLoading}
           />
           {errors.email && (
-            <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+            <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+              <span>●</span> {errors.email}
+            </p>
           )}
         </div>
 
+        {/* Password Field */}
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Password
+          </label>
           <div className="relative">
             <input
               type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
-              className={`w-full border p-2 pr-10 rounded ${
-                errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              placeholder="••••••••"
+              className={`w-full px-4 py-3 border-2 rounded-lg transition-colors pr-12 ${
+                errors.password 
+                  ? 'border-red-500 bg-red-50 focus:outline-none focus:ring-red-500' 
+                  : 'border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
               }`}
               value={loginData.password}
               ref={(el) => (inputRefs.current[1] = el)}
@@ -157,46 +175,63 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700 disabled:opacity-50"
               disabled={isLoading}
             >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
+              {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+            <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+              <span>●</span> {errors.password}
+            </p>
           )}
         </div>
 
-        <div className="flex justify-end">
+        {/* Forgot Password Link */}
+        <div className="flex justify-end pt-2">
           <Link 
             to="/auth/forgot-password" 
-            className="text-sm text-blue-600 hover:text-blue-700"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
             onClick={(e) => isLoading && e.preventDefault()}
           >
-            Forgot Password?
+            Forgot password?
           </Link>
         </div>
 
+        {/* Login Button */}
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full p-2 rounded text-white font-semibold transition-all ${
+          className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 ${
             isLoading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
+              ? 'bg-gray-400 cursor-not-allowed opacity-70'
+              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-105'
           }`}
         >
-          {isLoading ? 'Logging in...' : 'Login'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Signing in...
+            </span>
+          ) : (
+            'Sign In'
+          )}
         </button>
       </form>
 
-      <p className="mt-4 text-sm">
-        Don't have an account?{' '}
-        <Link to="/auth/register" className="text-blue-600 hover:text-blue-700">
-          Register
-        </Link>
-      </p>
+      {/* Register Link */}
+      <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+        <p className="text-gray-600 text-sm">
+          Don't have an account?{' '}
+          <Link 
+            to="/auth/register" 
+            className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Create one here
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
