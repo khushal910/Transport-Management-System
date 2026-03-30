@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaExclamationCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 import passwordConfig from '../../config/environment';
@@ -18,16 +18,17 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loginAttempted, setLoginAttempted] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
-  // Redirect if user is already logged in
+  // Redirect if user is already logged in (only on mount)
   useEffect(() => {
     const user = localStorage.getItem('user');
-    if (user) {
-      // User data exists, redirect to dashboard
-      // If there's no valid session, the dashboard/interceptor will handle logout
+    if (user && !loginAttempted) {
+      // User data exists and no login attempt in progress, redirect to dashboard
       navigate('/main/dashboard');
     }
-  }, [navigate]);
+  }, []);
 
   // Validate form inputs
   const validateForm = () => {
@@ -59,10 +60,12 @@ export default function Login() {
 
     // Validate form
     if (!validateForm()) {
+      setLoginAttempted(true);
       return;
     }
 
     setIsLoading(true);
+    setLoginAttempted(true);
 
     const data = {
       email: loginData.email,
@@ -72,13 +75,18 @@ export default function Login() {
     try {
       const response = await authBaseURL.post('/login', data);
       
+      // Clear any previous errors
+      setLoginError('');
+      
       // Extract and validate user data
       const userData = response.data.data || response.data.user;
       if (!userData) {
-        toast.error('Invalid response from server');
         setIsLoading(false);
+        setLoginError('Invalid response from server');
+        toast.error('Invalid response from server');
         localStorage.removeItem('user');
         localStorage.removeItem('company');
+        setLoginAttempted(false);
         return;
       }
 
@@ -110,9 +118,11 @@ export default function Login() {
       localStorage.removeItem('user');
       localStorage.removeItem('company');
       setIsLoading(false);
+      setLoginAttempted(false); // Reset to allow retry
       
       // Show specific error message
       const errorMessage = error.response?.data?.message || error.message || 'An error occurred. Please try again.';
+      setLoginError(errorMessage);
       toast.error(errorMessage);
     }
   };
@@ -122,6 +132,23 @@ export default function Login() {
 
   return (
     <div>
+      {/* Error Banner */}
+      {loginError && (
+        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-3">
+          <FaExclamationCircle className="text-red-600 text-lg mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-800">{loginError}</p>
+            <p className="text-xs text-red-600 mt-1">Please check your email and password and try again.</p>
+          </div>
+          <button
+            onClick={() => setLoginError('')}
+            className="text-red-400 hover:text-red-600 shrink-0 text-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Page Title */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-3 mb-3">
@@ -220,7 +247,7 @@ export default function Login() {
           className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 ${
             isLoading
               ? 'bg-gray-400 cursor-not-allowed opacity-70'
-              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-105'
+              : 'bg-linear-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-105'
           }`}
         >
           {isLoading ? (
