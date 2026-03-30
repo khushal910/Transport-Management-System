@@ -317,7 +317,15 @@ export default function EmployeeManagement() {
   };
 
   const processedEmployees = processEmployeeList();
-  const totalPages = Math.ceil(processedEmployees.length / itemsPerPage);
+  const totalPages = Math.ceil(processedEmployees.length / itemsPerPage) || 1;
+  
+  // Auto-adjust current page if it exceeds total pages (e.g., after deletion)
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEmployees = processedEmployees.slice(startIndex, startIndex + itemsPerPage);
 
