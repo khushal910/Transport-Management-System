@@ -9,6 +9,7 @@ export default function EmployeeManagement() {
   const [employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingEmployeeId, setDeletingEmployeeId] = useState(null);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -288,6 +289,10 @@ export default function EmployeeManagement() {
   const handleDelete = async (employeeId) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) return;
 
+    // Prevent double submission
+    if (deletingEmployeeId) return;
+
+    setDeletingEmployeeId(employeeId);
     try {
       const response = await authBaseURL.delete(`/employee/${employeeId}`);
       if (response.status === 200) {
@@ -296,6 +301,8 @@ export default function EmployeeManagement() {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete employee');
+    } finally {
+      setDeletingEmployeeId(null);
     }
   };
 
@@ -481,10 +488,24 @@ export default function EmployeeManagement() {
                         </button>
                         <button
                           onClick={() => handleDelete(employee._id)}
-                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 flex items-center gap-1"
+                          disabled={deletingEmployeeId === employee._id}
+                          className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-300 ${
+                            deletingEmployeeId === employee._id
+                              ? 'bg-red-400 cursor-not-allowed opacity-70'
+                              : 'bg-red-500 hover:bg-red-600'
+                          }`}
                         >
-                          <FaTrash className="text-sm" />
-                          Delete
+                          {deletingEmployeeId === employee._id ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <FaTrash className="text-sm" />
+                              Delete
+                            </>
+                          )}
                         </button>
                       </td>
                     </tr>
