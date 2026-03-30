@@ -4,6 +4,7 @@ import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash, FaChevronDown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
+import passwordConfig from '../../config/environment';
 
 export default function Register() {
   const [registrationData, setRegistrationData] = useState({
@@ -46,8 +47,8 @@ export default function Register() {
     // Password validation
     if (!registrationData.password) {
       newErrors.password = 'Password is required';
-    } else if (registrationData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (registrationData.password.length < passwordConfig.getMinPasswordLength()) {
+      newErrors.password = passwordConfig.getPasswordRuleMessage();
     }
 
     // Company validation
@@ -113,7 +114,12 @@ export default function Register() {
     <div>
       {/* Page Title */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${passwordConfig.getEnvironmentBadge().color}`}>
+            {passwordConfig.getEnvironmentBadge().label}
+          </span>
+        </div>
         <p className="text-gray-600">Get started with FleetFlow management system</p>
       </div>
 
@@ -184,7 +190,7 @@ export default function Register() {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
+              Password {passwordConfig.isDevelopment && <span className="text-xs text-orange-600">(Dev Mode: 3+ chars)</span>}
             </label>
             <div className="relative">
               <input

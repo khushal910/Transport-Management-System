@@ -4,6 +4,7 @@ import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
+import passwordConfig from '../../config/environment';
 
 export default function Login() {
   const location = useLocation();
@@ -39,8 +40,8 @@ export default function Login() {
     // Password validation
     if (!loginData.password) {
       newErrors.password = 'Password is required';
-    } else if (loginData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (loginData.password.length < passwordConfig.getMinPasswordLength()) {
+      newErrors.password = passwordConfig.getPasswordRuleMessage();
     }
 
     setErrors(newErrors);
@@ -115,7 +116,12 @@ export default function Login() {
     <div>
       {/* Page Title */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${passwordConfig.getEnvironmentBadge().color}`}>
+            {passwordConfig.getEnvironmentBadge().label}
+          </span>
+        </div>
         <p className="text-gray-600">Sign in to access your fleet dashboard</p>
       </div>
 
@@ -152,7 +158,7 @@ export default function Login() {
         {/* Password Field */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Password
+            Password {passwordConfig.isDevelopment && <span className="text-xs text-orange-600">(Dev Mode: 3+ chars)</span>}
           </label>
           <div className="relative">
             <input
