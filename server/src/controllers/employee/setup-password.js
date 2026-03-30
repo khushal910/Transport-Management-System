@@ -41,11 +41,15 @@ const setupPassword = async (req, res) => {
 
     const { token, password, passwordConfirm } = value;
 
+    console.log('🔐 Setup Password Request - Token received (length:', token.length, ')');
+
     // Find user with valid setup token and non-expired token
     const users = await User.find({
       passwordResetExpires: { $gt: Date.now() },
       password: null, // User hasn't set password yet
     });
+
+    console.log(`📋 Found ${users.length} users with pending password setup`);
 
     let user = null;
 
@@ -55,18 +59,26 @@ const setupPassword = async (req, res) => {
         const tokenMatch = await bcrypt.compare(token, u.passwordResetToken);
         if (tokenMatch) {
           user = u;
+          console.log('✅ Token matched for user:', u.email);
           break;
         }
       }
     }
 
     if (!user) {
-      return response(res, 401, false, 'Invalid or expired setup link');
+      console.log('❌ Token not found or no match. Attempting to check token validity...');
+      
+      // Additional check: Find if there are ANY tokens (even expired ones) for debugging
+      const allUsers = await User.find({ passwordResetToken: { $exists: true, $ne: null } });
+      console.log(`📊 Total users with tokens in system: ${allUsers.length}`);
+      
+      return response(res, 401, false, 'Invalid or expired setup link. Please request a new one.');
     }
 
-    // Check if token has expired
+    // Check if token has expired (double-check, shouldn't reach here if query is correct)
     if (user.passwordResetExpires < Date.now()) {
-      return response(res, 401, false, 'Setup link has expired');
+      console.log('⏰ Token has expired for user:', user.email);
+      return response(res, 401, false, 'Setup link has expired. Please request a new one.');
     }
 
     // Hash new password
@@ -79,10 +91,11 @@ const setupPassword = async (req, res) => {
 
     await user.save();
 
+    console.log('✅ Password set successfully for user:', user.email);
     return response(res, 200, true, 'Password set successfully. You can now login with your credentials.');
   } catch (err) {
-    console.error('Setup Password Error:', err);
-    return response(res, 500, false, 'Failed to set password');
+    console.error('❌ Setup Password Error:', err.message);
+    return response(res, 500, false, 'Failed to set password. Please try again.');
   }
 };
 

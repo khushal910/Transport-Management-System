@@ -22,6 +22,7 @@ export default function SetupPassword() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [isSetup, setIsSetup] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Password validation
   const passwordRequirements = {
@@ -29,7 +30,7 @@ export default function SetupPassword() {
     hasUpperCase: /[A-Z]/.test(formData.password),
     hasLowerCase: /[a-z]/.test(formData.password),
     hasNumber: /\d/.test(formData.password),
-    hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password),
+    hasSpecialChar: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password),
   };
 
   const isPasswordStrong = Object.values(passwordRequirements).every(Boolean);
@@ -124,11 +125,64 @@ export default function SetupPassword() {
   };
 
   useEffect(() => {
-    if (!token) {
-      toast.error('Invalid setup link');
-      navigate('/auth/login');
+    // Mark component as mounted after initial render
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only check token after component has mounted and URL params are parsed
+    if (mounted && !token) {
+      toast.error('Invalid or expired setup link. Please request a new setup email.');
+      const redirectTimer = setTimeout(() => {
+        navigate('/auth/login');
+      }, 3000);
+      return () => clearTimeout(redirectTimer);
     }
-  }, [token, navigate]);
+  }, [token, navigate, mounted]);
+
+  // Show loading state while waiting for token to load from URL
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading setup page...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if token is missing after component has mounted
+  if (mounted && !token) {
+    return (
+      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center px-4">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        </div>
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-16 h-16 mx-auto bg-linear-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-lg">
+            <FaTimesCircle className="text-white text-3xl" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Setup Link</h2>
+            <p className="text-gray-600 mb-4">The setup link is invalid or has expired.</p>
+            <p className="text-sm text-gray-600 mb-6">Please request a new setup email from your administrator.</p>
+          </div>
+          <button
+            onClick={() => navigate('/auth/login')}
+            className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isSetup) {
     return (
