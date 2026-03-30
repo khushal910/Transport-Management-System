@@ -1,50 +1,53 @@
 import { Outlet, Link } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa6';
 
 export default function AuthLayout() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4 py-12">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Animated Gradient Blobs - matching landing page */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/3 left-1/2 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute -bottom-1/4 left-1/2 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      <div className="w-full max-w-md">
-        {/* Header with back button */}
-        <div className="mb-8">
+      {/* Simple Header */}
+      <header className="relative z-20 border-b border-blue-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link 
             to="/" 
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
           >
-            <FaArrowLeft size={16} />
-            Back to Home
+            <FaArrowLeft size={14} />
+            Back Home
           </Link>
-          
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">FleetFlow</h1>
-          <p className="text-gray-600">Fleet & Logistics Management Platform</p>
         </div>
+      </header>
 
-        {/* Main card */}
-        <div className="bg-white rounded-2xl border-2 border-blue-100 shadow-lg p-8 backdrop-blur-sm">
-          <Outlet />
+      {/* Main Content - Centered Form */}
+      <main className="relative z-10 min-h-[calc(100vh-65px)] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-8">
+            <Outlet />
+          </div>
         </div>
+      </main>
 
-        {/* Footer info */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Secure authentication • No spam • GDPR Compliant
-          </p>
-        </div>
-      </div>
 
       <style jsx>{`
         @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(20px, -50px) scale(1.1); }
-          50% { transform: translate(-20px, 20px) scale(0.9); }
-          75% { transform: translate(50px, 50px) scale(1.05); }
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          25% {
+            transform: translate(20px, -50px) scale(1.1);
+          }
+          50% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          75% {
+            transform: translate(50px, 50px) scale(1.05);
+          }
         }
 
         .animate-blob {
