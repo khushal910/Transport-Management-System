@@ -46,11 +46,6 @@ export default function ForgotPassword() {
       if (response.status === 200) {
         toast.success(response.data.message || 'Password reset link sent to your email');
         setIsSubmitted(true);
-        
-        // Auto-redirect after 3 seconds
-        setTimeout(() => {
-          navigate('/auth/login');
-        }, 3000);
       }
     } catch (error) {
       console.error(error);
@@ -76,9 +71,12 @@ export default function ForgotPassword() {
             <p className="text-sm text-gray-500 mb-6">
               The reset link will expire in 24 hours. Please check your email and follow the instructions.
             </p>
-            <p className="text-sm text-gray-500">
-              Redirecting to login page in a moment...
-            </p>
+            <button
+              onClick={() => navigate('/auth/login')}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+            >
+              Back to Login
+            </button>
           </div>
         </div>
       </div>

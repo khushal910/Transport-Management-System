@@ -21,7 +21,10 @@ export default function Login() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (localStorage.getItem('user')) {
+    const user = localStorage.getItem('user');
+    if (user) {
+      // User data exists, redirect to dashboard
+      // If there's no valid session, the dashboard/interceptor will handle logout
       navigate('/main/dashboard');
     }
   }, [navigate]);

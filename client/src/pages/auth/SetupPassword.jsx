@@ -102,12 +102,10 @@ export default function SetupPassword() {
 
       if (response.status === 200) {
         toast.success(response.data.message || 'Password set successfully');
+        // Clear any existing user data before showing success page
+        localStorage.removeItem('user');
+        localStorage.removeItem('company');
         setIsSetup(true);
-
-        // Redirect to login after 2 seconds
-        setTimeout(() => {
-          navigate('/auth/login');
-        }, 2000);
       }
     } catch (error) {
       console.error(error);
@@ -141,11 +139,14 @@ export default function SetupPassword() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Set Successfully</h2>
           <p className="text-gray-600 mb-6">
-            Your account is now active. You can login with your email and password.
+            Your account is now active. Click the button below to login with your email and password.
           </p>
-          <p className="text-sm text-gray-500">
-            Redirecting to login page...
-          </p>
+          <button
+            onClick={() => navigate('/auth/login')}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
