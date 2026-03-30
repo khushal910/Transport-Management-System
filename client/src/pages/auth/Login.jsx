@@ -51,9 +51,11 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    // Prevent multiple submissions
+    if (isLoading) return;
+
     // Validate form
     if (!validateForm()) {
-      toast.error('Please fix the errors below');
       return;
     }
 
@@ -66,46 +68,49 @@ export default function Login() {
 
     try {
       const response = await authBaseURL.post('/login', data);
-      if (response.status == 200) {
-        // Extract and validate user data
-        const userData = response.data.data;
-        if (!userData) {
-          toast.error('Invalid response from server');
-          setIsLoading(false);
-          return;
-        }
-
-        // Store user information
-        localStorage.setItem('user', JSON.stringify({
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          companyId: userData.companyId,
-        }));
-        
-        // Store company information in localStorage
-        if (userData.company) {
-          localStorage.setItem('company', JSON.stringify(userData.company));
-        }
-
-        // Store authentication token if provided
-        if (response.data.token) {
-          localStorage.setItem('authToken', response.data.token);
-        }
-
-        toast.success(response.data.message);
+      
+      // Extract and validate user data
+      const userData = response.data.data || response.data.user;
+      if (!userData) {
+        toast.error('Invalid response from server');
         setIsLoading(false);
+        localStorage.removeItem('user');
+        localStorage.removeItem('company');
+        return;
+      }
+
+      // Store user information (token is in httpOnly cookie, sent automatically)
+      localStorage.setItem('user', JSON.stringify({
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        companyId: userData.companyId,
+      }));
+      
+      // Store company information in localStorage
+      if (userData.company) {
+        localStorage.setItem('company', JSON.stringify(userData.company));
+      }
+
+      toast.success(response.data.message || 'Login successful!');
+      
+      // Navigate to dashboard
+      setTimeout(() => {
         navigate('/main/dashboard');
-      } 
+      }, 100);
+      setIsLoading(false);
     } catch (error) {
-      console.error(error);
+      console.error('Login error:', error);
+      
       // Clear localStorage on failed login
       localStorage.removeItem('user');
-      localStorage.removeItem('authToken');
       localStorage.removeItem('company');
       setIsLoading(false);
-      toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
+      
+      // Show specific error message
+      const errorMessage = error.response?.data?.message || error.message || 'An error occurred. Please try again.';
+      toast.error(errorMessage);
     }
   };
 
@@ -134,7 +139,7 @@ export default function Login() {
           <input
             type="email"
             placeholder="you@example.com"
-            className={`w-full px-4 py-3 border-2 rounded-lg transition-colors ${
+            className={`w-full px-4 py-3 border-2 rounded-lg transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed ${
               errors.email 
                 ? 'border-red-500 bg-red-50 focus:outline-none focus:ring-red-500' 
                 : 'border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -164,7 +169,7 @@ export default function Login() {
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              className={`w-full px-4 py-3 border-2 rounded-lg transition-colors pr-12 ${
+              className={`w-full px-4 py-3 border-2 rounded-lg transition-colors pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                 errors.password 
                   ? 'border-red-500 bg-red-50 focus:outline-none focus:ring-red-500' 
                   : 'border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500'

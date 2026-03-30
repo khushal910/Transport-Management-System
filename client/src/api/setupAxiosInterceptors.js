@@ -18,16 +18,14 @@ const apiInstances = [
 
 // Flag to prevent multiple redirects
 let isRedirecting = false;
+let errorToastShown = false;
 
 export const setupAxiosInterceptors = () => {
   apiInstances.forEach((instance) => {
-    // Request interceptor to add auth token
+    // Request interceptor - cookie is sent automatically with withCredentials: true
     instance.interceptors.request.use(
       (config) => {
-        const authToken = localStorage.getItem('authToken');
-        if (authToken) {
-          config.headers.Authorization = `Bearer ${authToken}`;
-        }
+        // No need to manually add token - httpOnly cookie is sent automatically
         return config;
       },
       (error) => Promise.reject(error)
@@ -41,22 +39,23 @@ export const setupAxiosInterceptors = () => {
         if (error.response?.status === 401 && !isRedirecting) {
           isRedirecting = true;
 
-          // Clear all stored authentication data
+          // Clear all stored user data (httpOnly cookie is cleared by backend on logout)
           localStorage.removeItem('user');
-          localStorage.removeItem('authToken');
           localStorage.removeItem('userId');
           localStorage.removeItem('company');
 
-          // Show error message
-          toast.error('Session expired or invalid. Please login again.', {
-            position: 'top-right',
-            autoClose: 3000,
-          });
+          // Show error message only once
+          if (!errorToastShown) {
+            errorToastShown = true;
+            toast.error('Session expired or invalid. Please login again.', {
+              position: 'top-right',
+              autoClose: 3000,
+            });
+          }
 
           // Redirect to login after a short delay
           setTimeout(() => {
             window.location.href = '/auth/login';
-            isRedirecting = false;
           }, 500);
         }
 
