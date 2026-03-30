@@ -86,6 +86,7 @@ const setupPassword = async (req, res) => {
 
     // Update user password and clear setup token fields
     user.password = hashedPassword;
+    user.isPasswordSet = true; // Mark password as set
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
 

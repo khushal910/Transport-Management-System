@@ -316,6 +316,13 @@ export default function EmployeeManagement() {
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
+  // Get pending employees (those who haven't set password)
+  const getPendingEmployees = () => {
+    return employeeList.filter((emp) => !emp.isPasswordSet);
+  };
+
+  const pendingEmployees = getPendingEmployees();
+
   const processedEmployees = processEmployeeList();
   const totalPages = Math.ceil(processedEmployees.length / itemsPerPage) || 1;
   
@@ -334,6 +341,22 @@ export default function EmployeeManagement() {
       {/* Header Section */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Employee Management</h1>
+
+        {/* Pending Password Alert - Informational Only */}
+        {pendingEmployees.length > 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-300 rounded-lg">
+            <p className="text-sm font-semibold text-blue-800 mb-2">
+              ℹ️ These employees haven't set their password yet and cannot be assigned to tasks:
+            </p>
+            <ul className="text-sm text-blue-700 space-y-1">
+              {pendingEmployees.map((emp) => (
+                <li key={emp._id} className="ml-4">
+                  • {emp.name} ({emp.email})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="mb-4">
@@ -469,13 +492,14 @@ export default function EmployeeManagement() {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Password Status</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedEmployees.map((employee) => (
-                    <tr key={employee._id} className="border-b hover:bg-gray-50">
+                    <tr key={employee._id} className={`border-b hover:bg-gray-50 ${!employee.isPasswordSet ? 'bg-red-50' : ''}`}>
                       <td className="px-4 py-3 text-sm text-gray-900">{employee.name}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{employee.email}</td>
                       <td className="px-4 py-3 text-sm">
@@ -483,13 +507,30 @@ export default function EmployeeManagement() {
                           {employee.role.replaceAll('_', ' ').toUpperCase()}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-sm">
+                        {employee.isPasswordSet ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✓ Ready
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                            ⚠️ Not Ready
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {new Date(employee.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2">
                         <button
                           onClick={() => handleEdit(employee)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
+                          disabled={!employee.isPasswordSet}
+                          className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 ${
+                            !employee.isPasswordSet
+                              ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                              : 'bg-blue-500 hover:bg-blue-600'
+                          }`}
+                          title={!employee.isPasswordSet ? 'Cannot edit - employee must set password first' : ''}
                         >
                           <FaEdit className="text-sm" />
                           Edit

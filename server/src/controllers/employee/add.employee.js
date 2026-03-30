@@ -40,6 +40,7 @@ const addEmployee = async (req, res) => {
       name,
       email,
       password: null, // No password until employee sets it
+      isPasswordSet: false, // Employee hasn't set password yet
       role,
       company: managerCompanyId,
       passwordResetToken: hashedSetupToken, // Reuse field for setup token

@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null, // Password is set later by employee via email setup
     },
+    isPasswordSet: {
+      type: Boolean,
+      default: false, // Track if employee has set their password
+    },
     passwordResetToken: {
       type: String,
       default: null,
