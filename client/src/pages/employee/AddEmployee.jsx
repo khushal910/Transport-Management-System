@@ -16,6 +16,7 @@ export default function EmployeeManagement() {
 
   // Filter state
   const [filterRole, setFilterRole] = useState('');
+  const [filterPasswordStatus, setFilterPasswordStatus] = useState('');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
   // Sort state
@@ -135,6 +136,11 @@ export default function EmployeeManagement() {
     setCurrentPage(1);
   };
 
+  const handleFilterPasswordStatusChange = (e) => {
+    setFilterPasswordStatus(e.target.value);
+    setCurrentPage(1);
+  };
+
   const handleSortFieldChange = (e) => {
     setSortField(e.target.value);
   };
@@ -145,6 +151,7 @@ export default function EmployeeManagement() {
 
   const clearFilters = () => {
     setFilterRole('');
+    setFilterPasswordStatus('');
     setShowFilterMenu(false);
   };
 
@@ -183,9 +190,18 @@ export default function EmployeeManagement() {
       );
     }
 
-    // Apply filters
+    // Apply role filter
     if (filterRole) {
       processed = processed.filter((e) => e.role === filterRole);
+    }
+
+    // Apply password status filter
+    if (filterPasswordStatus) {
+      if (filterPasswordStatus === 'not_ready') {
+        processed = processed.filter((e) => !e.isPasswordSet);
+      } else if (filterPasswordStatus === 'ready') {
+        processed = processed.filter((e) => e.isPasswordSet);
+      }
     }
 
     // Apply sort
@@ -342,22 +358,6 @@ export default function EmployeeManagement() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Employee Management</h1>
 
-        {/* Pending Password Alert - Informational Only */}
-        {pendingEmployees.length > 0 && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-300 rounded-lg">
-            <p className="text-sm font-semibold text-blue-800 mb-2">
-              ℹ️ These employees haven't set their password yet and cannot be assigned to tasks:
-            </p>
-            <ul className="text-sm text-blue-700 space-y-1">
-              {pendingEmployees.map((emp) => (
-                <li key={emp._id} className="ml-4">
-                  • {emp.name} ({emp.email})
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* Search Bar */}
         <div className="mb-4">
           <input
@@ -389,11 +389,11 @@ export default function EmployeeManagement() {
               onClick={() => setShowFilterMenu(!showFilterMenu)}
               className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
             >
-              Filter {filterRole && '✓'}
+              Filter {(filterRole || filterPasswordStatus) && '✓'}
             </button>
             {showFilterMenu && (
-              <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-48">
-                <div className="p-4 space-y-3">
+              <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-56">
+                <div className="p-4 space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Role
@@ -408,6 +408,20 @@ export default function EmployeeManagement() {
                       <option value="dispatcher">Dispatcher</option>
                       <option value="safety_officer">Safety Officer</option>
                       <option value="financial_analyst">Financial Analyst</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password Status
+                    </label>
+                    <select
+                      value={filterPasswordStatus}
+                      onChange={handleFilterPasswordStatusChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="">All</option>
+                      <option value="ready">✓ Ready</option>
+                      <option value="not_ready">⚠️ Not Ready</option>
                     </select>
                   </div>
                   <button
