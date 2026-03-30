@@ -49,7 +49,7 @@ export default function ForgotPassword() {
         
         // Auto-redirect after 3 seconds
         setTimeout(() => {
-          navigate('/login');
+          navigate('/auth/login');
         }, 3000);
       }
     } catch (error) {
@@ -88,7 +88,7 @@ export default function ForgotPassword() {
   return (
     <div>
       <button
-        onClick={() => navigate('/login')}
+        onClick={() => navigate('/auth/login')}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6 transition"
       >
         <FaArrowLeft className="text-sm" />

@@ -33,7 +33,7 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
       throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
     }
 
-    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.CLIENT_URL}/auth/reset-password?token=${resetToken}`;
     
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -159,7 +159,7 @@ export const sendEmployeeSetupEmail = async (email, name, setupToken) => {
       throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
     }
 
-    const setupLink = `${process.env.CLIENT_URL}/setup-password?token=${setupToken}`;
+    const setupLink = `${process.env.CLIENT_URL}/auth/setup-password?token=${setupToken}`;
     
     const mailOptions = {
       from: process.env.EMAIL_USER,

@@ -106,7 +106,7 @@ export default function ResetPassword() {
 
         // Redirect to login after 2 seconds
         setTimeout(() => {
-          navigate('/login');
+          navigate('/auth/login');
         }, 2000);
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export default function ResetPassword() {
       // If token is invalid or expired, redirect to forgot password
       if (error.response?.status === 400 || error.response?.status === 401) {
         setTimeout(() => {
-          navigate('/forgot-password');
+          navigate('/auth/forgot-password');
         }, 3000);
       }
     } finally {

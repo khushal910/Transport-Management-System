@@ -84,7 +84,7 @@ export default function SetupPassword() {
 
     if (!token) {
       toast.error('Invalid setup link. Please check your email.');
-      navigate('/login');
+      navigate('/auth/login');
       return;
     }
 
@@ -106,7 +106,7 @@ export default function SetupPassword() {
 
         // Redirect to login after 2 seconds
         setTimeout(() => {
-          navigate('/login');
+          navigate('/auth/login');
         }, 2000);
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export default function SetupPassword() {
       // If link is invalid or expired, redirect to login
       if (error.response?.status === 400 || error.response?.status === 401) {
         setTimeout(() => {
-          navigate('/login');
+          navigate('/auth/login');
         }, 3000);
       }
     } finally {
@@ -128,7 +128,7 @@ export default function SetupPassword() {
   useEffect(() => {
     if (!token) {
       toast.error('Invalid setup link');
-      navigate('/login');
+      navigate('/auth/login');
     }
   }, [token, navigate]);
 
