@@ -8,6 +8,7 @@ export default function EmployeeManagement() {
   // Employee list from backend
   const [employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,6 +69,7 @@ export default function EmployeeManagement() {
   const handleCloseModal = (event) => {
     if (event.target === event.currentTarget) {
       setIsModalOpen(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -216,6 +218,7 @@ export default function EmployeeManagement() {
     });
     setFormErrors({});
     setShowPassword(false);
+    setIsSubmitting(false);
   };
 
   const handleCreateOrUpdateEmployee = async (e) => {
@@ -223,6 +226,10 @@ export default function EmployeeManagement() {
 
     if (!validateForm()) return;
 
+    // Prevent double submission
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       const isUpdate = !!editingEmployeeId;
       const payload = {
@@ -244,6 +251,7 @@ export default function EmployeeManagement() {
 
       if (!response.data.success) {
         toast.error(response.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
+        setIsSubmitting(false);
         return;
       }
 
@@ -255,6 +263,8 @@ export default function EmployeeManagement() {
     } catch (error) {
       const isUpdate = !!editingEmployeeId;
       toast.error(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -536,11 +546,12 @@ export default function EmployeeManagement() {
                   id="name"
                   value={employeeForm.name}
                   autoComplete="off"
+                  disabled={isSubmitting}
                   onChange={handleFormChange}
                   onKeyDown={(e) => handleKeyDown(e, 0)}
                   ref={(el) => (inputRefs.current[0] = el)}
                   placeholder="Employee Name"
-                  className={`w-full border p-2 rounded mt-1 ${
+                  className={`w-full border p-2 rounded mt-1 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                     formErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                   required
@@ -558,11 +569,12 @@ export default function EmployeeManagement() {
                   id="email"
                   value={employeeForm.email}
                   autoComplete="off"
+                  disabled={isSubmitting}
                   onChange={handleFormChange}
                   onKeyDown={(e) => handleKeyDown(e, 1)}
                   ref={(el) => (inputRefs.current[1] = el)}
                   placeholder="Employee Email"
-                  className={`w-full border p-2 rounded mt-1 ${
+                  className={`w-full border p-2 rounded mt-1 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                     formErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                   required
@@ -578,10 +590,11 @@ export default function EmployeeManagement() {
                   name="role"
                   id="role"
                   value={employeeForm.role}
+                  disabled={isSubmitting}
                   onChange={handleFormChange}
                   onKeyDown={(e) => handleKeyDown(e, 2)}
                   ref={(el) => (inputRefs.current[2] = el)}
-                  className="w-full border border-gray-300 p-2 rounded mt-1"
+                  className="w-full border border-gray-300 p-2 rounded mt-1 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="driver">Driver</option>
                   <option value="dispatcher">Dispatcher</option>
@@ -607,11 +620,12 @@ export default function EmployeeManagement() {
                       id="licenseNumber"
                       value={employeeForm.licenseNumber}
                       autoComplete="off"
+                      disabled={isSubmitting}
                       onChange={handleFormChange}
                       onKeyDown={(e) => handleKeyDown(e, 3)}
                       ref={(el) => (inputRefs.current[3] = el)}
                       placeholder="e.g., DL1234567"
-                      className={`w-full border p-2 rounded mt-1 ${
+                      className={`w-full border p-2 rounded mt-1 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                         formErrors.licenseNumber ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       }`}
                       required={employeeForm.role === 'driver'}
@@ -630,10 +644,11 @@ export default function EmployeeManagement() {
                       name="licenseExpiry"
                       id="licenseExpiry"
                       value={employeeForm.licenseExpiry}
+                      disabled={isSubmitting}
                       onChange={handleFormChange}
                       onKeyDown={(e) => handleKeyDown(e, 4)}
                       ref={(el) => (inputRefs.current[4] = el)}
-                      className={`w-full border p-2 rounded mt-1 ${
+                      className={`w-full border p-2 rounded mt-1 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                         formErrors.licenseExpiry ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       }`}
                       required={employeeForm.role === 'driver'}
@@ -651,8 +666,9 @@ export default function EmployeeManagement() {
                       name="licenseCategory"
                       id="licenseCategory"
                       value={employeeForm.licenseCategory}
+                      disabled={isSubmitting}
                       onChange={handleFormChange}
-                      className={`w-full border p-2 rounded mt-1 ${
+                      className={`w-full border p-2 rounded mt-1 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                         formErrors.licenseCategory ? 'border-red-500 bg-red-50' : 'border-gray-300'
                       }`}
                       required={employeeForm.role === 'driver'}
@@ -676,15 +692,28 @@ export default function EmployeeManagement() {
                     setIsModalOpen(false);
                     setEditingEmployeeId(null);
                   }}
-                  className="flex-1 bg-gray-400 text-white p-2 rounded font-medium hover:bg-gray-500"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gray-400 text-white p-2 rounded font-medium hover:bg-gray-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white p-2 rounded font-medium hover:bg-blue-700"
+                  disabled={isSubmitting}
+                  className={`flex-1 text-white p-2 rounded font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                    isSubmitting
+                      ? 'bg-gray-400 cursor-not-allowed opacity-70'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  {editingEmployeeId ? 'Update' : 'Add'}
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {editingEmployeeId ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    editingEmployeeId ? 'Update' : 'Add'
+                  )}
                 </button>
               </div>
             </form>
