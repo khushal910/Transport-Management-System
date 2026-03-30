@@ -221,3 +221,75 @@ export const sendEmployeeSetupEmail = async (email, name, setupToken) => {
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Send employee account deletion email
+ * @param {string} email - Recipient email
+ * @param {string} name - Employee name
+ * @param {string} companyName - Company name
+ * @returns {Promise} - Email sending result
+ */
+export const sendEmployeeDeletedEmail = async (email, name, companyName) => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Employee Account Deactivated - Fleet Management System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #7f1d1d; margin-top: 0;">Account Deactivated</h2>
+            <p style="color: #991b1b; font-size: 14px;">
+              Hi <strong>${name}</strong>, your employee account has been deactivated by your manager.
+            </p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; margin-bottom: 15px;">
+              <strong>Account Information:</strong>
+            </p>
+            <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+              <p style="color: #4b5563; margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+              <p style="color: #4b5563; margin: 5px 0;"><strong>Company:</strong> ${companyName}</p>
+              <p style="color: #4b5563; margin: 5px 0;"><strong>Status:</strong> <span style="color: #dc2626; font-weight: bold;">Deactivated</span></p>
+              <p style="color: #4b5563; margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+
+            <p style="color: #374151; margin-bottom: 10px;">
+              Your access to the Fleet Management System has been removed. You will no longer be able to log in to your account.
+            </p>
+          </div>
+
+          <div style="background-color: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+            <p style="color: #7f1d1d; font-size: 13px; margin: 0;">
+              <strong>Important:</strong> If you believe this action was taken in error or if you have questions, please contact your manager or HR department.
+            </p>
+          </div>
+
+          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; font-size: 13px; margin: 0;">
+              We appreciate your efforts with the Fleet Management System. If you were employed by us, we hope to work with you again in the future.
+            </p>
+          </div>
+
+          <div style="color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+            <p style="margin: 5px 0;">This is an automated message from your Fleet Management System.</p>
+            <p style="margin: 5px 0;">© 2026 Fleet Management System. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✓ Employee deletion email sent successfully to:', email);
+    return { success: true, message: 'Deletion notification sent successfully', messageId: result.messageId };
+  } catch (error) {
+    console.error('❌ Employee deletion email sending error:', error.message);
+    console.error('Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};

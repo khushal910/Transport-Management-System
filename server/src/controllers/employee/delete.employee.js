@@ -1,5 +1,7 @@
 import User from '../../models/user.schema.js';
+import Company from '../../models/company.schema.js';
 import response from '../../response/response.js';
+import { sendEmployeeDeletedEmail } from '../../utils/email.service.js';
 
 const deleteEmployee = async (req, res) => {
   try {
@@ -10,18 +12,23 @@ const deleteEmployee = async (req, res) => {
       return response(res, 400, false, 'Employee ID is required');
     }
 
-    // Check if employee exists and belongs to manager's company
-    const deletedEmployee = await User.findOneAndDelete({
+    // Find employee before deletion to get their details for the email
+    const employee = await User.findOne({
       _id: employeeId,
       company: managerCompanyId,
       role: { $ne: 'manager' },
-    });
+    }).populate('company', 'name');
 
-    if (!deletedEmployee) {
+    if (!employee) {
       return response(res, 404, false, 'Employee not found');
     }
 
-    return response(res, 200, true, 'Employee deleted successfully');
+    // Delete the employee
+    await User.findByIdAndDelete(employeeId);
+
+    // Send deletion notification email
+    await sendEmployeeDeletedEmail(employee.email, employee.name, employee.company.name);
+
     return response(res, 200, true, 'Employee deleted successfully');
   } catch (err) {
     console.error('Delete employee error:', err.message);
