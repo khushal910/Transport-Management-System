@@ -4,6 +4,7 @@ import tripBaseURL from "../../api/tripBaseURL";
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import authBaseURL from "../../api/authBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
+import { PageContainer, PageHeader } from '../../components/ui';
 
 const INITIAL_FORM = {
   vehiclePlateNumber: "",
@@ -691,16 +692,21 @@ const Trip = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
+    <PageContainer>
+      <PageHeader 
+        title="Trip Dispatcher"
+        description="Manage and monitor all fleet trips and deliveries"
+      />
 
-      <div className="flex flex-wrap gap-4 items-center justify-between mb-8">
-        <input
-          type="text"
-          placeholder="Search by vehicle name, license plate, driver, location, or trip ID..."
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          className="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="space-y-6">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <input
+            type="text"
+            placeholder="Search by vehicle name, license plate, driver, location, or trip ID..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
 
         <div className="flex gap-3">
           <div className="relative" ref={filterMenuRef}>
@@ -1613,7 +1619,8 @@ const Trip = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PageContainer>
   );
 };
 
