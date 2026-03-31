@@ -6,10 +6,10 @@
   "author": "Khushal",
   "license": "ISC",
   "scripts": {
-    "dev": "nodemon --watch . --ext ts,json --exec ts-node index.ts",
+    "dev": "nodemon --watch . --watch src --ext ts,json --exec npx tsx index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:ts": "ts-node index.ts"
+    "start:ts": "npx tsx index.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -30,6 +30,7 @@
     "@types/node": "^25.5.0",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
 }

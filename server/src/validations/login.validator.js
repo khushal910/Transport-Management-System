@@ -1,8 +1,0 @@
-import joi from 'joi'
-
-const loginValidatorSchema = joi.object({
-  email: joi.string().email().trim().required(),
-  password: joi.string().min(3).max(50).trim().required()
-})
-
-export default loginValidatorSchema
