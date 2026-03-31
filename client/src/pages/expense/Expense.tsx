@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotification } from '../../hooks/useNotification';
 import expenseBaseURL from '../../api/expenseBaseURL.ts';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
+import { PageContainer, PageHeader } from '../../components/ui';
 
 const Expense = () => {
   const { notifyError, notifySuccess } = useNotification();
@@ -295,20 +296,15 @@ const Expense = () => {
 
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Trip Expenses</h1>
-            <p className="text-gray-600 mt-1">
-              Expenses are automatically created when trips complete. Fill in fuel cost and distance to mark as completed.
-            </p>
-          </div>
-        </div>
+    <PageContainer>
+      <PageHeader 
+        title="Trip Expenses" 
+        description="Expenses are automatically created when trips complete. Fill in fuel cost and distance to mark as completed."
+      />
 
+      <div className="space-y-6">
         {/* Search & Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6">
           {/* Search Bar */}
           <div className="flex gap-4 mb-4">
             <input
@@ -685,7 +681,7 @@ const Expense = () => {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

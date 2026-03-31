@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, ChangeEvent, FormEvent } from "react";
 import { useNotification } from '../../hooks/useNotification';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
+import { PageContainer, PageHeader } from '../../components/ui';
 
 interface Vehicle {
   _id: string;
@@ -449,8 +450,13 @@ const VehicleRegistry = () => {
 
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
+    <PageContainer>
+      <PageHeader 
+        title="Vehicle Registry" 
+        description="Manage your fleet vehicles and track their status"
+      />
 
+      <div className="space-y-6">
       {/* TABS */}
       <div className="flex gap-4 mb-8 border-b border-gray-200">
         <button
@@ -880,7 +886,8 @@ const VehicleRegistry = () => {
 
       )}
 
-    </div>
+      </div>
+    </PageContainer>
   );
 };
 

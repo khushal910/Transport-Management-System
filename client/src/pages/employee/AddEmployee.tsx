@@ -354,13 +354,14 @@ export default function EmployeeManagement() {
   const paginatedEmployees = processedEmployees.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="w-full">
-      {/* Header Section */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Employee Management</h1>
+    <div className="w-full min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Employee Management</h1>
 
-        {/* Search Bar */}
-        <div className="mb-4">
+          {/* Search Bar */}
+          <div className="mb-4">
           <input
             type="text"
             placeholder="Search by name or email..."
@@ -368,10 +369,10 @@ export default function EmployeeManagement() {
             onChange={handleSearchChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
+          </div>
 
-        {/* Controls Row */}
-        <div className="flex flex-wrap gap-4 items-center">
+          {/* Controls Row */}
+          <div className="flex flex-wrap gap-4 items-center">
           {/* Add Employee Button */}
           <button
             onClick={() => {
@@ -488,10 +489,10 @@ export default function EmployeeManagement() {
             )}
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* Employees Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        {/* Employees Table */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {isLoading ? (
           <div className="text-center py-8 text-gray-600">Loading employees...</div>
         ) : paginatedEmployees.length === 0 ? (
@@ -805,6 +806,7 @@ export default function EmployeeManagement() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

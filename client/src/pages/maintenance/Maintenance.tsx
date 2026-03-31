@@ -471,9 +471,10 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="mb-6">
+    <div className="w-full min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Maintenance Management</h1>
 
         {/* Search Bar */}
@@ -687,6 +688,7 @@ export default function MaintenancePage() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 

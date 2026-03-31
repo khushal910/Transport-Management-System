@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../hooks/useNotification';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
+import { PageContainer, PageHeader } from '../../components/ui';
 
 const TRIP_STATUS_COLORS = {
   dispatched: 'bg-yellow-100 text-yellow-800',
@@ -237,13 +238,13 @@ const Dashboard = () => {
   const hasActiveGroup = Boolean(appliedGroupBy);
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Fleet Flow</h1>
-        <p className="text-gray-600">Real-time fleet visibility and operations dashboard</p>
-      </div>
+    <PageContainer>
+      <PageHeader 
+        title="Fleet Flow" 
+        description="Real-time fleet visibility and operations dashboard"
+      />
 
+      <div className="space-y-6">
       {/* KPI Cards */}
       <DashboardKPIs kpis={kpis} isLoading={isLoading} onCardClick={handleKPICardClick} />
 
@@ -685,7 +686,9 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-    </div>
+
+      </div>
+    </PageContainer>
   );
 };
 
