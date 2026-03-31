@@ -6,7 +6,7 @@
   "author": "Khushal",
   "license": "ISC",
   "scripts": {
-    "dev": "nodemon --exec ts-node index.ts",
+    "dev": "nodemon --watch . --ext ts,json --exec ts-node index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "start:ts": "ts-node index.ts"
