@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import expenseBaseURL from '../../api/expenseBaseURL.js';
+import expenseBaseURL from '../../api/expenseBaseURL.ts';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 const Expense = () => {
@@ -689,3 +689,4 @@ const Expense = () => {
 };
 
 export default Expense;
+
