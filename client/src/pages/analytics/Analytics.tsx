@@ -16,11 +16,80 @@ import {
 import html2pdf from "html2pdf.js";
 import ExcelJS from "exceljs";
 
+interface FleetKPI {
+  totalTrips: number;
+  totalRevenue: number;
+  totalFuelCost: number;
+  totalMaintenanceCost: number;
+  totalExpense: number;
+  totalNetProfit: number;
+  fleetROI: number;
+  averageUtilization: number;
+  activeVehicles: number;
+  totalVehicles: number;
+}
+
+interface MonthlyFinancial {
+  month: string;
+  revenue: number;
+  fuelCost: number;
+  maintenanceCost: number;
+  netProfit: number;
+}
+
+interface VehicleROI {
+  vehicleName: string;
+  licensePlate: string;
+  revenue: number;
+  fuelCost: number;
+  maintenanceCost: number;
+  netProfit: number;
+  roiPercentage: number;
+  trips: number;
+}
+
+interface FuelEfficiency {
+  vehicleName: string;
+  licensePlate: string;
+  totalDistance: number;
+  totalFuelCost: number;
+  kmPerLiter: number;
+  efficiency: string;
+}
+
+interface DeadStock {
+  vehicleId: string;
+  vehicleName: string;
+  licensePlate: string;
+  status: string;
+}
+
+interface TopCostliestVehicle {
+  vehicleName: string;
+  licensePlate: string;
+  totalCost: number;
+  totalExpense: number;
+}
+
+interface AnalyticsData {
+  fleetKPIs: FleetKPI;
+  monthlyFinancial: MonthlyFinancial[];
+  vehicleROI: VehicleROI[];
+  fuelEfficiency: FuelEfficiency[];
+  deadStock: DeadStock[];
+  topCostliestVehicles: TopCostliestVehicle[];
+}
+
+interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
 const Analytics = () => {
   const { notifyError, notifySuccess } = useNotification();
-  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
   });
@@ -41,8 +110,9 @@ const Analytics = () => {
       } else {
         notifyError(response.data?.message || "Failed to fetch analytics");
       }
-    } catch (error) {
-      notifyError(error.response?.data?.message || "Error fetching analytics");
+    } catch (error: unknown) {
+      const axiosError = error as any;
+      notifyError(axiosError?.response?.data?.message || "Error fetching analytics");
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +123,7 @@ const Analytics = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
-  const handleDateRangeChange = (dates) => {
+  const handleDateRangeChange = (dates: DateRange) => {
     setDateRange({
       startDate: dates.startDate,
       endDate: dates.endDate,
@@ -186,10 +256,15 @@ const Analytics = () => {
 
   const exportToPDF = () => {
     const element = document.getElementById("analytics-report");
-    const opt = {
+    if (!element) {
+      notifyError("Analytics report element not found");
+      return;
+    }
+    
+    const opt: any = {
       margin: 10,
       filename: `Analytics_Report_${new Date().toISOString().split("T")[0]}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
+      image: { type: "jpeg" as const, quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { orientation: "landscape", unit: "mm", format: "a4" },
     };
@@ -367,7 +442,7 @@ const Analytics = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                  <Tooltip formatter={(value: any) => `₹${(value || 0).toLocaleString()}`} />
                   <Legend />
                   <Bar dataKey="totalExpense" fill="#ef4444" name="Total Expense (₹)" />
                 </BarChart>
@@ -389,7 +464,7 @@ const Analytics = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: any) => `₹${(value || 0).toLocaleString()}`} />
                 <Legend />
                 <Line
                   type="monotone"

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, RefObject } from 'react';
 
 /**
  * Custom hook to handle form field navigation with Enter key
@@ -11,8 +11,8 @@ import { useEffect, useRef } from 'react';
  * @param {boolean|any} isOpen - Optional dependency to trigger focus when modal/form opens (e.g., isModalOpen)
  * @returns {object} - Object containing refs array and handler function
  */
-export function useFormNavigation(fields, onSubmit, isOpen = true) {
-  const inputRefs = useRef([]);
+export function useFormNavigation(fields: number, onSubmit: () => void, isOpen: boolean = true) {
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Auto-focus the first input field when component mounts or when form/modal opens
   useEffect(() => {
@@ -30,7 +30,7 @@ export function useFormNavigation(fields, onSubmit, isOpen = true) {
    * @param {KeyboardEvent} e - The keyboard event
    * @param {number} fieldIndex - The current field index
    */
-  const handleKeyDown = (e, fieldIndex) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, fieldIndex: number) => {
     if (e.key === 'Enter') {
       e.preventDefault();
 

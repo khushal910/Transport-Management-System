@@ -12,7 +12,7 @@ const MainLayout = () => {
   const [showProfilePanel, setShowProfilePanel] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  const isActive = (path) => {
+  const isActive = (path: string) => {
     return location.pathname === path
   }
 
@@ -98,7 +98,7 @@ const MainLayout = () => {
                 }`}
                 title={!sidebarOpen ? item.label : ''}
               >
-                <span className="text-lg flex-shrink-0">{item.icon}</span>
+                <span className="text-lg shrink-0">{item.icon}</span>
                 {sidebarOpen && <span>{item.label}</span>}
               </Link>
             ))}
@@ -114,7 +114,7 @@ const MainLayout = () => {
                 showProfilePanel ? 'bg-gray-100' : ''
               }`}
             >
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0">
                 {user()?.name?.charAt(0)?.toUpperCase()}
               </div>
               {sidebarOpen && (
@@ -123,7 +123,7 @@ const MainLayout = () => {
                     <p className="text-sm font-medium text-gray-900 truncate">{user()?.name}</p>
                     <p className="text-xs text-gray-500 truncate">{company()?.name}</p>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
                 </>
               )}
             </button>

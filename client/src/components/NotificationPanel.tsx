@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNotification } from '../hooks/useNotification.ts';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 
@@ -15,13 +15,13 @@ const NotificationBanner: React.FC = () => {
   const getIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />;
+        return <CheckCircle className="w-6 h-6 text-green-600 shrink-0" />;
       case 'error':
-        return <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />;
+        return <AlertCircle className="w-6 h-6 text-red-600 shrink-0" />;
       case 'warning':
-        return <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />;
+        return <AlertTriangle className="w-6 h-6 text-yellow-600 shrink-0" />;
       case 'info':
-        return <Info className="w-6 h-6 text-blue-600 flex-shrink-0" />;
+        return <Info className="w-6 h-6 text-blue-600 shrink-0" />;
       default:
         return null;
     }
@@ -94,7 +94,7 @@ const NotificationBanner: React.FC = () => {
           </div>
           <button
             onClick={() => removeNotification(notification.id)}
-            className={`${getTitleColor(notification.type)} hover:opacity-75 transition-opacity flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded p-1`}
+            className={`${getTitleColor(notification.type)} hover:opacity-75 transition-opacity shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded p-1`}
             aria-label="Close notification"
           >
             <X className="w-5 h-5" />

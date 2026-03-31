@@ -1,15 +1,36 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, ChangeEvent, FormEvent } from "react";
 import { useNotification } from '../../hooks/useNotification';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
+
+interface Vehicle {
+  _id: string;
+  name: string;
+  licensePlate: string;
+  model: string;
+  vehicleType: string;
+  maxCapacity: number;
+  odometer: number;
+  status?: string;
+  [key: string]: any;
+}
+
+interface VehicleFormData {
+  name: string;
+  licensePlate: string;
+  model: string;
+  vehicleType: string;
+  maxCapacity: string;
+  odometer: string;
+}
 
 const VehicleRegistry = () => {
   const { notifyError, notifySuccess } = useNotification();
 
 
   // vehicle list from backend
-  const [vehicleList, setVehicleList] = useState([]);
-  const [deletedVehicleList, setDeletedVehicleList] = useState([]);
+  const [vehicleList, setVehicleList] = useState<Vehicle[]>([]);
+  const [deletedVehicleList, setDeletedVehicleList] = useState<Vehicle[]>([]);
 
   // tab state
   const [activeTab, setActiveTab] = useState("active");
@@ -29,8 +50,8 @@ const VehicleRegistry = () => {
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   // dropdown refs for outside click handling
-  const filterMenuRef = useRef(null);
-  const sortMenuRef = useRef(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,8 +59,8 @@ const VehicleRegistry = () => {
 
   // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingVehicleId, setEditingVehicleId] = useState(null);
-  const [vehicleForm, setVehicleForm] = useState({
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
+  const [vehicleForm, setVehicleForm] = useState<VehicleFormData>({
     name: "",
     licensePlate: "",
     model: "",
@@ -51,7 +72,7 @@ const VehicleRegistry = () => {
   });
 
 
-  const handleCloseModal = (event) => {
+  const handleCloseModal = (event: React.MouseEvent<HTMLDivElement>) => {
 
     // if clicked on overlay (not modal box)
     if (event.target === event.currentTarget) {
@@ -59,31 +80,31 @@ const VehicleRegistry = () => {
     }
   };
 
-  const handleFormChange = (e) => {
+  const handleFormChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setVehicleForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1); // Reset to first page when search changes
   };
 
-  const handleFilterStatusChange = (e) => {
+  const handleFilterStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setFilterStatus(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleFilterTypeChange = (e) => {
+  const handleFilterTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setFilterType(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleSortFieldChange = (e) => {
+  const handleSortFieldChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setSortField(e.target.value);
   };
 
-  const handleSortOrderChange = (e) => {
+  const handleSortOrderChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setSortOrder(e.target.value);
   };
 
@@ -100,12 +121,12 @@ const VehicleRegistry = () => {
   };
 
   useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
         setShowFilterMenu(false);
       }
 
-      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target)) {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
         setShowSortMenu(false);
       }
     };
@@ -159,7 +180,7 @@ const VehicleRegistry = () => {
     });
   };
 
-  const handleCreateOrUpdateVehicle = async (e) => {
+  const handleCreateOrUpdateVehicle = async (e: FormEvent) => {
     e.preventDefault();
 
     // Status is managed through system lifecycle only (trips, maintenance, etc.)
@@ -194,33 +215,35 @@ const VehicleRegistry = () => {
       if (refreshed.data.success) {
         setVehicleList(refreshed.data.data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const isUpdate = !!editingVehicleId;
-      notifyError(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
+      const axiosError = error as any;
+      notifyError(axiosError?.response?.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
+    } finally {
     }
   };
 
   // Use the form navigation hook (5 input fields: name, licensePlate, model, maxCapacity, odometer - excluding vehicleType select)
   // Must be after handleCreateOrUpdateVehicle is defined
   const { inputRefs, handleKeyDown } = useFormNavigation(5, () => {
-    handleCreateOrUpdateVehicle({ preventDefault: () => {} });
+    handleCreateOrUpdateVehicle({ preventDefault: () => {} } as FormEvent);
   }, isModalOpen);
 
-  const handleEdit = (vehicle) => {
+  const handleEdit = (vehicle: Vehicle) => {
     setEditingVehicleId(vehicle._id);
     setVehicleForm({
       name: vehicle.name,
       licensePlate: vehicle.licensePlate,
       model: vehicle.model,
       vehicleType: vehicle.vehicleType,
-      maxCapacity: vehicle.maxCapacity,
-      odometer: vehicle.odometer,
+      maxCapacity: String(vehicle.maxCapacity),
+      odometer: String(vehicle.odometer),
       // Status not included - managed through system lifecycle
     });
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (vehicleId) => {
+  const handleDelete = async (vehicleId: string) => {
     if (!window.confirm('Are you sure you want to delete this vehicle?')) {
       return;
     }
@@ -242,11 +265,11 @@ const VehicleRegistry = () => {
       // Remove deleted vehicle from active list
       setVehicleList(vehicleList.filter(vehicle => vehicle._id !== vehicleId));
     } catch (error) {
-      notifyError(error.response?.data?.message || 'Delete failed');
+      notifyError((error as any).response?.data?.message || 'Delete failed');
     }
   };
 
-  const handleRecover = async (vehicleId) => {
+  const handleRecover = async (vehicleId: string) => {
     if (!window.confirm('Are you sure you want to recover this vehicle?')) {
       return;
     }
@@ -276,7 +299,7 @@ const VehicleRegistry = () => {
         setVehicleList(activeRefresh.data.data);
       }
     } catch (error) {
-      notifyError(error.response?.data?.message || 'Recovery failed');
+      notifyError((error as any).response?.data?.message || 'Recovery failed');
     }
   };
 
@@ -705,7 +728,7 @@ const VehicleRegistry = () => {
               renderDeletedVehicleRows()
             ) : (
               <tr>
-                <td colSpan="9" className="px-4 py-4 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-4 text-center text-gray-500">
                   No deleted vehicles found
                 </td>
               </tr>
@@ -745,7 +768,7 @@ const VehicleRegistry = () => {
                 value={vehicleForm.name}
                 onChange={handleFormChange}
                 onKeyDown={(e) => handleKeyDown(e, 0)}
-                ref={(el) => (inputRefs.current[0] = el)}
+                ref={(el) => { if (el) (inputRefs.current as (HTMLInputElement | null)[])[0] = el; }}
                 required
               />
 
@@ -758,7 +781,7 @@ const VehicleRegistry = () => {
                 value={vehicleForm.licensePlate}
                 onChange={handleFormChange}
                 onKeyDown={(e) => handleKeyDown(e, 1)}
-                ref={(el) => (inputRefs.current[1] = el)}
+                ref={(el) => { if (el) (inputRefs.current as (HTMLInputElement | null)[])[1] = el; }}
                 required
               />
 
@@ -771,7 +794,7 @@ const VehicleRegistry = () => {
                 value={vehicleForm.model}
                 onChange={handleFormChange}
                 onKeyDown={(e) => handleKeyDown(e, 2)}
-                ref={(el) => (inputRefs.current[2] = el)}
+                ref={(el) => { if (el) (inputRefs.current as (HTMLInputElement | null)[])[2] = el; }}
                 required
               />
 
@@ -795,7 +818,7 @@ const VehicleRegistry = () => {
                 value={vehicleForm.maxCapacity}
                 onChange={handleFormChange}
                 onKeyDown={(e) => handleKeyDown(e, 3)}
-                ref={(el) => (inputRefs.current[3] = el)}
+                ref={(el) => { if (el) (inputRefs.current as (HTMLInputElement | null)[])[3] = el; }}
                 min="1"
                 required
               />
@@ -809,7 +832,7 @@ const VehicleRegistry = () => {
                 value={vehicleForm.odometer}
                 onChange={handleFormChange}
                 onKeyDown={(e) => handleKeyDown(e, 4)}
-                ref={(el) => (inputRefs.current[4] = el)}
+                ref={(el) => { if (el) (inputRefs.current as (HTMLInputElement | null)[])[4] = el; }}
                 min="0"
                 required
               />

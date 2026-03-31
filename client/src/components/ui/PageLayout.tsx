@@ -20,7 +20,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         <h1 className="text-3xl font-semibold text-gray-900 mb-2">{title}</h1>
         {description && <p className="text-base text-gray-600">{description}</p>}
       </div>
-      {action && <div className="ml-6 flex-shrink-0">{action}</div>}
+      {action && <div className="ml-6 shrink-0">{action}</div>}
     </div>
   );
 };
