@@ -234,12 +234,13 @@ const VehicleRegistry = () => {
       }
 
       notifySuccess(response.data?.message || 'Vehicle deleted successfully');
-      const refreshed = await vehicleBaseURL.get(
-        `/list?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}`
-      );
-      if (refreshed.data.success) {
-        setVehicleList(refreshed.data.data);
+      // Find the deleted vehicle and add it to deleted list
+      const deletedVehicle = vehicleList.find(vehicle => vehicle._id === vehicleId);
+      if (deletedVehicle) {
+        setDeletedVehicleList([deletedVehicle, ...deletedVehicleList]);
       }
+      // Remove deleted vehicle from active list
+      setVehicleList(vehicleList.filter(vehicle => vehicle._id !== vehicleId));
     } catch (error) {
       notifyError(error.response?.data?.message || 'Delete failed');
     }
