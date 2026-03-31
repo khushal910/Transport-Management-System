@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { useNotification } from '../../hooks/useNotification';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 
@@ -75,6 +75,7 @@ const isLogMatchingSearch = (log, query) => {
 };
 
 export default function MaintenancePage() {
+  const { notifyError, notifySuccess } = useNotification();
   const [maintenanceList, setMaintenanceList] = useState([]);
   const [groupedLogs, setGroupedLogs] = useState({});
   const [isGroupedView, setIsGroupedView] = useState(false);
@@ -157,10 +158,10 @@ export default function MaintenancePage() {
           totalPages: data.data?.pagination?.totalPages || 1,
         });
       } else {
-        toast.error(data.message || "Failed to fetch maintenance logs");
+        notifyError(data.message || "Failed to fetch maintenance logs");
       }
     } catch (error) {
-      toast.error("Error fetching maintenance logs");
+      notifyError("Error fetching maintenance logs");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -265,14 +266,14 @@ export default function MaintenancePage() {
     
     // Prevent selection if vehicle is already in maintenance
     if (selectedVehicle?.status === "in_shop") {
-      toast.error(`${selectedVehicle.name} (${selectedVehicle.licensePlate}) is already under maintenance. Please select another vehicle.`);
+      notifyError(`${selectedVehicle.name} (${selectedVehicle.licensePlate}) is already under maintenance. Please select another vehicle.`);
       setShowVehicleSuggestions(false);
       return;
     }
     
     // Prevent selection if vehicle is on trip or assigned
     if (selectedVehicle?.status === "on_trip" || selectedVehicle?.status === "assigned") {
-      toast.error(`${selectedVehicle.name} (${selectedVehicle.licensePlate}) is currently ${selectedVehicle.status}. Please select another vehicle.`);
+      notifyError(`${selectedVehicle.name} (${selectedVehicle.licensePlate}) is currently ${selectedVehicle.status}. Please select another vehicle.`);
       setShowVehicleSuggestions(false);
       return;
     }
@@ -358,17 +359,17 @@ export default function MaintenancePage() {
       const data = await response.json();
 
       if (!data.success) {
-        toast.error(data.message || "Failed to create maintenance service");
+        notifyError(data.message || "Failed to create maintenance service");
         return;
       }
 
-      toast.success(data.message || "Maintenance service created successfully");
+      notifySuccess(data.message || "Maintenance service created successfully");
       setIsCreateModalOpen(false);
       setMaintenanceForm(INITIAL_FORM);
       setFormErrors({});
       fetchMaintenanceLogs(1);
     } catch (error) {
-      toast.error("Error creating maintenance service");
+      notifyError("Error creating maintenance service");
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -386,7 +387,7 @@ export default function MaintenancePage() {
   const handleApplyFilters = () => {
     const error = validateFilterState(filterState);
     if (error) {
-      toast.error(error);
+      notifyError(error);
       return;
     }
     setAppliedFilters(filterState);
@@ -451,14 +452,14 @@ export default function MaintenancePage() {
       const data = await response.json();
 
       if (!data.success) {
-        toast.error(data.message || "Failed to update maintenance status");
+        notifyError(data.message || "Failed to update maintenance status");
         return;
       }
 
-      toast.success(data.message || "Maintenance status updated successfully");
+      notifySuccess(data.message || "Maintenance status updated successfully");
       fetchMaintenanceLogs(currentPage);
     } catch (error) {
-      toast.error("Error updating maintenance status");
+      notifyError("Error updating maintenance status");
       console.error(error);
     } finally {
       setIsSubmitting(false);

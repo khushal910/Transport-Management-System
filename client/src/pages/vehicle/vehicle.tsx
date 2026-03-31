@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { useNotification } from '../../hooks/useNotification';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 
 const VehicleRegistry = () => {
+  const { notifyError, notifySuccess } = useNotification();
 
 
   // vehicle list from backend
@@ -179,11 +180,11 @@ const VehicleRegistry = () => {
         : await vehicleBaseURL.post('/register', payload);
 
       if (!response.data.success) {
-        toast.error(response.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
+        notifyError(response.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
         return;
       }
 
-      toast.success(response.data?.message || (isUpdate ? 'Vehicle updated successfully' : 'Vehicle registered successfully'));
+      notifySuccess(response.data?.message || (isUpdate ? 'Vehicle updated successfully' : 'Vehicle registered successfully'));
       setIsModalOpen(false);
       resetForm();
       setEditingVehicleId(null);
@@ -195,7 +196,7 @@ const VehicleRegistry = () => {
       }
     } catch (error) {
       const isUpdate = !!editingVehicleId;
-      toast.error(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
+      notifyError(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Registration failed'));
     }
   };
 
@@ -228,11 +229,11 @@ const VehicleRegistry = () => {
       const response = await vehicleBaseURL.delete(`/delete/${vehicleId}`);
 
       if (!response.data.success) {
-        toast.error(response.data?.message || 'Delete failed');
+        notifyError(response.data?.message || 'Delete failed');
         return;
       }
 
-      toast.success(response.data?.message || 'Vehicle deleted successfully');
+      notifySuccess(response.data?.message || 'Vehicle deleted successfully');
       const refreshed = await vehicleBaseURL.get(
         `/list?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}`
       );
@@ -240,7 +241,7 @@ const VehicleRegistry = () => {
         setVehicleList(refreshed.data.data);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Delete failed');
+      notifyError(error.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -253,11 +254,11 @@ const VehicleRegistry = () => {
       const response = await vehicleBaseURL.post(`/recover/${vehicleId}`);
 
       if (!response.data.success) {
-        toast.error(response.data?.message || 'Recovery failed');
+        notifyError(response.data?.message || 'Recovery failed');
         return;
       }
 
-      toast.success(response.data?.message || 'Vehicle recovered successfully');
+      notifySuccess(response.data?.message || 'Vehicle recovered successfully');
       
       // Refresh both lists
       const deletedRefresh = await vehicleBaseURL.get(
@@ -274,7 +275,7 @@ const VehicleRegistry = () => {
         setVehicleList(activeRefresh.data.data);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Recovery failed');
+      notifyError(error.response?.data?.message || 'Recovery failed');
     }
   };
 
@@ -288,7 +289,7 @@ const VehicleRegistry = () => {
         );
 
         if (!response.data.success) {
-          toast.error("Failed to fetch vehicles");
+          notifyError("Failed to fetch vehicles");
           return;
         }
 
@@ -297,7 +298,7 @@ const VehicleRegistry = () => {
         }
       } catch (error) {
         console.error("Vehicle fetch error:", error);
-        toast.error("Failed to fetch vehicles");
+        notifyError("Failed to fetch vehicles");
       }
     };
 
@@ -320,7 +321,7 @@ const VehicleRegistry = () => {
         );
 
         if (!response.data.success) {
-          toast.error("Failed to fetch deleted vehicles");
+          notifyError("Failed to fetch deleted vehicles");
           return;
         }
 
@@ -329,7 +330,7 @@ const VehicleRegistry = () => {
         }
       } catch (error) {
         console.error("Deleted vehicle fetch error:", error);
-        toast.error("Failed to fetch deleted vehicles");
+        notifyError("Failed to fetch deleted vehicles");
       }
     };
 

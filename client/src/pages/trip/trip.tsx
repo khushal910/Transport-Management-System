@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { useNotification } from '../../hooks/useNotification';
 import tripBaseURL from "../../api/tripBaseURL";
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import authBaseURL from "../../api/authBaseURL";
@@ -96,6 +96,7 @@ const isTripMatchingSearch = (trip, query) => {
 };
 
 const Trip = () => {
+  const { notifyError, notifySuccess } = useNotification();
   const [tripList, setTripList] = useState([]);
   const [groupedTrips, setGroupedTrips] = useState({});
   const [isGroupedView, setIsGroupedView] = useState(false);
@@ -205,7 +206,7 @@ const Trip = () => {
       setTripList([]);
       setGroupedTrips({});
       setIsGroupedView(false);
-      toast.error(error.response?.data?.message || "Unable to fetch trips");
+      notifyError(error.response?.data?.message || "Unable to fetch trips");
     } finally {
       setIsLoading(false);
     }
@@ -378,7 +379,7 @@ const Trip = () => {
   const handleApplyFilters = () => {
     const validationMessage = validateFilterState(filterState);
     if (validationMessage) {
-      toast.error(validationMessage);
+      notifyError(validationMessage);
       return;
     }
 
@@ -442,7 +443,7 @@ const Trip = () => {
       const response = await tripBaseURL.post("/create", payload);
 
       if (!response.data?.success) {
-        toast.error(response.data?.message || "Unable to create trip");
+        notifyError(response.data?.message || "Unable to create trip");
         return;
       }
 
@@ -461,7 +462,7 @@ const Trip = () => {
         ...prev,
       ]);
 
-      toast.success(response.data?.message || "Trip created successfully");
+      notifySuccess(response.data?.message || "Trip created successfully");
       setTripForm(INITIAL_FORM);
       setIsCreateModalOpen(false);
       if (currentPage !== 1) {
@@ -470,7 +471,7 @@ const Trip = () => {
         fetchTrips(1);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to create trip");
+      notifyError(error.response?.data?.message || "Unable to create trip");
     } finally {
       setIsSubmitting(false);
     }
@@ -487,7 +488,7 @@ const Trip = () => {
       const response = await tripBaseURL.patch(`/status/${tripId}`, { status: "cancelled" });
 
       if (!response.data?.success) {
-        toast.error(response.data?.message || "Unable to cancel trip");
+        notifyError(response.data?.message || "Unable to cancel trip");
         return;
       }
 
@@ -523,9 +524,9 @@ const Trip = () => {
         return updated;
       });
 
-      toast.success(response.data?.message || "Trip cancelled successfully");
+      notifySuccess(response.data?.message || "Trip cancelled successfully");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to cancel trip");
+      notifyError(error.response?.data?.message || "Unable to cancel trip");
     } finally {
       setIsDeleting(false);
     }
@@ -562,7 +563,7 @@ const Trip = () => {
     event.preventDefault();
 
     if (!selectedTrip || !selectedTrip._id) {
-      toast.error("Unable to identify trip for update");
+      notifyError("Unable to identify trip for update");
       return;
     }
 
@@ -581,7 +582,7 @@ const Trip = () => {
       const response = await tripBaseURL.put(`/update/${selectedTrip._id}`, payload);
 
       if (!response.data?.success) {
-        toast.error(response.data?.message || "Unable to update trip");
+        notifyError(response.data?.message || "Unable to update trip");
         return;
       }
 
@@ -623,12 +624,12 @@ const Trip = () => {
         return updated;
       });
 
-      toast.success(response.data?.message || "Trip updated successfully");
+      notifySuccess(response.data?.message || "Trip updated successfully");
       setTripForm(INITIAL_FORM);
       setSelectedTrip(null);
       setIsEditModalOpen(false);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to update trip");
+      notifyError(error.response?.data?.message || "Unable to update trip");
     } finally {
       setIsSubmitting(false);
     }
@@ -645,7 +646,7 @@ const Trip = () => {
       const response = await tripBaseURL.patch(`/status/${tripId}`, { status: newStatus });
 
       if (!response.data?.success) {
-        toast.error(response.data?.message || "Unable to update trip status");
+        notifyError(response.data?.message || "Unable to update trip status");
         return;
       }
 
@@ -681,9 +682,9 @@ const Trip = () => {
         return updated;
       });
 
-      toast.success(response.data?.message || "Trip status updated successfully");
+      notifySuccess(response.data?.message || "Trip status updated successfully");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Unable to update trip status");
+      notifyError(error.response?.data?.message || "Unable to update trip status");
     } finally {
       setIsSubmitting(false);
     }

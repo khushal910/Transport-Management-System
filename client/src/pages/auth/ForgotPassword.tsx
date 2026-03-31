@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import authBaseURL from '../../api/authBaseURL';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
+  const { notifySuccess, notifyError } = useNotification();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -44,13 +45,13 @@ export default function ForgotPassword() {
       const response = await authBaseURL.post('/forgot-password', { email });
 
       if (response.status === 200) {
-        toast.success(response.data.message || 'Password reset link sent to your email');
+        notifySuccess(response.data.message || 'Password reset link sent to your email');
         setIsSubmitted(true);
       }
     } catch (error) {
       console.error(error);
       const errorMessage = error.response?.data?.message || 'Failed to send reset link';
-      toast.error(errorMessage);
+      notifyError(errorMessage);
     } finally {
       setLoading(false);
     }

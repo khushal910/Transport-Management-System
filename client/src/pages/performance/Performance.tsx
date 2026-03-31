@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { useNotification } from '../../hooks/useNotification';
 import { FaShieldAlt } from "react-icons/fa";
 import driverBaseURL from "../../api/driverBaseURL";
 import driverStatusBaseURL from "../../api/driverStatusBaseURL";
@@ -136,6 +136,7 @@ const getLicenseStatusLabel = (expiryDate) => {
 };
 
 const Performance = () => {
+  const { notifyError } = useNotification();
   const [driverList, setDriverList] = useState([]);
   const [groupedDrivers, setGroupedDrivers] = useState({});
   const [isGroupedView, setIsGroupedView] = useState(false);
@@ -231,7 +232,7 @@ const Performance = () => {
         setDriverList([]);
         setGroupedDrivers({});
         setIsGroupedView(false);
-        toast.error(
+        notifyError(
           error.response?.data?.message || "Unable to fetch drivers"
         );
       } finally {
@@ -339,7 +340,7 @@ const Performance = () => {
   const handleApplyFilters = () => {
     const validationMessage = validateFilterState(filterState);
     if (validationMessage) {
-      toast.error(validationMessage);
+      notifyError(validationMessage);
       return;
     }
 

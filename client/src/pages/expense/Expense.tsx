@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import expenseBaseURL from '../../api/expenseBaseURL.ts';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 const Expense = () => {
+  const { notifyError, notifySuccess } = useNotification();
   const [expenses, setExpenses] = useState([]);
   const [filteredExpenses, setFilteredExpenses] = useState([]);
   const [filteredGroupedExpenses, setFilteredGroupedExpenses] = useState({});
@@ -122,7 +123,7 @@ const Expense = () => {
       }
     } catch (error) {
       console.error('Error fetching expenses:', error);
-      toast.error('Failed to fetch expenses: ' + error.message);
+      notifyError('Failed to fetch expenses: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +164,7 @@ const Expense = () => {
   // Open edit modal for pending expense
   const handleEditExpense = (expense) => {
     if (expense.status !== 'pending') {
-      toast.error(`Cannot edit ${expense.status} expenses`);
+      notifyError(`Cannot edit ${expense.status} expenses`);
       return;
     }
 
@@ -179,22 +180,22 @@ const Expense = () => {
   // Validate form
   const validateForm = () => {
     if (!expenseForm.fuelCost) {
-      toast.error('Fuel Cost is required');
+      notifyError('Fuel Cost is required');
       return false;
     }
 
     if (Number(expenseForm.fuelCost) < 0) {
-      toast.error('Fuel Cost cannot be negative');
+      notifyError('Fuel Cost cannot be negative');
       return false;
     }
 
     if (expenseForm.miscExpense && isNaN(expenseForm.miscExpense)) {
-      toast.error('Misc Expense must be a valid number');
+      notifyError('Misc Expense must be a valid number');
       return false;
     }
 
     if (expenseForm.distance && isNaN(expenseForm.distance)) {
-      toast.error('Distance must be a valid number');
+      notifyError('Distance must be a valid number');
       return false;
     }
 
@@ -218,7 +219,7 @@ const Expense = () => {
 
       const response = await expenseBaseURL.post(`/update/${editingExpenseId}`, payload);
       if (response.data.success) {
-        toast.success(response.data.message || 'Expense updated and marked as completed');
+        notifySuccess(response.data.message || 'Expense updated and marked as completed');
         setShowEditModal(false);
         setEditingExpenseId(null);
         setExpenseForm({ fuelCost: '', miscExpense: '', distance: '' });
@@ -226,7 +227,7 @@ const Expense = () => {
       }
     } catch (error) {
       console.error('Error updating expense:', error);
-      toast.error('Failed to update expense: ' + (error.response?.data?.message || error.message));
+      notifyError('Failed to update expense: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSubmitting(false);
     }

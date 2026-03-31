@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import { useNotification } from '../../hooks/useNotification';
 import analyticsBaseURL from "../../api/analyticsBaseURL";
 import {
   LineChart,
@@ -17,6 +17,7 @@ import html2pdf from "html2pdf.js";
 import ExcelJS from "exceljs";
 
 const Analytics = () => {
+  const { notifyError, notifySuccess } = useNotification();
   const [analyticsData, setAnalyticsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
@@ -38,10 +39,10 @@ const Analytics = () => {
       if (response.data?.success) {
         setAnalyticsData(response.data?.data);
       } else {
-        toast.error(response.data?.message || "Failed to fetch analytics");
+        notifyError(response.data?.message || "Failed to fetch analytics");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error fetching analytics");
+      notifyError(error.response?.data?.message || "Error fetching analytics");
     } finally {
       setIsLoading(false);
     }
@@ -176,10 +177,10 @@ const Analytics = () => {
       link.click();
       window.URL.revokeObjectURL(url);
 
-      toast.success("Excel file exported successfully");
+      notifySuccess("Excel file exported successfully");
     } catch (error) {
       console.error("Export error:", error);
-      toast.error("Failed to export Excel file");
+      notifyError("Failed to export Excel file");
     }
   };
 
@@ -193,7 +194,7 @@ const Analytics = () => {
       jsPDF: { orientation: "landscape", unit: "mm", format: "a4" },
     };
     html2pdf().set(opt).from(element).save();
-    toast.success("PDF exported successfully");
+    notifySuccess("PDF exported successfully");
   };
 
   if (isLoading) {

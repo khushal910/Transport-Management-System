@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import authBaseURL from '../../api/authBaseURL';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function EmployeeManagement() {
+  const { notifyError, notifySuccess } = useNotification();
   // Employee list from backend
   const [employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +59,7 @@ export default function EmployeeManagement() {
       }
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || 'Failed to fetch employees');
+      notifyError(error.response?.data?.message || 'Failed to fetch employees');
     } finally {
       setIsLoading(false);
     }
@@ -267,19 +268,19 @@ export default function EmployeeManagement() {
         : await authBaseURL.post('/add-employee', payload);
 
       if (!response.data.success) {
-        toast.error(response.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
+        notifyError(response.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
         setIsSubmitting(false);
         return;
       }
 
-      toast.success(response.data?.message || (isUpdate ? 'Employee updated' : 'Employee added'));
+      notifySuccess(response.data?.message || (isUpdate ? 'Employee updated' : 'Employee added'));
       setIsModalOpen(false);
       resetForm();
       setEditingEmployeeId(null);
       fetchEmployees();
     } catch (error) {
       const isUpdate = !!editingEmployeeId;
-      toast.error(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
+      notifyError(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -312,11 +313,11 @@ export default function EmployeeManagement() {
     try {
       const response = await authBaseURL.delete(`/employee/${employeeId}`);
       if (response.status === 200) {
-        toast.success('Employee deleted successfully');
+        notifySuccess('Employee deleted successfully');
         fetchEmployees();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete employee');
+      notifyError(error.response?.data?.message || 'Failed to delete employee');
     } finally {
       setDeletingEmployeeId(null);
     }

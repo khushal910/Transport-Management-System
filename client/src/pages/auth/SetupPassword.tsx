@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { FaLock, FaEye, FaEyeSlash, FaCheckCircle, FaTimesCircle, FaArrowRight } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import authBaseURL from '../../api/authBaseURL';
 
 export default function SetupPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { notifyError, notifySuccess } = useNotification();
   const token = searchParams.get('token');
 
   const [formData, setFormData] = useState({
@@ -84,7 +85,7 @@ export default function SetupPassword() {
     e.preventDefault();
 
     if (!token) {
-      toast.error('Invalid setup link. Please check your email.');
+      notifyError('Invalid setup link. Please check your email.');
       navigate('/auth/login');
       return;
     }
@@ -102,7 +103,7 @@ export default function SetupPassword() {
       });
 
       if (response.status === 200) {
-        toast.success(response.data.message || 'Password set successfully');
+        notifySuccess(response.data.message || 'Password set successfully');
         // Clear any existing user data before showing success page
         localStorage.removeItem('user');
         localStorage.removeItem('company');
@@ -111,7 +112,7 @@ export default function SetupPassword() {
     } catch (error) {
       console.error(error);
       const errorMessage = error.response?.data?.message || 'Failed to set password';
-      toast.error(errorMessage);
+      notifyError(errorMessage);
 
       // If link is invalid or expired, redirect to login
       if (error.response?.status === 400 || error.response?.status === 401) {
@@ -132,7 +133,7 @@ export default function SetupPassword() {
   useEffect(() => {
     // Only check token after component has mounted and URL params are parsed
     if (mounted && !token) {
-      toast.error('Invalid or expired setup link. Please request a new setup email.');
+      notifyError('Invalid or expired setup link. Please request a new setup email.');
       const redirectTimer = setTimeout(() => {
         navigate('/auth/login');
       }, 3000);

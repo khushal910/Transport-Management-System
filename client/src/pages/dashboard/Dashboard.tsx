@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
 
@@ -20,6 +20,7 @@ const TRIP_STATUS_LABELS = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { notifyError } = useNotification();
   const [kpis, setKpis] = useState(null);
   const [trips, setTrips] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,10 +82,10 @@ const Dashboard = () => {
         setKpis(data.kpis);
         setTrips(data.trips);
       } else {
-        toast.error(response.data?.message || 'Failed to fetch dashboard data');
+        notifyError(response.data?.message || 'Failed to fetch dashboard data');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error fetching dashboard data');
+      notifyError(error.response?.data?.message || 'Error fetching dashboard data');
     } finally {
       setIsLoading(false);
     }

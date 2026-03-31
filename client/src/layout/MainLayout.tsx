@@ -1,11 +1,13 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import authBaseURL from '../api/authBaseURL'
-import { toast } from 'react-toastify'
+import { useNotification } from '../hooks/useNotification'
+import NotificationBanner from '../components/NotificationPanel'
 
 const MainLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { notifySuccess, notifyError } = useNotification()
   const [showProfilePanel, setShowProfilePanel] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -40,18 +42,18 @@ const MainLayout = () => {
       await authBaseURL.post('/logout')
       localStorage.removeItem('user')
       localStorage.removeItem('company')
-      toast.success('Logged out successfully')
+      notifySuccess('Logged out successfully')
       navigate('/')
     } catch (error) {
       console.error(error)
-      toast.error('Logout failed')
+      notifyError('Logout failed')
     }
   }
 
   return (
     <div className="min-h-screen flex">
       {/* Left Sidebar Navigation */}
-      <nav className={`fixed left-0 top-0 h-screen bg-gray-900 text-white flex flex-col shadow-lg transition-all duration-300 ease-in-out ${
+      <nav className={`fixed left-0 top-0 h-screen bg-gray-900 text-white flex flex-col shadow-lg transition-all duration-300 ease-in-out z-40 ${
         sidebarOpen ? 'w-64' : 'w-20'
       }`}>
         {/* Logo/Title Area and Toggle Button */}
@@ -271,6 +273,13 @@ const MainLayout = () => {
         </div>
         )}
       </nav>
+
+      {/* Notification Area - Same margin as content */}
+      <div className={`fixed top-0 transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'ml-64' : 'ml-20'
+      }`} style={{ left: 0, right: 0 }}>
+        <NotificationBanner />
+      </div>
 
       {/* Main Content Area */}
       <main className={`flex-1 bg-gray-100 p-6 transition-all duration-300 ease-in-out ${

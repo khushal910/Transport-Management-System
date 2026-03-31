@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import { useNotification } from '../hooks/useNotification';
 import { FaHistory, FaTimes, FaCircle } from 'react-icons/fa';
 import driverStatusBaseURL from '../api/driverStatusBaseURL';
 
 export default function DriverStatusModal({ driverId, driverName, onClose, onStatusUpdated }) {
+  const { notifyError, notifySuccess, notifyInfo } = useNotification();
   const [currentStatus, setCurrentStatus] = useState(null);
   const [statusHistory, setStatusHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +37,7 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
     if (driverId) {
       fetchStatusHistory();
     } else {
-      toast.error('Driver ID is missing');
+      notifyError('Driver ID is missing');
     }
   }, [driverId]);
 
@@ -48,10 +49,10 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
         setCurrentStatus(response.data.data.currentStatus);
         setStatusHistory(response.data.data.statusHistory || []);
       } else {
-        toast.error(response.data?.message || 'Failed to load driver status');
+        notifyError(response.data?.message || 'Failed to load driver status');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to load driver status');
+      notifyError(error.response?.data?.message || 'Failed to load driver status');
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +60,7 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
 
   const handleStatusChange = async (newStatus) => {
     if (newStatus === currentStatus) {
-      toast.info('Driver already has this status');
+      notifyInfo('Driver already has this status');
       return;
     }
 
@@ -71,14 +72,14 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
 
       if (response.data.success) {
         setCurrentStatus(newStatus);
-        toast.success(response.data.message);
+        notifySuccess(response.data.message);
         onStatusUpdated?.();
         // Refresh history
         await fetchStatusHistory();
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error(error.response?.data?.message || 'Failed to update status');
+      notifyError(error.response?.data?.message || 'Failed to update status');
     } finally {
       setIsUpdating(false);
     }

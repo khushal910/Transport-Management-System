@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { useNotification } from '../hooks/useNotification';
 
 export default function PrivateRoute({ children, requiredRoles }) {
+  const { notifyError } = useNotification();
   const userStr = localStorage.getItem('user');
 
   // Not logged in - No user data in localStorage
@@ -10,10 +11,7 @@ export default function PrivateRoute({ children, requiredRoles }) {
     localStorage.removeItem('user');
     localStorage.removeItem('company');
     
-    toast.error('Session expired. Please login again.', {
-      position: 'top-right',
-      autoClose: 3000,
-    });
+    notifyError('Session expired. Please login again.');
     return <Navigate to="/" replace />;
   }
 
@@ -29,10 +27,7 @@ export default function PrivateRoute({ children, requiredRoles }) {
     localStorage.removeItem('user');
     localStorage.removeItem('company');
     
-    toast.error('Invalid session data. Please login again.', {
-      position: 'top-right',
-      autoClose: 3000,
-    });
+    notifyError('Invalid session data. Please login again.');
     return <Navigate to="/" replace />;
   }
 
@@ -44,10 +39,7 @@ export default function PrivateRoute({ children, requiredRoles }) {
     localStorage.removeItem('user');
     localStorage.removeItem('company');
     
-    toast.error('Invalid user data. Please login again.', {
-      position: 'top-right',
-      autoClose: 3000,
-    });
+    notifyError('Invalid user data. Please login again.');
     return <Navigate to="/" replace />;
   }
 
@@ -66,9 +58,6 @@ export default function PrivateRoute({ children, requiredRoles }) {
   }
 
   // Unauthorized
-  toast.error('You do not have permission to access this page.', {
-    position: 'top-right',
-    autoClose: 3000,
-  });
+  notifyError('You do not have permission to access this page.');
   return <Navigate to="/main/dashboard" replace />;
 }

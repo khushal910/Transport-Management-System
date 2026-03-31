@@ -1,4 +1,4 @@
-import { toast } from 'react-toastify';
+// Notification handling moved to components using useNotification hook
 import authBaseURL from './authBaseURL';
 import tripBaseURL from './tripBaseURL';
 import vehicleBaseURL from './vehicleBaseURL';
@@ -44,16 +44,8 @@ export const setupAxiosInterceptors = () => {
           localStorage.removeItem('userId');
           localStorage.removeItem('company');
 
-          // Show error message only once
-          if (!errorToastShown) {
-            errorToastShown = true;
-            toast.error('Session expired or invalid. Please login again.', {
-              position: 'top-right',
-              autoClose: 3000,
-            });
-          }
-
           // Redirect to login after a short delay
+          // Note: Components using PrivateRoute will handle notification display
           setTimeout(() => {
             window.location.href = '/auth/login';
           }, 500);

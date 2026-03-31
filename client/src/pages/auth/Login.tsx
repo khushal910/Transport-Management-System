@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash, FaExclamationCircle } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 import passwordConfig from '../../config/environment';
 
 export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { notifyError, notifySuccess } = useNotification();
 
   const [loginData, setLoginData] = useState({
     email: location.state?.email || '',
@@ -83,7 +84,7 @@ export default function Login() {
       if (!userData) {
         setIsLoading(false);
         setLoginError('Invalid response from server');
-        toast.error('Invalid response from server');
+        notifyError('Invalid response from server');
         localStorage.removeItem('user');
         localStorage.removeItem('company');
         setLoginAttempted(false);
@@ -104,7 +105,7 @@ export default function Login() {
         localStorage.setItem('company', JSON.stringify(userData.company));
       }
 
-      toast.success(response.data.message || 'Login successful!');
+      notifySuccess(response.data.message || 'Login successful!');
       
       // Navigate to dashboard
       setTimeout(() => {
@@ -123,7 +124,7 @@ export default function Login() {
       // Show specific error message
       const errorMessage = error.response?.data?.message || error.message || 'An error occurred. Please try again.';
       setLoginError(errorMessage);
-      toast.error(errorMessage);
+      notifyError(errorMessage);
     }
   };
 

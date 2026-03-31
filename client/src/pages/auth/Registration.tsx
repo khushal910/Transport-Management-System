@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { FaEye, FaEyeSlash, FaChevronDown } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 import passwordConfig from '../../config/environment';
 
 export default function Register() {
+  const navigate = useNavigate();
+  const { notifyError, notifySuccess } = useNotification();
   const [registrationData, setRegistrationData] = useState({
     name: '',
     email: '',
@@ -25,8 +27,6 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [expandCompanySection, setExpandCompanySection] = useState(true);
-
-  const navigate = useNavigate();
 
   // Validate form inputs
   const validateForm = () => {
@@ -74,7 +74,7 @@ export default function Register() {
 
     // Validate form
     if (!validateForm()) {
-      toast.error('Please fix the errors below');
+      notifyError('Please fix the errors below');
       return;
     }
 
@@ -92,7 +92,7 @@ export default function Register() {
       const response = await authBaseURL.post('/register', data);
 
       if (response.status == 201) {
-        toast.success(response.data?.message);
+        notifySuccess(response.data?.message);
         setIsLoading(false);
         navigate('/auth/login', {
           state: {
@@ -103,7 +103,7 @@ export default function Register() {
     } catch (error) {
       console.error(error);
       setIsLoading(false);
-      toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
+      notifyError(error.response?.data?.message || 'An error occurred. Please try again.');
     }
   };
 

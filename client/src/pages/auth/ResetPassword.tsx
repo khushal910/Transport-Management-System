@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { FaLock, FaEye, FaEyeSlash, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { useNotification } from '../../hooks/useNotification';
 import authBaseURL from '../../api/authBaseURL';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { notifyError, notifySuccess } = useNotification();
   const token = searchParams.get('token');
 
   const [formData, setFormData] = useState({
@@ -83,7 +84,7 @@ export default function ResetPassword() {
     e.preventDefault();
 
     if (!token) {
-      toast.error('Invalid reset link. Please try again.');
+      notifyError('Invalid reset link. Please try again.');
       navigate('/forgot-password');
       return;
     }
@@ -101,7 +102,7 @@ export default function ResetPassword() {
       });
 
       if (response.status === 200) {
-        toast.success(response.data.message || 'Password reset successfully');
+        notifySuccess(response.data.message || 'Password reset successfully');
         // Clear any existing user data before showing success page
         localStorage.removeItem('user');
         localStorage.removeItem('company');
@@ -110,7 +111,7 @@ export default function ResetPassword() {
     } catch (error) {
       console.error(error);
       const errorMessage = error.response?.data?.message || 'Failed to reset password';
-      toast.error(errorMessage);
+      notifyError(errorMessage);
 
       // If token is invalid or expired, redirect to forgot password
       if (error.response?.status === 400 || error.response?.status === 401) {
@@ -125,7 +126,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      toast.error('Invalid reset link');
+      notifyError('Invalid reset link');
       navigate('/forgot-password');
     }
   }, [token, navigate]);
