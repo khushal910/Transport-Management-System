@@ -25,6 +25,8 @@ import DriverManagement from '../pages/docs/driver-management';
 import TripManagement from '../pages/docs/trip-management';
 import Maintenance from '../pages/docs/maintenance';
 import Expenses from '../pages/docs/expenses';
+// Role-based access control
+import { UserRole } from '../config/rolePermissions';
 
 export const router = createBrowserRouter([
   {
@@ -68,37 +70,45 @@ export const router = createBrowserRouter([
     element: <PrivateRoute><MainLayout /></PrivateRoute>,
     errorElement: <Error />,
     children: [
+      // Dashboard - Accessible by all authenticated roles
       {
         path: 'dashboard',
-        element: <Dashboard />,
+        element: <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer', 'financial_analyst', 'admin'] as UserRole[]}><Dashboard /></PrivateRoute>,
       },
+      // Vehicles - Manager & Admin only
       {
         path: 'vehicle-registry',
-        element: <PrivateRoute requiredRoles={['manager', 'admin']}><Vehicle /></PrivateRoute>,
+        element: <PrivateRoute requiredRoles={['manager', 'admin'] as UserRole[]}><Vehicle /></PrivateRoute>,
       },
+      // Trips - Manager, Dispatcher & Admin
       {
         path: 'trip-dispatcher',
-        element: <Trip />,
+        element: <PrivateRoute requiredRoles={['manager', 'dispatcher', 'admin'] as UserRole[]}><Trip /></PrivateRoute>,
       },
+      // Team Page - Manager & Admin only (⚠️ Important Decision)
       {
         path: 'employee/add',
-        element: <PrivateRoute requiredRoles={['manager', 'admin']}><AddEmployee /></PrivateRoute>,
+        element: <PrivateRoute requiredRoles={['manager', 'admin'] as UserRole[]}><AddEmployee /></PrivateRoute>,
       },
+      // Maintenance - Manager & Admin only
       { 
         path: 'maintenance',
-        element: <PrivateRoute requiredRoles={['manager', 'admin']}><MaintenancePage /></PrivateRoute>,
+        element: <PrivateRoute requiredRoles={['manager', 'admin'] as UserRole[]}><MaintenancePage /></PrivateRoute>,
       },
+      // Expenses - Manager, Financial Analyst & Admin
       { 
         path: 'trip-expense',
-        element: <Expense />,
+        element: <PrivateRoute requiredRoles={['manager', 'financial_analyst', 'admin'] as UserRole[]}><Expense /></PrivateRoute>,
       },
+      // Performance - Manager, Safety Officer & Admin
       { 
         path: 'performance',
-        element: <PrivateRoute requiredRoles={['manager', 'admin']}><Performance /></PrivateRoute>,
+        element: <PrivateRoute requiredRoles={['manager', 'safety_officer', 'admin'] as UserRole[]}><Performance /></PrivateRoute>,
       },
+      // Analytics - Manager, Financial Analyst & Admin
       { 
         path: 'analytics',
-        element: <PrivateRoute requiredRoles={['manager', 'admin']}><Analytics /></PrivateRoute>,
+        element: <PrivateRoute requiredRoles={['manager', 'financial_analyst', 'admin'] as UserRole[]}><Analytics /></PrivateRoute>,
       },
     ],
   },

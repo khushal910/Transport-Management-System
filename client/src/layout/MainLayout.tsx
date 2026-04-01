@@ -4,6 +4,7 @@ import authBaseURL from '../api/authBaseURL'
 import { useNotification } from '../hooks/useNotification'
 import NotificationBanner from '../components/NotificationPanel'
 import { Menu, X, LogOut, ChevronDown } from 'lucide-react'
+import { navItems, UserRole } from '../config/rolePermissions'
 
 const MainLayout = () => {
   const navigate = useNavigate()
@@ -51,16 +52,11 @@ const MainLayout = () => {
     }
   }
 
-  const navItems = [
-    { path: '/main/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/main/vehicle-registry', label: 'Vehicles', icon: '🚗' },
-    { path: '/main/trip-dispatcher', label: 'Trips', icon: '🛣️' },
-    { path: '/main/maintenance', label: 'Maintenance', icon: '🔧' },
-    { path: '/main/trip-expense', label: 'Expenses', icon: '💰' },
-    { path: '/main/performance', label: 'Performance', icon: '📈' },
-    { path: '/main/analytics', label: 'Analytics', icon: '📉' },
-    { path: '/main/employee/add', label: 'Team', icon: '👥' },
-  ]
+  // Get user role and filter navigation items
+  const userRole = (user()?.role as UserRole) || 'dispatcher'
+  const filteredNavItems = navItems.filter(item => 
+    item.requiredRoles.includes(userRole)
+  )
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -87,7 +83,7 @@ const MainLayout = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6 px-3">
           <div className="space-y-1">
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -140,6 +136,14 @@ const MainLayout = () => {
                     <p className="text-sm font-semibold text-gray-900">{user()?.name}</p>
                     <p className="text-xs text-gray-500">{user()?.email}</p>
                     <p className="text-xs text-gray-500 mt-1">{company()?.name}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                        {userRole === 'safety_officer' ? '🛡️ Safety Officer' :
+                         userRole === 'financial_analyst' ? '📊 Financial Analyst' :
+                         userRole === 'dispatcher' ? '🚚 Dispatcher' :
+                         userRole === 'manager' ? '👑 Manager' : '⚙️ Admin'}
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={() => {
