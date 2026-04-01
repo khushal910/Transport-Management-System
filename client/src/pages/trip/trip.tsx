@@ -134,6 +134,10 @@ const Trip = () => {
   const [driverSuggestions, setDriverSuggestions] = useState([]);
   const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
   const [showDriverSuggestions, setShowDriverSuggestions] = useState(false);
+  const [cargoWeightError, setCargoWeightError] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [formMessageType, setFormMessageType] = useState("");
+  const [selectedVehicleCapacity, setSelectedVehicleCapacity] = useState(null);
   const filterMenuRef = useRef(null);
   const sortMenuRef = useRef(null);
   const groupMenuRef = useRef(null);
@@ -232,7 +236,7 @@ const Trip = () => {
       try {
         const res = await authBaseURL.get("/employees");
         if (res.data?.success && res.data?.data?.employees) {
-          // Filter only drivers with on_duty or off_duty status
+          // Filter only drivers
           const availableDrivers = res.data.data.employees.filter(
             (d) => d.role === "driver"
           );
@@ -309,32 +313,58 @@ const Trip = () => {
     const { name, value } = event.target;
     setTripForm((prev) => ({ ...prev, [name]: value }));
 
-    // Handle vehicle plate search
+    // Handle vehicle plate search - show available if empty, filter if text entered
     if (name === "vehiclePlateNumber") {
-      if (value.trim()) {
+      if (value.trim() === "") {
+        // Show only available vehicles
+        const availableVehicles = vehicles.filter((v) => v.status === "available");
+        setVehicleSuggestions(availableVehicles);
+        setShowVehicleSuggestions(true);
+      } else {
         const filtered = vehicles.filter((v) =>
-          (v.licensePlate || "").toLowerCase().includes(value.toLowerCase()) ||
-          (v.name || "").toLowerCase().includes(value.toLowerCase())
+          v.status === "available" && (
+            (v.licensePlate || "").toLowerCase().includes(value.toLowerCase()) ||
+            (v.name || "").toLowerCase().includes(value.toLowerCase())
+          )
         );
         setVehicleSuggestions(filtered);
         setShowVehicleSuggestions(true);
-      } else {
-        setVehicleSuggestions([]);
-        setShowVehicleSuggestions(false);
       }
     }
 
-    // Handle driver email search
+    // Handle driver email search - show all if empty, filter if text entered
     if (name === "driverEmail") {
-      if (value.trim()) {
+      if (value.trim() === "") {
+        // Show all drivers
+        setDriverSuggestions(drivers);
+        setShowDriverSuggestions(true);
+      } else {
         const filtered = drivers.filter((d) =>
-          (d.email || "").toLowerCase().includes(value.toLowerCase())
+          (d.email || "").toLowerCase().includes(value.toLowerCase()) ||
+          (d.name || "").toLowerCase().includes(value.toLowerCase())
         );
         setDriverSuggestions(filtered);
         setShowDriverSuggestions(true);
+      }
+    }
+
+    // Handle cargo weight validation against vehicle capacity
+    if (name === "cargoWeight") {
+      if (value === "") {
+        setCargoWeightError("");
       } else {
-        setDriverSuggestions([]);
-        setShowDriverSuggestions(false);
+        const weight = Number(value);
+        if (isNaN(weight)) {
+          setCargoWeightError("Cargo weight must be a valid number");
+        } else if (weight <= 0) {
+          setCargoWeightError("Cargo weight must be greater than 0");
+        } else if (selectedVehicleCapacity && weight > selectedVehicleCapacity) {
+          setCargoWeightError(`Cargo weight exceeds vehicle capacity (${selectedVehicleCapacity} kg)`);
+        } else if (weight > 10000) {
+          setCargoWeightError("Cargo weight cannot exceed 10000 kg");
+        } else {
+          setCargoWeightError("");
+        }
       }
     }
   };
@@ -344,6 +374,7 @@ const Trip = () => {
       ...prev,
       vehiclePlateNumber: vehicle.licensePlate,
     }));
+    setSelectedVehicleCapacity(vehicle.maxCapacity);
     setShowVehicleSuggestions(false);
     setVehicleSuggestions([]);
   };
@@ -428,6 +459,8 @@ const Trip = () => {
 
   const handleCreateTrip = async (event) => {
     event.preventDefault();
+    setFormMessage("");
+    setFormMessageType("");
 
     const payload = {
       vehiclePlateNumber: tripForm.vehiclePlateNumber.trim(),
@@ -438,13 +471,32 @@ const Trip = () => {
       revenue: Number(tripForm.revenue),
     };
 
+    // Validate cargo weight against vehicle capacity on submit
+    if (cargoWeightError) {
+      setFormMessage(cargoWeightError);
+      setFormMessageType("error");
+      notifyError(cargoWeightError);
+      return;
+    }
+
+    if (!payload.cargoWeight || payload.cargoWeight <= 0) {
+      const msg = "Cargo weight must be valid and greater than 0";
+      setFormMessage(msg);
+      setFormMessageType("error");
+      notifyError(msg);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
       const response = await tripBaseURL.post("/create", payload);
 
       if (!response.data?.success) {
-        notifyError(response.data?.message || "Unable to create trip");
+        const errorMsg = response.data?.message || "Unable to create trip";
+        setFormMessage(errorMsg);
+        setFormMessageType("error");
+        notifyError(errorMsg);
         return;
       }
 
@@ -463,8 +515,13 @@ const Trip = () => {
         ...prev,
       ]);
 
-      notifySuccess(response.data?.message || "Trip created successfully");
+      const successMsg = response.data?.message || "Trip created successfully";
+      setFormMessage(successMsg);
+      setFormMessageType("success");
+      notifySuccess(successMsg);
       setTripForm(INITIAL_FORM);
+      setSelectedVehicleCapacity(null);
+      setCargoWeightError("");
       setIsCreateModalOpen(false);
       if (currentPage !== 1) {
         setCurrentPage(1);
@@ -472,7 +529,10 @@ const Trip = () => {
         fetchTrips(1);
       }
     } catch (error) {
-      notifyError(error.response?.data?.message || "Unable to create trip");
+      const errorMsg = error.response?.data?.message || "Unable to create trip";
+      setFormMessage(errorMsg);
+      setFormMessageType("error");
+      notifyError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -543,6 +603,16 @@ const Trip = () => {
       endLocation: trip.endLocation,
       revenue: trip.revenue,
     });
+    setFormMessage("");
+    setFormMessageType("");
+    setCargoWeightError("");
+    
+    // Set vehicle capacity when editing
+    const vehicle = vehicles.find(v => v.licensePlate === trip.vehiclePlateNumber);
+    if (vehicle) {
+      setSelectedVehicleCapacity(vehicle.maxCapacity);
+    }
+    
     setIsEditModalOpen(true);
   };
 
@@ -562,9 +632,19 @@ const Trip = () => {
 
   const handleUpdateTrip = async (event) => {
     event.preventDefault();
+    setFormMessage("");
+    setFormMessageType("");
 
     if (!selectedTrip || !selectedTrip._id) {
       notifyError("Unable to identify trip for update");
+      return;
+    }
+
+    // Validate cargo weight against vehicle capacity on submit
+    if (cargoWeightError) {
+      setFormMessage(cargoWeightError);
+      setFormMessageType("error");
+      notifyError(cargoWeightError);
       return;
     }
 
@@ -583,7 +663,10 @@ const Trip = () => {
       const response = await tripBaseURL.put(`/update/${selectedTrip._id}`, payload);
 
       if (!response.data?.success) {
-        notifyError(response.data?.message || "Unable to update trip");
+        const errorMsg = response.data?.message || "Unable to update trip";
+        setFormMessage(errorMsg);
+        setFormMessageType("error");
+        notifyError(errorMsg);
         return;
       }
 
@@ -625,12 +708,20 @@ const Trip = () => {
         return updated;
       });
 
-      notifySuccess(response.data?.message || "Trip updated successfully");
+      const successMsg = response.data?.message || "Trip updated successfully";
+      setFormMessage(successMsg);
+      setFormMessageType("success");
+      notifySuccess(successMsg);
       setTripForm(INITIAL_FORM);
+      setSelectedVehicleCapacity(null);
+      setCargoWeightError("");
       setSelectedTrip(null);
       setIsEditModalOpen(false);
     } catch (error) {
-      notifyError(error.response?.data?.message || "Unable to update trip");
+      const errorMsg = error.response?.data?.message || "Unable to update trip";
+      setFormMessage(errorMsg);
+      setFormMessageType("error");
+      notifyError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -1168,6 +1259,12 @@ const Trip = () => {
               Fill all fields to dispatch a new trip.
             </p>
 
+            {formMessage && (
+              <div className={`mb-4 p-3 rounded text-sm ${ formMessageType === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200' }`}>
+                {formMessage}
+              </div>
+            )}
+
             <form onSubmit={handleCreateTrip} className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="relative" ref={vehicleInputRef}>
                 <input
@@ -1177,7 +1274,13 @@ const Trip = () => {
                   autoComplete="off"
                   value={tripForm.vehiclePlateNumber}
                   onChange={handleFormChange}
-                  onFocus={() => tripForm.vehiclePlateNumber && setShowVehicleSuggestions(true)}
+                  onFocus={() => {
+                    setShowVehicleSuggestions(true);
+                    if (tripForm.vehiclePlateNumber.trim() === "") {
+                      const availableVehicles = vehicles.filter((v) => v.status === "available");
+                      setVehicleSuggestions(availableVehicles);
+                    }
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, 0)}
                   ref={(el) => (inputRefs.current[0] = el)}
                   className="w-full border px-3 py-2 rounded"
@@ -1209,7 +1312,12 @@ const Trip = () => {
                   autoComplete="off"
                   value={tripForm.driverEmail}
                   onChange={handleFormChange}
-                  onFocus={() => tripForm.driverEmail && setShowDriverSuggestions(true)}
+                  onFocus={() => {
+                    setShowDriverSuggestions(true);
+                    if (tripForm.driverEmail.trim() === "") {
+                      setDriverSuggestions(drivers);
+                    }
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, 1)}
                   ref={(el) => (inputRefs.current[1] = el)}
                   className="w-full border px-3 py-2 rounded"
@@ -1231,33 +1339,43 @@ const Trip = () => {
                 )}
               </div>
 
-              <input
-                name="cargoWeight"
-                type="number"
-                placeholder="Cargo Weight"
-                min="1"
-                autoComplete="off"
-                value={tripForm.cargoWeight}
-                onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 2)}
-                ref={(el) => (inputRefs.current[2] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
-              />
+              <div>
+                <input
+                  name="cargoWeight"
+                  type="number"
+                  placeholder="Cargo Weight"
+                  min="1"
+                  autoComplete="off"
+                  value={tripForm.cargoWeight}
+                  onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 2)}
+                  ref={(el) => (inputRefs.current[2] = el)}
+                  className="w-full border px-3 py-2 rounded"
+                  required
+                />
+                {selectedVehicleCapacity && (
+                  <p className="text-xs text-gray-600 mt-1">Vehicle capacity: {selectedVehicleCapacity} kg</p>
+                )}
+                {cargoWeightError && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">⚠️ {cargoWeightError}</p>
+                )}
+              </div>
 
-              <input
-                name="revenue"
-                type="number"
-                placeholder="Revenue"
-                min="0"
-                autoComplete="off"
-                value={tripForm.revenue}
-                onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 3)}
-                ref={(el) => (inputRefs.current[3] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
-              />
+              <div>
+                <input
+                  name="revenue"
+                  type="number"
+                  placeholder="Revenue"
+                  min="0"
+                  autoComplete="off"
+                  value={tripForm.revenue}
+                  onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 3)}
+                  ref={(el) => (inputRefs.current[3] = el)}
+                  className="w-full border px-3 py-2 rounded"
+                  required
+                />
+              </div>
 
               <input
                 name="startLocation"
@@ -1288,7 +1406,14 @@ const Trip = () => {
               <div className="col-span-1 mt-2 flex gap-3 sm:col-span-2">
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setCargoWeightError('');
+                    setTripForm(INITIAL_FORM);
+                    setSelectedVehicleCapacity(null);
+                    setFormMessage('');
+                    setFormMessageType('');
+                  }}
                   className="w-full border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50 cursor-pointer"
                 >
                   Cancel
@@ -1322,6 +1447,16 @@ const Trip = () => {
             </p>
 
             <form onSubmit={handleUpdateTrip} className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {formMessage && (
+                <div className={`mb-4 p-3 rounded text-sm sm:col-span-2 ${
+                  formMessageType === 'error' 
+                    ? 'bg-red-50 text-red-700 border border-red-200' 
+                    : 'bg-green-50 text-green-700 border border-green-200'
+                }`}>
+                  {formMessage}
+                </div>
+              )}
+
               <div className="relative" ref={vehicleInputRef}>
                 <input
                   name="vehiclePlateNumber"
@@ -1330,7 +1465,13 @@ const Trip = () => {
                   autoComplete="off"
                   value={tripForm.vehiclePlateNumber}
                   onChange={handleFormChange}
-                  onFocus={() => tripForm.vehiclePlateNumber && setShowVehicleSuggestions(true)}
+                  onFocus={() => {
+                    setShowVehicleSuggestions(true);
+                    if (tripForm.vehiclePlateNumber.trim() === "") {
+                      const availableVehicles = vehicles.filter((v) => v.status === "available");
+                      setVehicleSuggestions(availableVehicles);
+                    }
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, 0)}
                   ref={(el) => (inputRefs.current[0] = el)}
                   className="w-full border px-3 py-2 rounded"
@@ -1362,7 +1503,12 @@ const Trip = () => {
                   autoComplete="off"
                   value={tripForm.driverEmail}
                   onChange={handleFormChange}
-                  onFocus={() => tripForm.driverEmail && setShowDriverSuggestions(true)}
+                  onFocus={() => {
+                    setShowDriverSuggestions(true);
+                    if (tripForm.driverEmail.trim() === "") {
+                      setDriverSuggestions(drivers);
+                    }
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, 1)}
                   ref={(el) => (inputRefs.current[1] = el)}
                   className="w-full border px-3 py-2 rounded"
@@ -1384,33 +1530,43 @@ const Trip = () => {
                 )}
               </div>
 
-              <input
-                name="cargoWeight"
-                type="number"
-                placeholder="Cargo Weight"
-                min="1"
-                autoComplete="off"
-                value={tripForm.cargoWeight}
-                onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 2)}
-                ref={(el) => (inputRefs.current[2] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
-              />
+              <div>
+                <input
+                  name="cargoWeight"
+                  type="number"
+                  placeholder="Cargo Weight"
+                  min="1"
+                  autoComplete="off"
+                  value={tripForm.cargoWeight}
+                  onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 2)}
+                  ref={(el) => (inputRefs.current[2] = el)}
+                  className="w-full border px-3 py-2 rounded"
+                  required
+                />
+                {selectedVehicleCapacity && (
+                  <p className="text-xs text-gray-600 mt-1">Vehicle capacity: {selectedVehicleCapacity} kg</p>
+                )}
+                {cargoWeightError && (
+                  <p className="text-xs text-red-600 mt-1 font-medium">⚠️ {cargoWeightError}</p>
+                )}
+              </div>
 
-              <input
-                name="revenue"
-                type="number"
-                placeholder="Revenue"
-                min="0"
-                autoComplete="off"
-                value={tripForm.revenue}
-                onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 3)}
-                ref={(el) => (inputRefs.current[3] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
-              />
+              <div>
+                <input
+                  name="revenue"
+                  type="number"
+                  placeholder="Revenue"
+                  min="0"
+                  autoComplete="off"
+                  value={tripForm.revenue}
+                  onChange={handleFormChange}
+                  onKeyDown={(e) => handleKeyDown(e, 3)}
+                  ref={(el) => (inputRefs.current[3] = el)}
+                  className="w-full border px-3 py-2 rounded"
+                  required
+                />
+              </div>
 
               <input
                 name="startLocation"
@@ -1445,6 +1601,10 @@ const Trip = () => {
                     setIsEditModalOpen(false);
                     setSelectedTrip(null);
                     setTripForm(INITIAL_FORM);
+                    setCargoWeightError('');
+                    setSelectedVehicleCapacity(null);
+                    setFormMessage('');
+                    setFormMessageType('');
                   }}
                   className="w-full border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50 cursor-pointer"
                 >
