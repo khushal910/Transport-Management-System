@@ -66,8 +66,8 @@ export default function PrivateRoute({ children, requiredRoles }) {
     ? requiredRoles
     : [requiredRoles];
 
-  // Role check
-  if (allowedRoles.includes(user.role)) {
+  // Role check - manager has access to all protected routes
+  if (user.role === 'manager' || allowedRoles.includes(user.role)) {
     return children;
   }
 

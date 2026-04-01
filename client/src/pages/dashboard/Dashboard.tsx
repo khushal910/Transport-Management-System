@@ -2,8 +2,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../hooks/useNotification';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
+import { UserRole } from '../../config/rolePermissions';
 import DashboardKPIs from '../../components/DashboardKPIs';
 import { PageContainer, PageHeader } from '../../components/ui';
+import { 
+  ManagerDashboard, 
+  DispatcherDashboard, 
+  SafetyOfficerDashboard, 
+  FinancialAnalystDashboard 
+} from './RoleSpecificDashboards';
 
 const TRIP_STATUS_COLORS = {
   dispatched: 'bg-yellow-100 text-yellow-800',
@@ -19,7 +26,7 @@ const TRIP_STATUS_LABELS = {
   cancelled: 'Cancelled',
 };
 
-const Dashboard = () => {
+const ManagerDashboardView = () => {
   const navigate = useNavigate();
   const { notifyError } = useNotification();
   const [kpis, setKpis] = useState(null);
@@ -690,6 +697,38 @@ const Dashboard = () => {
       </div>
     </PageContainer>
   );
+};
+
+/**
+ * Main Dashboard Component
+ * Routes to role-specific dashboards
+ */
+const Dashboard = () => {
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setUserRole(user.role as UserRole);
+      }
+    } catch (error) {
+      console.error('Error parsing user role:', error);
+    }
+  }, []);
+
+  // Return role-specific dashboard
+  if (userRole === 'dispatcher') {
+    return <DispatcherDashboard />;
+  } else if (userRole === 'safety_officer') {
+    return <SafetyOfficerDashboard />;
+  } else if (userRole === 'financial_analyst') {
+    return <FinancialAnalystDashboard />;
+  }
+
+  // Manager/Admin Dashboard (default with all features)
+  return <ManagerDashboardView />;
 };
 
 export default Dashboard;

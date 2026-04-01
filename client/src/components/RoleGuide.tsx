@@ -138,7 +138,7 @@ export const RoleInformation = () => {
         <ul className="space-y-2 text-sm text-gray-700">
           <li className="flex gap-2">
             <span>👥</span>
-            <span><strong>Team Page:</strong> Only accessible by Manager and Admin roles</span>
+            <span><strong>Team Page:</strong> Only accessible by Manager role</span>
           </li>
           <li className="flex gap-2">
             <span>📊</span>

@@ -141,7 +141,7 @@ const MainLayout = () => {
                         {userRole === 'safety_officer' ? '🛡️ Safety Officer' :
                          userRole === 'financial_analyst' ? '📊 Financial Analyst' :
                          userRole === 'dispatcher' ? '🚚 Dispatcher' :
-                         userRole === 'manager' ? '👑 Manager' : '⚙️ Admin'}
+                         '👑 Manager'}
                       </span>
                     </div>
                   </div>

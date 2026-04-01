@@ -1,5 +1,5 @@
 // Role-Based Access Control Configuration
-export type UserRole = 'manager' | 'dispatcher' | 'safety_officer' | 'financial_analyst' | 'admin';
+export type UserRole = 'manager' | 'dispatcher' | 'safety_officer' | 'financial_analyst';
 
 export interface RoleConfig {
   name: string;
@@ -54,22 +54,6 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/analytics',
     ],
   },
-
-  // Admin - Full Access
-  admin: {
-    name: 'Admin',
-    icon: '⚙️',
-    accessiblePages: [
-      '/main/dashboard',
-      '/main/vehicle-registry',
-      '/main/trip-dispatcher',
-      '/main/employee/add',
-      '/main/maintenance',
-      '/main/trip-expense',
-      '/main/performance',
-      '/main/analytics',
-    ],
-  },
 };
 
 // Navigation items configuration
@@ -86,49 +70,49 @@ export const navItems: NavItem[] = [
     path: '/main/dashboard',
     label: 'Dashboard',
     icon: '📊',
-    requiredRoles: ['manager', 'dispatcher', 'safety_officer', 'financial_analyst', 'admin'],
+    requiredRoles: ['manager', 'dispatcher', 'safety_officer', 'financial_analyst'],
     dashboardType: 'full',
   },
   {
     path: '/main/vehicle-registry',
     label: 'Vehicles',
     icon: '🚗',
-    requiredRoles: ['manager', 'admin'],
+    requiredRoles: ['manager'],
   },
   {
     path: '/main/trip-dispatcher',
     label: 'Trips',
     icon: '🛣️',
-    requiredRoles: ['manager', 'dispatcher', 'admin'],
+    requiredRoles: ['manager', 'dispatcher'],
   },
   {
     path: '/main/maintenance',
     label: 'Maintenance',
     icon: '🔧',
-    requiredRoles: ['manager', 'admin'],
+    requiredRoles: ['manager'],
   },
   {
     path: '/main/trip-expense',
     label: 'Expenses',
     icon: '💰',
-    requiredRoles: ['manager', 'financial_analyst', 'admin'],
+    requiredRoles: ['manager', 'financial_analyst'],
   },
   {
     path: '/main/performance',
     label: 'Performance',
     icon: '📈',
-    requiredRoles: ['manager', 'safety_officer', 'admin'],
+    requiredRoles: ['manager', 'safety_officer'],
   },
   {
     path: '/main/analytics',
     label: 'Analytics',
     icon: '📉',
-    requiredRoles: ['manager', 'financial_analyst', 'admin'],
+    requiredRoles: ['manager', 'financial_analyst'],
   },
   {
     path: '/main/employee/add',
     label: 'Team',
     icon: '👥',
-    requiredRoles: ['manager', 'admin'],
+    requiredRoles: ['manager'],
   },
 ];
