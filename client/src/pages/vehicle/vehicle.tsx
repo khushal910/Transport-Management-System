@@ -28,6 +28,10 @@ interface VehicleFormData {
 const VehicleRegistry = () => {
   const { notifyError, notifySuccess } = useNotification();
 
+  // Get user role to determine read-only mode for dispatcher
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isReadOnly = user?.role === 'dispatcher';
 
   // vehicle list from backend
   const [vehicleList, setVehicleList] = useState<Vehicle[]>([]);
@@ -335,11 +339,16 @@ const VehicleRegistry = () => {
 
   }, [currentPage, itemsPerPage, searchTerm]);
 
-  // Fetch deleted vehicles
+  // Fetch deleted vehicles (manager only)
   useEffect(() => {
     let isActive = true;
 
     const run = async () => {
+      // Skip fetching deleted vehicles for dispatcher
+      if (isReadOnly) {
+        return;
+      }
+
       try {
         const response = await vehicleBaseURL.get(
           `/deleted/list?page=1&limit=100&search=${encodeURIComponent(deletedSearchTerm)}`
@@ -392,7 +401,7 @@ const VehicleRegistry = () => {
         <td className="px-4 py-2 capitalize">{vehicle.status}</td>
 
         {/* Action Buttons */}
-        <td className="px-4 py-2 space-x-2">
+        <td className="px-4 py-2 space-x-2" style={{ display: isReadOnly ? 'none' : 'table-cell' }}>
 
           <button
             onClick={() => handleEdit(vehicle)}
@@ -452,8 +461,8 @@ const VehicleRegistry = () => {
   return (
     <PageContainer>
       <PageHeader 
-        title="Vehicle Registry" 
-        description="Manage your fleet vehicles and track their status"
+        title={isReadOnly ? "Vehicle Registry - Read Only" : "Vehicle Registry"} 
+        description={isReadOnly ? "View available vehicles for trip assignment" : "Manage your fleet vehicles and track their status"}
       />
 
       <div className="space-y-6">
@@ -469,6 +478,7 @@ const VehicleRegistry = () => {
         >
           Active Vehicles
         </button>
+        {!isReadOnly && (
         <button
           onClick={() => setActiveTab("deleted")}
           className={`px-4 py-3 font-semibold transition-colors relative ${
@@ -484,6 +494,7 @@ const VehicleRegistry = () => {
             </span>
           )}
         </button>
+        )}
       </div>
 
       {/* ACTIVE VEHICLES TAB */}
@@ -626,6 +637,7 @@ const VehicleRegistry = () => {
               setIsModalOpen(true);
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer "
+            style={{ display: isReadOnly ? 'none' : 'block' }}
           >
             New Vehicle
           </button>
@@ -655,7 +667,7 @@ const VehicleRegistry = () => {
               <th className="px-4 py-2 text-left">Capacity</th>
               <th className="px-4 py-2 text-left">Odometer</th>
               <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-left">Actions</th>
+              {!isReadOnly && <th className="px-4 py-2 text-left">Actions</th>}
 
             </tr>
 

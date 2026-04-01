@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNotification } from '../../hooks/useNotification';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function EmployeeManagement() {
   const { notifyError, notifySuccess } = useNotification();
+  const location = useLocation();
+  
+  // Get user role to determine read-only mode for dispatcher
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isReadOnly = user?.role === 'dispatcher';
+  
   // Employee list from backend
   const [employeeList, setEmployeeList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -181,6 +189,11 @@ export default function EmployeeManagement() {
   const processEmployeeList = () => {
     let processed = [...employeeList];
 
+    // If viewing driver-registry, show only drivers
+    if (location.pathname.includes('driver-registry')) {
+      processed = processed.filter((e) => e.role === 'driver');
+    }
+
     // Apply search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -353,12 +366,32 @@ export default function EmployeeManagement() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEmployees = processedEmployees.slice(startIndex, startIndex + itemsPerPage);
 
+  // Compute header and description based on current page
+  const isDriverRegistry = location.pathname.includes('driver-registry');
+  const pageTitle = isDriverRegistry ? 'Driver Registry' : 'Employee Management';
+  const pageDescription = isDriverRegistry
+    ? (isReadOnly ? 'View available drivers for trip assignment' : 'Manage your fleet drivers and track their performance')
+    : (isReadOnly ? 'View team members' : 'Manage your team and employee information');
+
   return (
     <div className="w-full min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Employee Management</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-gray-800">
+              {pageTitle}
+              {isReadOnly && ' - Read Only'}
+            </h1>
+            {isReadOnly && (
+              <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                📖 View Only
+              </span>
+            )}
+          </div>
+          <p className="text-gray-600">
+            {pageDescription}
+          </p>
 
           {/* Search Bar */}
           <div className="mb-4">
@@ -381,6 +414,7 @@ export default function EmployeeManagement() {
               setIsModalOpen(true);
             }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+            style={{ display: isReadOnly ? 'none' : 'block' }}
           >
             + Add Employee
           </button>
@@ -510,7 +544,7 @@ export default function EmployeeManagement() {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Password Status</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
+                    {!isReadOnly && <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -537,7 +571,7 @@ export default function EmployeeManagement() {
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {new Date(employee.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2">
+                      <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2" style={{ display: isReadOnly ? 'none' : 'flex' }}>
                         <button
                           onClick={() => handleEdit(employee)}
                           disabled={!employee.isPasswordSet}

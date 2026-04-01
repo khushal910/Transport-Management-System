@@ -20,7 +20,7 @@ authRouter.post('/forgot-password', userForgotPassword);
 authRouter.post('/reset-password', userResetPassword);
 authRouter.post('/setup-password', setupPassword);
 authRouter.post('/add-employee', requiredRole('manager'), addEmployee);
-authRouter.get('/employees', requiredRole('manager'), getEmployees);
+authRouter.get('/employees', requiredRole('manager', 'dispatcher'), getEmployees);
 authRouter.put('/employee/:employeeId', requiredRole('manager'), updateEmployee);
 authRouter.delete('/employee/:employeeId', requiredRole('manager'), deleteEmployee);
 

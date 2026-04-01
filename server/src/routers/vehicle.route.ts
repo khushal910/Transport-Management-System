@@ -11,7 +11,7 @@ const vehicleRoute = Router();
 
 vehicleRoute.post('/register', requiredRole('manager'), vehicleRegister);
 vehicleRoute.post('/update/:vehicleId', requiredRole('manager'), vehicleUpdate);
-vehicleRoute.get('/list', requiredRole('manager'), getVehicleList);
+vehicleRoute.get('/list', requiredRole('manager', 'dispatcher'), getVehicleList);
 vehicleRoute.delete('/delete/:vehicleId', requiredRole('manager'), deleteVehicle);
 vehicleRoute.get('/deleted/list', requiredRole('manager'), getDeletedVehicleList);
 vehicleRoute.post('/recover/:vehicleId', requiredRole('manager'), recoverVehicle);

@@ -30,6 +30,8 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
     icon: '🚚',
     accessiblePages: [
       '/main/dashboard', // Limited data
+      '/main/vehicle-registry', // View only
+      '/main/driver-registry', // View only
       '/main/trip-dispatcher',
     ],
   },
@@ -77,7 +79,13 @@ export const navItems: NavItem[] = [
     path: '/main/vehicle-registry',
     label: 'Vehicles',
     icon: '🚗',
-    requiredRoles: ['manager'],
+    requiredRoles: ['manager', 'dispatcher'],
+  },
+  {
+    path: '/main/driver-registry',
+    label: 'Drivers',
+    icon: '👨‍✈️',
+    requiredRoles: ['manager', 'dispatcher'],
   },
   {
     path: '/main/trip-dispatcher',
