@@ -22,14 +22,10 @@ export default function Login() {
   const [loginAttempted, setLoginAttempted] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  // Redirect if user is already logged in (only on mount)
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user && !loginAttempted) {
-      // User data exists and no login attempt in progress, redirect to dashboard
-      navigate('/main/dashboard');
-    }
-  }, []);
+  // Note: Removed automatic redirect to dashboard on mount
+  // PrivateRoute will now verify the JWT token is valid before allowing access
+  // If user tries to access protected routes without a valid token, they'll be redirected to login
+
 
   // Validate form inputs
   const validateForm = () => {

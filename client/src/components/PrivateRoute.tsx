@@ -1,46 +1,60 @@
 import { Navigate } from 'react-router-dom';
-import { useNotification } from '../hooks/useNotification';
+import { useState, useEffect } from 'react';
 
 export default function PrivateRoute({ children, requiredRoles }) {
-  const { notifyError } = useNotification();
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [user, setUser] = useState(null);
   const userStr = localStorage.getItem('user');
 
-  // Not logged in - No user data in localStorage
-  if (!userStr) {
-    // Clear any partially stored data
-    localStorage.removeItem('user');
-    localStorage.removeItem('company');
-    
-    notifyError('Session expired. Please login again.');
-    return <Navigate to="/" replace />;
+  // Check if user data exists in localStorage
+  useEffect(() => {
+    if (!userStr) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('company');
+      setIsAuthenticated(false);
+      return;
+    }
+
+    try {
+      const userData = JSON.parse(userStr);
+      
+      // Validate user object has required properties
+      if (!userData.id || !userData.role || !userData.email) {
+        console.error('User missing required properties:', userData);
+        localStorage.removeItem('user');
+        localStorage.removeItem('company');
+        setIsAuthenticated(false);
+        return;
+      }
+
+      // User data exists and is valid
+      setUser(userData);
+      setIsAuthenticated(true);
+      
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      localStorage.removeItem('user');
+      localStorage.removeItem('company');
+      setIsAuthenticated(false);
+    }
+  }, [userStr]);
+
+  // Show loading state while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  let user;
-
-  // Only wrap parsing
-  try {
-    user = JSON.parse(userStr);
-  } catch (error) {
-    console.error('Invalid user data:', error);
-    
-    // Clear corrupted data
-    localStorage.removeItem('user');
-    localStorage.removeItem('company');
-    
-    notifyError('Invalid session data. Please login again.');
-    return <Navigate to="/" replace />;
-  }
-
-  // Validate user object has required properties
-  if (!user.id || !user.role || !user.email) {
-    console.error('User missing required properties:', user);
-    
-    // Clear invalid data
-    localStorage.removeItem('user');
-    localStorage.removeItem('company');
-    
-    notifyError('Invalid user data. Please login again.');
-    return <Navigate to="/" replace />;
+  // Not authenticated - redirect to login
+  // Note: If JWT token is invalid, the axios interceptor will handle 401 errors
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/login" replace />;
   }
 
   // No role required
@@ -57,7 +71,6 @@ export default function PrivateRoute({ children, requiredRoles }) {
     return children;
   }
 
-  // Unauthorized
-  notifyError('You do not have permission to access this page.');
+  // Unauthorized - no permission
   return <Navigate to="/main/dashboard" replace />;
 }
