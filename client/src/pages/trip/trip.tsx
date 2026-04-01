@@ -332,16 +332,19 @@ const Trip = () => {
       }
     }
 
-    // Handle driver email search - show all if empty, filter if text entered
+    // Handle driver email search - show available if empty, filter if text entered
     if (name === "driverEmail") {
       if (value.trim() === "") {
-        // Show all drivers
-        setDriverSuggestions(drivers);
+        // Show only available drivers
+        const availableDriversList = drivers.filter((d) => d.status === "available");
+        setDriverSuggestions(availableDriversList);
         setShowDriverSuggestions(true);
       } else {
         const filtered = drivers.filter((d) =>
-          (d.email || "").toLowerCase().includes(value.toLowerCase()) ||
-          (d.name || "").toLowerCase().includes(value.toLowerCase())
+          d.status === "available" && (
+            (d.email || "").toLowerCase().includes(value.toLowerCase()) ||
+            (d.name || "").toLowerCase().includes(value.toLowerCase())
+          )
         );
         setDriverSuggestions(filtered);
         setShowDriverSuggestions(true);
@@ -1315,7 +1318,8 @@ const Trip = () => {
                   onFocus={() => {
                     setShowDriverSuggestions(true);
                     if (tripForm.driverEmail.trim() === "") {
-                      setDriverSuggestions(drivers);
+                      const availableDriversList = drivers.filter((d) => d.status === "available");
+                      setDriverSuggestions(availableDriversList);
                     }
                   }}
                   onKeyDown={(e) => handleKeyDown(e, 1)}
@@ -1506,7 +1510,8 @@ const Trip = () => {
                   onFocus={() => {
                     setShowDriverSuggestions(true);
                     if (tripForm.driverEmail.trim() === "") {
-                      setDriverSuggestions(drivers);
+                      const availableDriversList = drivers.filter((d) => d.status === "available");
+                      setDriverSuggestions(availableDriversList);
                     }
                   }}
                   onKeyDown={(e) => handleKeyDown(e, 1)}
