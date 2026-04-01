@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import User from '../../models/user.schema';
+import Driver from '../../models/driver.schema';
 import response from '../../response/response';
 
 const getEmployees = async (req, res) => {
@@ -16,8 +17,28 @@ const getEmployees = async (req, res) => {
       role: { $ne: 'manager' },
     }).select('-password');
 
+    // For drivers, populate their driver status
+    const employeesWithStatus = await Promise.all(
+      employees.map(async (employee) => {
+        const emp = employee.toObject();
+        
+        if (emp.role === 'driver') {
+          try {
+            const driverData = await Driver.findOne({ user: employee._id }).select('status');
+            if (driverData) {
+              emp.status = driverData.status;
+            }
+          } catch (err) {
+            console.error(`Failed to fetch driver status for user ${employee._id}:`, err);
+          }
+        }
+        
+        return emp;
+      })
+    );
+
     return response(res, 200, true, 'Employees retrieved successfully', {
-      employees,
+      employees: employeesWithStatus,
     });
   } catch (err) {
     console.error('Get employees error:', err);

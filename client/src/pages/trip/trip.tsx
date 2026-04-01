@@ -525,6 +525,10 @@ const Trip = () => {
       setTripForm(INITIAL_FORM);
       setSelectedVehicleCapacity(null);
       setCargoWeightError("");
+      setShowVehicleSuggestions(false);
+      setShowDriverSuggestions(false);
+      setVehicleSuggestions([]);
+      setDriverSuggestions([]);
       setIsCreateModalOpen(false);
       if (currentPage !== 1) {
         setCurrentPage(1);
@@ -718,6 +722,10 @@ const Trip = () => {
       setTripForm(INITIAL_FORM);
       setSelectedVehicleCapacity(null);
       setCargoWeightError("");
+      setShowVehicleSuggestions(false);
+      setShowDriverSuggestions(false);
+      setVehicleSuggestions([]);
+      setDriverSuggestions([]);
       setSelectedTrip(null);
       setIsEditModalOpen(false);
     } catch (error) {
