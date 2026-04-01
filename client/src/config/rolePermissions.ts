@@ -76,6 +76,12 @@ export const navItems: NavItem[] = [
     dashboardType: 'full',
   },
   {
+    path: '/main/trip-dispatcher',
+    label: 'Trips',
+    icon: '🛣️',
+    requiredRoles: ['manager', 'dispatcher'],
+  },
+  {
     path: '/main/vehicle-registry',
     label: 'Vehicles',
     icon: '🚗',
@@ -85,12 +91,6 @@ export const navItems: NavItem[] = [
     path: '/main/driver-registry',
     label: 'Drivers',
     icon: '👨‍✈️',
-    requiredRoles: ['manager', 'dispatcher'],
-  },
-  {
-    path: '/main/trip-dispatcher',
-    label: 'Trips',
-    icon: '🛣️',
     requiredRoles: ['manager', 'dispatcher'],
   },
   {
