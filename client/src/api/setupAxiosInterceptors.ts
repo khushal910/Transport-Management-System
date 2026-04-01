@@ -18,7 +18,6 @@ const apiInstances = [
 
 // Flag to prevent multiple redirects
 let isRedirecting = false;
-let errorToastShown = false;
 
 export const setupAxiosInterceptors = () => {
   apiInstances.forEach((instance) => {
@@ -45,7 +44,6 @@ export const setupAxiosInterceptors = () => {
           localStorage.removeItem('company');
 
           // Redirect to login after a short delay
-          // Note: Components using PrivateRoute will handle notification display
           setTimeout(() => {
             window.location.href = '/auth/login';
           }, 500);
