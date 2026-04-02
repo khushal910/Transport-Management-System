@@ -72,6 +72,24 @@ const getDashboardKPIs = async (req, res) => {
       status: { $in: ['draft', 'dispatched'] },
     });
 
+    // Calculate completed today (trips completed today)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const completedTodayCount = await Trip.countDocuments({
+      company: companyObjectId,
+      status: 'completed',
+      updatedAt: { $gte: today, $lt: tomorrow },
+    });
+
+    // Calculate pending assignment (trips in draft status - not yet assigned to vehicle/driver)
+    const pendingAssignmentCount = await Trip.countDocuments({
+      company: companyObjectId,
+      status: 'draft',
+    });
+
     // Build trips list with applied filters
     let filteredTrips = trips;
 
@@ -109,6 +127,8 @@ const getDashboardKPIs = async (req, res) => {
         activeFleet: activeFleetCount,
         maintenanceAlerts: maintenanceAlertsCount,
         pendingCargo: pendingCargoCount,
+        completedToday: completedTodayCount,
+        pendingAssignment: pendingAssignmentCount,
       },
       trips: tripsData,
     };

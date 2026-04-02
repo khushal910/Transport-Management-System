@@ -155,6 +155,11 @@ export const DispatcherDashboard = () => {
   const navigate = useNavigate();
   const { notifyError } = useNotification();
   const [trips, setTrips] = useState([]);
+  const [kpis, setKpis] = useState({
+    activeTrips: 0,
+    completedToday: 0,
+    pendingAssignment: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -163,6 +168,13 @@ export const DispatcherDashboard = () => {
         const response = await dashboardBaseURL.get('/kpis');
         if (response.data?.success) {
           setTrips(response.data.data.trips);
+          setKpis({
+            activeTrips: response.data.data.trips.filter(
+              (t) => t.status === 'dispatched'
+            ).length,
+            completedToday: response.data.data.kpis?.completedToday || 0,
+            pendingAssignment: response.data.data.kpis?.pendingAssignment || 0,
+          });
         }
       } catch (error) {
         notifyError('Failed to fetch trips data');
@@ -194,7 +206,7 @@ export const DispatcherDashboard = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-600">Active Trips</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">12</p>
+                <p className="text-3xl font-bold text-blue-600 mt-1">{kpis.activeTrips}</p>
               </div>
               <span className="text-4xl">🛣️</span>
             </div>
@@ -206,7 +218,7 @@ export const DispatcherDashboard = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-600">Completed Today</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">28</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{kpis.completedToday}</p>
               </div>
               <span className="text-4xl">✅</span>
             </div>
@@ -218,7 +230,7 @@ export const DispatcherDashboard = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-600">Pending Assignment</p>
-                <p className="text-3xl font-bold text-yellow-600 mt-1">5</p>
+                <p className="text-3xl font-bold text-yellow-600 mt-1">{kpis.pendingAssignment}</p>
               </div>
               <span className="text-4xl">⏳</span>
             </div>
