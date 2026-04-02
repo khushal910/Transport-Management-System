@@ -93,7 +93,7 @@ export const router = createBrowserRouter([
       },
       // Team Page - Manager only
       {
-        path: 'employee/add',
+        path: 'team',
         element: <PrivateRoute requiredRoles={['manager'] as UserRole[]}><AddEmployee /></PrivateRoute>,
       },
       { 

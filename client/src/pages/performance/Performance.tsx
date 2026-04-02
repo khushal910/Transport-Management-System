@@ -1031,7 +1031,7 @@ const Performance = () => {
         )}
 
       {/* Pagination */}
-      {!isLoading && pagination.totalPages > 1 && (
+      {!isLoading && pagination.totalPages > 1 && !isStatusModalOpen && (
         <PaginationContainer>
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}

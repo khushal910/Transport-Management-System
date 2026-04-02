@@ -1236,6 +1236,7 @@ const Trip = () => {
         )}
       </div>
 
+      {!(isCreateModalOpen || isEditModalOpen || isDetailModalOpen) && (
       <PaginationContainer>
         <p className="text-sm text-gray-600">
           Page {pagination.page} of {Math.max(pagination.totalPages, 1)} | Total trips {pagination.total}
@@ -1259,6 +1260,7 @@ const Trip = () => {
           </button>
         </div>
       </PaginationContainer>
+      )}
 
       {isCreateModalOpen && (
         <div

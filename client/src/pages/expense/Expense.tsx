@@ -655,6 +655,7 @@ const Expense = () => {
               )}
 
               {/* Pagination Controls */}
+              {!showEditModal && (
               <PaginationContainer className="justify-between">
                 <p className="text-sm text-gray-600">
                   Page {pagination.page} of {Math.max(pagination.totalPages, 1)} | Total expenses {pagination.total}
@@ -678,6 +679,7 @@ const Expense = () => {
                   </button>
                 </div>
               </PaginationContainer>
+              )}
             </>
           )}
         </div>

@@ -687,6 +687,7 @@ const VehicleRegistry = () => {
       ------------------------------*/}
 
       {/* PAGINATION */}
+      {!isModalOpen && (
       <PaginationContainer>
         <button
           disabled={currentPage === 1}
@@ -710,6 +711,7 @@ const VehicleRegistry = () => {
         </button>
 
       </PaginationContainer>
+      )}
       </>
       )}
 

@@ -549,16 +549,16 @@ export default function EmployeeManagement() {
                 </thead>
                 <tbody>
                   {paginatedEmployees.map((employee) => (
-                    <tr key={employee._id} className={`border-b hover:bg-gray-50 ${!employee.isPasswordSet ? 'bg-red-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{employee.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{employee.email}</td>
+                    <tr key={employee?._id || Math.random()} className={`border-b hover:bg-gray-50 ${!employee?.isPasswordSet ? 'bg-red-50' : ''}`}>
+                      <td className="px-4 py-3 text-sm text-gray-900">{employee?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{employee?.email || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(employee.role)}`}>
-                          {employee.role.replaceAll('_', ' ').toUpperCase()}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(employee?.role)}`}>
+                          {employee?.role ? employee.role.replaceAll('_', ' ').toUpperCase() : 'N/A'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {employee.isPasswordSet ? (
+                        {employee?.isPasswordSet ? (
                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             ✓ Ready
                           </span>
@@ -569,7 +569,7 @@ export default function EmployeeManagement() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {new Date(employee.createdAt).toLocaleDateString()}
+                        {employee?.createdAt ? new Date(employee.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2" style={{ display: isReadOnly ? 'none' : 'flex' }}>
                         <button
@@ -614,7 +614,7 @@ export default function EmployeeManagement() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {totalPages > 1 && !isModalOpen && (
               <PaginationContainer className="justify-between">
                 <div className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages} ({processedEmployees.length} total)

@@ -828,7 +828,7 @@ export default function MaintenancePage() {
             )}
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {pagination.totalPages > 1 && !isCreateModalOpen && (
               <PaginationContainer className="flex-col md:flex-row md:justify-between">
                 <div className="text-sm text-gray-600">
                   Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
