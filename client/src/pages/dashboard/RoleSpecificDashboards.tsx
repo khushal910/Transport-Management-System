@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../hooks/useNotification';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
@@ -151,6 +152,7 @@ export const ManagerDashboard = () => {
  * Limited data, focus on trips and operations
  */
 export const DispatcherDashboard = () => {
+  const navigate = useNavigate();
   const { notifyError } = useNotification();
   const [trips, setTrips] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +188,9 @@ export const DispatcherDashboard = () => {
 
         {/* Operational KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div 
+            onClick={() => navigate('/main/trip-dispatcher?status=dispatched')}
+            className="bg-blue-50 border border-blue-200 rounded-lg p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-600">Active Trips</p>
@@ -196,7 +200,9 @@ export const DispatcherDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+          <div 
+            onClick={() => navigate('/main/trip-dispatcher?status=completed')}
+            className="bg-green-50 border border-green-200 rounded-lg p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-600">Completed Today</p>
@@ -206,7 +212,9 @@ export const DispatcherDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div 
+            onClick={() => navigate('/main/trip-dispatcher?status=draft')}
+            className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-600">Pending Assignment</p>
