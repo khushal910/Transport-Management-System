@@ -3,6 +3,7 @@ import { useNotification } from '../../hooks/useNotification';
 import expenseBaseURL from '../../api/expenseBaseURL.ts';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 import { PageContainer, PageHeader } from '../../components/ui';
+import PaginationContainer from '../../components/PaginationContainer';
 
 const Expense = () => {
   const { notifyError, notifySuccess } = useNotification();
@@ -43,7 +44,7 @@ const Expense = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 4,
     total: 0,
     totalPages: 1,
   });
@@ -654,7 +655,7 @@ const Expense = () => {
               )}
 
               {/* Pagination Controls */}
-              <div className="mt-6 flex items-center justify-between">
+              <PaginationContainer className="justify-between">
                 <p className="text-sm text-gray-600">
                   Page {pagination.page} of {Math.max(pagination.totalPages, 1)} | Total expenses {pagination.total}
                 </p>
@@ -663,7 +664,7 @@ const Expense = () => {
                     type="button"
                     disabled={pagination.page <= 1 || isLoading}
                     onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
                   >
                     Previous
                   </button>
@@ -671,12 +672,12 @@ const Expense = () => {
                     type="button"
                     disabled={pagination.page >= pagination.totalPages || isLoading}
                     onClick={() => setCurrentPage((prev) => prev + 1)}
-                    className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
                   >
                     Next
                   </button>
                 </div>
-              </div>
+              </PaginationContainer>
             </>
           )}
         </div>

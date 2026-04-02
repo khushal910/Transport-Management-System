@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './routes/routes';
 import { setupAxiosInterceptors } from './api/setupAxiosInterceptors';
+import { SidebarProvider } from './context/SidebarContext';
 
 const App = () => {
   useEffect(() => {
@@ -11,7 +12,9 @@ const App = () => {
 
   return (
     <>
-      <RouterProvider router={router} />
+      <SidebarProvider>
+        <RouterProvider router={router} />
+      </SidebarProvider>
     </>
   );
 };

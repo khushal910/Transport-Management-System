@@ -5,6 +5,7 @@ import vehicleBaseURL from "../../api/vehicleBaseURL";
 import authBaseURL from "../../api/authBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 import { PageContainer, PageHeader } from '../../components/ui';
+import PaginationContainer from '../../components/PaginationContainer';
 
 const INITIAL_FORM = {
   vehiclePlateNumber: "",
@@ -119,7 +120,7 @@ const Trip = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 4,
     total: 0,
     totalPages: 1,
   });
@@ -1235,7 +1236,7 @@ const Trip = () => {
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
+      <PaginationContainer>
         <p className="text-sm text-gray-600">
           Page {pagination.page} of {Math.max(pagination.totalPages, 1)} | Total trips {pagination.total}
         </p>
@@ -1244,7 +1245,7 @@ const Trip = () => {
             type="button"
             disabled={pagination.page <= 1 || isLoading}
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
           >
             Previous
           </button>
@@ -1252,12 +1253,12 @@ const Trip = () => {
             type="button"
             disabled={pagination.page >= pagination.totalPages || isLoading}
             onClick={() => setCurrentPage((prev) => prev + 1)}
-            className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-gray-300 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
           >
             Next
           </button>
         </div>
-      </div>
+      </PaginationContainer>
 
       {isCreateModalOpen && (
         <div

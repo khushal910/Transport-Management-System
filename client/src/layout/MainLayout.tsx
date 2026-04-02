@@ -5,13 +5,14 @@ import { useNotification } from '../hooks/useNotification'
 import NotificationBanner from '../components/NotificationPanel'
 import { Menu, X, LogOut, ChevronDown } from 'lucide-react'
 import { navItems, UserRole } from '../config/rolePermissions'
+import { useSidebar } from '../context/SidebarContext'
 
 const MainLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { notifySuccess, notifyError } = useNotification()
   const [showProfilePanel, setShowProfilePanel] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { sidebarOpen, setSidebarOpen } = useSidebar()
 
   const isActive = (path: string) => {
     return location.pathname === path

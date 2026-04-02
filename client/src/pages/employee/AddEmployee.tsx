@@ -39,7 +39,7 @@ export default function EmployeeManagement() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(3);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -615,7 +615,7 @@ export default function EmployeeManagement() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
+              <PaginationContainer className="justify-between">
                 <div className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages} ({processedEmployees.length} total)
                 </div>
@@ -623,19 +623,19 @@ export default function EmployeeManagement() {
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded disabled:opacity-50 hover:bg-gray-400 transition"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
+                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded disabled:opacity-50 hover:bg-gray-400 transition"
                   >
                     Next
                   </button>
                 </div>
-              </div>
+              </PaginationContainer>
             )}
           </>
         )}

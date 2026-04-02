@@ -47,7 +47,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({
   maxWidth = 'xl',
 }) => {
   return (
-    <div className={`mx-auto ${maxWidthMap[maxWidth]} px-6 py-8`}>
+    <div className={`mx-auto ${maxWidthMap[maxWidth]} px-6 py-8 pb-24`}>
       {children}
     </div>
   );

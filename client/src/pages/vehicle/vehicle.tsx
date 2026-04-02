@@ -3,6 +3,7 @@ import { useNotification } from '../../hooks/useNotification';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 import { PageContainer, PageHeader } from '../../components/ui';
+import PaginationContainer from '../../components/PaginationContainer';
 
 interface Vehicle {
   _id: string;
@@ -60,7 +61,7 @@ const VehicleRegistry = () => {
 
   // pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(3);
 
   // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -460,12 +461,13 @@ const VehicleRegistry = () => {
 
   return (
     <PageContainer>
-      <PageHeader 
-        title={isReadOnly ? "Vehicle Registry - Read Only" : "Vehicle Registry"} 
-        description={isReadOnly ? "View available vehicles for trip assignment" : "Manage your fleet vehicles and track their status"}
-      />
+      <div className="flex flex-col h-[calc(100vh-80px)]">
+        <PageHeader 
+          title={isReadOnly ? "Vehicle Registry - Read Only" : "Vehicle Registry"} 
+          description={isReadOnly ? "View available vehicles for trip assignment" : "Manage your fleet vehicles and track their status"}
+        />
 
-      <div className="space-y-6">
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4 pb-4">
       {/* TABS */}
       <div className="flex gap-4 mb-8 border-b border-gray-200">
         <button
@@ -648,12 +650,12 @@ const VehicleRegistry = () => {
 
 
       {/* -----------------------------
-           VEHICLE TABLE
-      ------------------------------*/}
+        {/* VEHICLE TABLE
+        ------------------------------*/}
 
-      <div className="overflow-x-auto">
+        <div className="overflow-x-auto flex-1">
 
-        <table className="min-w-full ">
+          <table className="min-w-full ">
 
           <thead className="bg-gray-200 text-gray-700">
 
@@ -684,14 +686,14 @@ const VehicleRegistry = () => {
            PAGINATION
       ------------------------------*/}
 
-      <div className="flex gap-4 mt-6">
-
+      {/* PAGINATION */}
+      <PaginationContainer>
         <button
           disabled={currentPage === 1}
           onClick={() =>
             setCurrentPage((prev) => Math.max(prev - 1, 1))
           }
-          className="px-4 py-2 bg-gray-700 text-white rounded disabled:bg-gray-400 cursor-pointer "
+          className="px-4 py-2 bg-gray-700 text-white rounded disabled:bg-gray-400 cursor-pointer hover:bg-gray-800 transition"
         >
           Previous
         </button>
@@ -702,12 +704,12 @@ const VehicleRegistry = () => {
               vehicleList.length < itemsPerPage ? prev : prev + 1
             )
           }
-          className="px-4 py-2 bg-gray-700 text-white rounded cursor-pointer "
+          className="px-4 py-2 bg-gray-700 text-white rounded cursor-pointer hover:bg-gray-800 transition"
         >
           Next
         </button>
 
-      </div>
+      </PaginationContainer>
       </>
       )}
 
@@ -898,6 +900,7 @@ const VehicleRegistry = () => {
 
       )}
 
+      </div>
       </div>
     </PageContainer>
   );
