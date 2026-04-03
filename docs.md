@@ -8,13 +8,15 @@
 2. [Tech Stack](#-tech-stack)
 3. [System Architecture](#-system-architecture)
 4. [Core Features](#-core-features)
-5. [API Documentation](#-api-documentation)
-6. [Business Logic Rules](#-business-logic-rules)
-7. [Real-World Workflow](#-real-world-workflow)
-8. [Database Design](#-database-design)
-9. [Error Handling](#-error-handling)
-10. [UI & Navigation](#-ui--navigation)
-11. [Future Scope](#-future-scope)
+5. [Role-Based Access Control](#-role-based-access-control)
+6. [Email Notifications & Communication](#-email-notifications--communication)
+7. [API Documentation](#-api-documentation)
+8. [Business Logic Rules](#-business-logic-rules)
+9. [Real-World Workflow](#-real-world-workflow)
+10. [Database Design](#-database-design)
+11. [Error Handling](#-error-handling)
+12. [UI & Navigation](#-ui--navigation)
+13. [Future Scope](#-future-scope)
 
 ---
 
@@ -224,6 +226,559 @@ Backend Structure:
 - ✅ Fuel efficiency analysis
 - ✅ Expense trends & forecasting
 - ✅ Performance metrics (on-time %, fuel consumption %)
+
+### 7. 📧 **Email Notifications & Communication**
+- ✅ Automatic email notifications when employee details are updated
+- ✅ Employee receives updates showing: name, email, role, or password changes
+- ✅ Professional HTML email templates with security notices
+- ✅ Password reset & account setup emails
+- ✅ Employee account deactivation notifications
+- ✅ Manager-initiated communication system
+- ✅ Secure email delivery with error tracking
+
+---
+
+## 🔐 Role-Based Access Control
+
+### **System Overview**
+
+FleetFlow implements strict **Role-Based Access Control (RBAC)** to ensure data security and operational integrity. Each user role has defined permissions, accessible pages, and data view limitations.
+
+### **Available User Roles**
+
+| Role | Icon | Level | Access Type |
+|------|------|-------|-------------|
+| **Manager** | 👑 | Full | Administrative - Complete access |
+| **Dispatcher** | 🚚 | Operations | Limited - Operations focus |
+| **Safety Officer** | 🛡️ | Compliance | Restricted - Safety metrics only |
+| **Financial Analyst** | 📊 | Finance | Restricted - Financial metrics only |
+
+---
+
+### **1. 👑 Manager Role**
+
+**Access Level:** Full Administrative Access
+
+**Accessible Pages:**
+- ✅ Dashboard (Full data)
+- ✅ Vehicle Registry (Add/Edit/Delete)
+- ✅ Trip Dispatcher
+- ✅ Driver Registry / Team
+- ✅ Employee Management (Add/Edit/Delete)
+- ✅ Maintenance Scheduling
+- ✅ Trip Expense Management
+- ✅ Performance Analytics
+- ✅ System Analytics
+
+**Capabilities:**
+- Create, edit, delete vehicles
+- Assign drivers to trips
+- Manage employee accounts (create, update, delete)
+- Schedule and update maintenance
+- View all financial data
+- Generate all reports
+- Update employee details (triggers email notification to employee)
+- Assign roles to team members
+- Access system-wide analytics
+
+**Example Usage:**
+```
+Manager Action → Employee Update
+1. Manager edits employee in Team page
+2. Changes: Name, Email, Role, or Password
+3. Employee receives professional email notification
+4. Email shows: What was changed and timestamp
+5. Log entry created in system audit trail
+```
+
+---
+
+### **2. 🚚 Dispatcher Role**
+
+**Access Level:** Operations Focus (Limited Administrative)
+
+**Accessible Pages:**
+- ✅ Dashboard (Limited - Operations data only)
+- ✅ Vehicle Registry (View Only)
+- ✅ Driver Registry (View Only)
+- ✅ Trip Dispatcher (Create/Edit/Assign trips)
+
+**Cannot Access:**
+- ❌ Employee/Team Management
+- ❌ Maintenance Scheduling
+- ❌ Financial/Expense Data
+- ❌ Analytics (except operations dashboard)
+- ❌ System Settings
+
+**View Limitations:**
+- Dashboard shows only: Active trips, Vehicle status, Driver availability
+- Cannot see: Employee personal data, Salary info, Financial metrics
+- Can view vehicle details but cannot modify them
+- Can view driver info but cannot edit roles/permissions
+
+**Capabilities:**
+- Create and dispatch new trips
+- Assign available vehicles to trips
+- Assign available drivers to trips
+- Update trip status (Draft → Dispatched → In Progress → Completed)
+- View real-time vehicle locations
+- Track trip progress
+
+**Example Usage:**
+```
+Dispatcher Workflow:
+1. New order received: "Deliver cargo from Surat to Vadodara"
+2. Dispatcher views available vehicles → Sees Truck-12 (Available)
+3. Dispatcher views available drivers → Sees Rajesh (Available)
+4. Creates Trip: Assign Truck-12 + Rajesh
+5. Trip status updated → Real-time tracking enabled
+✓ Cannot: Edit trip expenses, view maintenance schedule, or access employee contacts
+```
+
+---
+
+### **3. 🛡️ Safety Officer Role**
+
+**Access Level:** Compliance & Safety Focus (Restricted)
+
+**Accessible Pages:**
+- ✅ Dashboard (Safety metrics only)
+- ✅ Performance Analytics (Driver safety & compliance)
+
+**Cannot Access:**
+- ❌ Vehicle Management
+- ❌ Trip Dispatcher
+- ❌ Driver Registry
+- ❌ Employee Management
+- ❌ Maintenance Scheduling
+- ❌ Financial Data
+- ❌ System Settings
+
+**View Limitations:**
+- Dashboard shows only: Driver safety scores, Maintenance due dates, Compliance alerts
+- Can see: Driver performance ratings, License expiration dates
+- Cannot see: Personal driver info, Contact details, Financial data
+- Cannot make modifications to any data
+
+**Capabilities:**
+- Monitor driver performance & safety metrics
+- View compliance alerts & schedules
+- Access driver performance rankings
+- Generate safety compliance reports
+- View maintenance requirements & schedules
+- Track vehicle inspection history
+
+**Example Usage:**
+```
+Safety Officer Workflow:
+1. Dashboard shows: "Driver Rajesh - Safety Score: 94%"
+2. Sees alert: "Truck-12 maintenance due in 3 days"
+3. Views: Driver performance history across all trips
+4. Cannot: Modify driver info, assign vehicles, view financial data
+✓ Pure monitoring & compliance role
+```
+
+---
+
+### **4. 📊 Financial Analyst Role**
+
+**Access Level:** Finance & Analytics Focus (Restricted)
+
+**Accessible Pages:**
+- ✅ Dashboard (Financial metrics only)
+- ✅ Trip Expense Management
+- ✅ System Analytics
+
+**Cannot Access:**
+- ❌ Vehicle Management
+- ❌ Trip Dispatcher
+- ❌ Driver Registry
+- ❌ Employee Management
+- ❌ Maintenance Scheduling
+- ❌ Performance Analytics (driver safety)
+- ❌ System Settings
+
+**View Limitations:**
+- Dashboard shows only: Revenue, expenses, fuel costs, profit margins
+- Can see: Trip-wise expenses, fuel consumption costs, maintenance expenses
+- Cannot see: Driver personal info, Employee details, Vehicle maintenance history
+- Cannot make modifications to operational data
+
+**Capabilities:**
+- View all expense data
+- Analyze cost trends & patterns
+- Generate financial reports
+- View revenue analytics
+- Track fuel efficiency costs
+- Budget vs. actual comparisons
+- Export financial data for analysis
+
+**Example Usage:**
+```
+Financial Analyst Workflow:
+1. Dashboard shows: "Monthly Revenue: ₹2,50,000"
+2. Views: Trip expenses breakdown
+3. Analyzes: "Fuel costs increased by 12% vs last month"
+4. Generates report: "Cost optimization recommendations"
+5. Cannot: Create trips, view driver names, access employee records
+✓ Pure financial analysis role
+```
+
+---
+
+### **RBAC Summary Table**
+
+| Feature | Manager | Dispatcher | Safety Officer | Financial Analyst |
+|---------|---------|-----------|----------------|-------------------|
+| **Dashboard** | ✅ Full | ✅ Limited | ✅ Safety Only | ✅ Finance Only |
+| **Vehicles** | ✅ Full CRUD | ✅ View Only | ❌ No Access | ❌ No Access |
+| **Trips** | ✅ Full CRUD | ✅ Create/Assign | ❌ No Access | ❌ No Access |
+| **Drivers** | ✅ Full CRUD | ✅ View Only | ✅ View Performance | ❌ No Access |
+| **Employees** | ✅ Full CRUD | ❌ No Access | ❌ No Access | ❌ No Access |
+| **Maintenance** | ✅ Full CRUD | ❌ No Access | ✅ View Only | ❌ No Access |
+| **Expenses** | ✅ Full Access | ❌ No Access | ❌ No Access | ✅ View Only |
+| **Analytics** | ✅ Full Reports | ❌ Dashboard Only | ✅ Safety Reports | ✅ Finance Reports |
+| **Email Notifications** | ✅ Sends (when updating employees) | ❌ Receives Only | ❌ Receives Only | ❌ Receives Only |
+
+---
+
+### **Security Rules**
+
+```
+1. Authentication Required
+   - All endpoints require valid JWT token
+   - Token expires after inactivity
+   - Automatic logout on 401 error
+
+2. Authorization Check
+   - Every request validated against user role
+   - Unauthorized access returns 403 Forbidden
+   - Audit logs track all access attempts
+
+3. Data Isolation
+   - Users see only data for their company
+   - Multi-tenant isolation enforced
+   - No cross-company data leakage
+
+4. Email Notifications
+   - Sent only to employee being updated
+   - Manager/Admin can trigger emails
+   - Security notice included in email
+```
+
+---
+
+## 📧 Email Notifications & Communication
+
+### **System Overview**
+
+FleetFlow uses **Nodemailer with Gmail SMTP** to send professional email notifications. All emails are HTML-formatted with enterprise-grade design and security considerations.
+
+### **Email Configuration**
+
+**Required Environment Variables (.env):**
+```
+EMAIL_SERVICE=gmail
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-specific-password
+CLIENT_URL=http://localhost:5173
+```
+
+**Setup Instructions:**
+1. Enable 2-Factor Authentication on Gmail account
+2. Generate App-Specific Password: https://myaccount.google.com/apppasswords
+3. Add credentials to `.env` file
+4. Restart backend server
+
+### **Email Types & Triggers**
+
+#### **1. 📋 Employee Details Updated Email**
+
+**Trigger:** When manager updates employee information (name, email, role, or password)
+
+**Recipients:** Updated employee (on their registered email)
+
+**Sender:** Automated system (EMAIL_USER from .env)
+
+**Content:**
+```
+To: employee@company.com
+Subject: Your Account Details Have Been Updated
+From: system@fleetflow.com
+
+Email Body:
+- Header: "Account Details Updated"
+- Updated fields list (what changed)
+- Timestamp of update
+- Security notice: "If unauthorized, contact manager"
+- Help section with contact info
+```
+
+**Detailed Update Information Shown:**
+```javascript
+Updated Fields:
+- Name: "Rajesh Kumar" (if changed)
+- Email: "new.email@company.com" (if changed)
+- Role: "Dispatcher" (if changed)
+- Password: "Updated" (if changed)
+```
+
+**Real-World Example:**
+```
+Manager Updates Employee:
+1. Opens Team/Employee page
+2. Clicks edit on "Rajesh Kumar"
+3. Changes:
+   - Name: "Rajesh Kumar" → "Rajesh K. Singh"
+   - Role: "Driver" → "Dispatcher"
+4. Saves changes
+5. System sends email to Rajesh's email
+6. Email shows:
+   ✓ Name updated to: "Rajesh K. Singh"
+   ✓ Role updated to: "Dispatcher"
+   ✓ Updated on: March 26, 2024 at 2:30 PM
+   ✓ Security notice included
+```
+
+**Implementation Details:**
+```typescript
+// Backend Controller: update.employee.ts
+- Tracks which fields were updated
+- Calls sendEmployeeDetailsUpdatedEmail()
+- Sends only if changes were made
+- Logs email delivery status
+
+// Email Service: email.service.ts
+- Generates professional HTML template
+- Includes company branding
+- Shows all modified fields
+- Provides security guidance
+```
+
+---
+
+#### **2. 🔑 Password Reset Email**
+
+**Trigger:** Employee requests password reset
+
+**Recipients:** Employee requesting reset
+
+**Content:**
+- Password reset link (24-hour expiration)
+- Instructions for creating new password
+- Security notice
+- Click-to-reset button
+
+**Example:**
+```
+Subject: Password Reset Request - Fleet Management System
+
+Email includes:
+- Reset link with token
+- 24-hour expiration notice
+- If unauthorized, ignore warning
+- Copy/paste URL option
+- Security advice about strong passwords
+```
+
+---
+
+#### **3. 🎉 Employee Account Setup Email**
+
+**Trigger:** New employee account created
+
+**Recipients:** New employee (on assigned email)
+
+**Content:**
+- Welcome message
+- Account setup instructions
+- Temporary setup link (24-hour expiration)
+- Required password strength guidelines
+- Security tips
+
+**Example:**
+```
+Subject: Welcome to Fleet Management System - Set Your Password
+
+Email includes:
+- Welcome greeting with name
+- Instructions to set password
+- Setup link with token
+- Password strength requirements
+- Security tips & best practices
+```
+
+---
+
+#### **4. ❌ Employee Account Deactivation Email**
+
+**Trigger:** Manager deletes/deactivates employee
+
+**Recipients:** Deactivated employee
+
+**Content:**
+- Deactivation notice
+- Employee information summary
+- Deactivation date & reason
+- Appeal instructions
+- HR contact information
+
+**Example:**
+```
+Subject: Employee Account Deactivated - Fleet Management System
+
+Email includes:
+- Account status: Deactivated (red highlight)
+- Employee name & company
+- Deactivation date
+- Access removal notice
+- HR contact for questions
+```
+
+---
+
+### **Email Template Features**
+
+**Universal Elements in All Emails:**
+```
+1. Professional Header
+   - Company branding
+   - Clear subject line
+   - Timestamp
+
+2. Main Content
+   - Clear action/change description
+   - Relevant details
+   - Status indicators
+
+3. Security Section
+   - "If unauthorized..."
+   - "Contact manager"
+   - "Never share password"
+
+4. Footer
+   - Automated message notice
+   - Company copyright
+   - Do not reply notice
+```
+
+**Visual Design:**
+```
+- Color Scheme: Blue (#3b82f6), Green (#10b981), Red (#dc2626)
+- Font: Arial, sans-serif
+- Max Width: 600px (mobile responsive)
+- Professional spacing & padding
+- Clear call-to-action buttons
+```
+
+---
+
+### **Email Delivery Process**
+
+```
+Flowchart:
+┌─────────────────────────────────────┐
+│ 1. Event Triggered                  │
+│ (Employee updated, account created) │
+└────────────┬────────────────────────┘
+             ↓
+┌─────────────────────────────────────┐
+│ 2. Email Function Called            │
+│ (sendEmployeeDetailsUpdatedEmail)   │
+└────────────┬────────────────────────┘
+             ↓
+┌─────────────────────────────────────┐
+│ 3. Template Generated               │
+│ (HTML formatted with data)          │
+└────────────┬────────────────────────┘
+             ↓
+┌─────────────────────────────────────┐
+│ 4. Nodemailer Transporter           │
+│ (Gmail SMTP connection)             │
+└────────────┬────────────────────────┘
+             ↓
+┌─────────────────────────────────────┐
+│ 5. Email Sent                       │
+│ (Delivery to inbox)                 │
+└────────────┬────────────────────────┘
+             ↓
+┌─────────────────────────────────────┐
+│ 6. Confirmation                     │
+│ (Success/Error logged)              │
+└─────────────────────────────────────┘
+```
+
+---
+
+### **Error Handling & Troubleshooting**
+
+**If emails don't send:**
+
+1. **Check .env Configuration**
+   ```
+   ✓ EMAIL_USER is set
+   ✓ EMAIL_PASSWORD is app-specific (not regular password)
+   ✓ CLIENT_URL is correct
+   ✓ No spaces in credentials
+   ```
+
+2. **Verify Gmail Setup**
+   - 2-Factor Authentication enabled
+   - App-Specific Password generated (not regular password)
+   - Less secure app access disabled (use App Password instead)
+
+3. **Check Email Logs**
+   ```
+   Backend Console Output:
+   ✓ "Email transporter ready to send emails"
+   ✓ "Employee details updated email sent successfully to: email@example.com"
+   ```
+
+4. **Test Email Delivery**
+   - Update employee details
+   - Check employee's email inbox (including spam folder)
+   - Verify email content matches expectations
+
+5. **Common Errors**
+   ```
+   Error: Email credentials not configured
+   Solution: Set EMAIL_USER and EMAIL_PASSWORD in .env
+
+   Error: Invalid credentials
+   Solution: Use app-specific password, not regular Gmail password
+
+   Error: 535 Unsuccessful SMTP authentication
+   Solution: Enable 2FA and generate new app password
+   ```
+
+---
+
+### **Email Notification Use Cases**
+
+**Scenario 1: Name Change Notification**
+```
+Manager updates employee "Rajesh" to "Rajesh Singh"
+Email sent to: rajesh.singh@company.com
+Subject line: "Your Account Details Have Been Updated"
+Shows: ✓ Name: Rajesh Singh
+```
+
+**Scenario 2: Role Promotion Notification**
+```
+Manager changes employee role from "Driver" to "Dispatcher"
+Email sent to: employee@company.com
+Subject line: "Your Account Details Have Been Updated"
+Shows: ✓ Role: Dispatcher
+```
+
+**Scenario 3: Password Reset Notification**
+```
+Manager updates employee password for security
+Email sent to: employee@company.com
+Subject line: "Your Account Details Have Been Updated"
+Shows: ✓ Password: Updated
+Content: "Your password has been updated by your manager"
+```
 
 ---
 
