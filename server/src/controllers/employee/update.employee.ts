@@ -2,6 +2,7 @@
 import User from '../../models/user.schema';
 import response from '../../response/response';
 import updateEmployeeValidatorSchema from '../../validations/update.employee.validator';
+import { sendEmployeeDetailsUpdatedEmail } from '../../utils/email.service';
 import bcrypt from 'bcryptjs';
 
 const updateEmployee = async (req, res) => {
@@ -66,6 +67,18 @@ const updateEmployee = async (req, res) => {
 
     if (!updatedEmployee) {
       return response(res, 404, false, 'Employee not found');
+    }
+
+    // Send email notification about updated details
+    const updatedFields: any = {};
+    if (updateData.name) updatedFields.name = updateData.name;
+    if (updateData.email) updatedFields.email = updateData.email;
+    if (updateData.role) updatedFields.role = updateData.role;
+    if (updateData.password) updatedFields.password = true;
+
+    // Only send email if there are updates
+    if (Object.keys(updatedFields).length > 0) {
+      await sendEmployeeDetailsUpdatedEmail(updatedEmployee.email, updatedEmployee.name, updatedFields);
     }
 
     return response(res, 200, true, 'Employee updated successfully', {

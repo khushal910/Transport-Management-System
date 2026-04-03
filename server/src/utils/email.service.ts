@@ -220,6 +220,88 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
 };
 
 /**
+ * Send employee details updated notification email
+ */
+export const sendEmployeeDetailsUpdatedEmail = async (
+  email: string,
+  name: string,
+  updatedFields: { name?: string; email?: string; role?: string; password?: boolean }
+): Promise<EmailResult> => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    const fieldsList = [];
+    if (updatedFields.name) fieldsList.push(`<li style="color: #4b5563; margin: 8px 0;"><strong>Name:</strong> ${updatedFields.name}</li>`);
+    if (updatedFields.email) fieldsList.push(`<li style="color: #4b5563; margin: 8px 0;"><strong>Email:</strong> ${updatedFields.email}</li>`);
+    if (updatedFields.role) fieldsList.push(`<li style="color: #4b5563; margin: 8px 0;"><strong>Role:</strong> ${updatedFields.role.charAt(0).toUpperCase() + updatedFields.role.slice(1)}</li>`);
+    if (updatedFields.password) fieldsList.push(`<li style="color: #4b5563; margin: 8px 0;"><strong>Password:</strong> Updated</li>`);
+
+    const mailOptions: SendMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your Account Details Have Been Updated',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #dbeafe; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #0c4a6e; margin-top: 0;">Account Details Updated</h2>
+            <p style="color: #0c4a6e; font-size: 14px;">
+              Hi <strong>${name}</strong>, your account information has been updated by your manager.
+            </p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; margin-bottom: 15px;">
+              <strong>Updated Information:</strong>
+            </p>
+            <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+              <ul style="margin: 0; padding-left: 0; list-style: none;">
+                ${fieldsList.join('')}
+              </ul>
+            </div>
+
+            <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; border-radius: 4px;">
+              <p style="color: #15803d; font-size: 13px; margin: 0;">
+                ✓ Your account has been updated successfully. If you updated your email, you may need to log in again with your new credentials.
+              </p>
+            </div>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; font-size: 13px; margin-bottom: 10px;">
+              <strong>Need Help?</strong>
+            </p>
+            <p style="color: #6b7280; font-size: 13px; margin: 0;">
+              If you didn't authorize these changes or have any questions, please contact your manager or support team immediately.
+            </p>
+          </div>
+
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+            <p style="color: #92400e; font-size: 13px; margin: 0;">
+              <strong>Security Note:</strong> Your account security is important to us. If you notice any suspicious activity, please alert your security team immediately.
+            </p>
+          </div>
+
+          <div style="color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+            <p style="margin: 5px 0;">This is an automated message. Please do not reply directly to this email.</p>
+            <p style="margin: 5px 0;">© 2026 Fleet Management System. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✓ Employee details updated email sent successfully to:', email);
+    return { success: true, message: 'Update notification sent successfully', messageId: result.messageId };
+  } catch (error: any) {
+    console.error('❌ Employee update email sending error:', error.message);
+    console.error('Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Send employee account deletion email
  */
 export const sendEmployeeDeletedEmail = async (email: string, name: string, companyName: string): Promise<EmailResult> => {
