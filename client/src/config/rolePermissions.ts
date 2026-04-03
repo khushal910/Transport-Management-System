@@ -41,8 +41,11 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
     name: 'Safety Officer',
     icon: '🛡️',
     accessiblePages: [
-      '/main/dashboard', // Safety data
+      '/main/dashboard', // Safety data only
       '/main/performance', // Driver performance & safety
+      '/main/driver-registry', // Driver safety profiles (read-only)
+      '/main/trip-dispatcher', // Trips read-only (view violations only)
+      '/main/analytics', // Safety analytics only
     ],
   },
 

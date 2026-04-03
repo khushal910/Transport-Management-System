@@ -16,6 +16,9 @@ import MaintenancePage from '../pages/maintenance/Maintenance';
 import Expense from '../pages/expense/Expense';
 import Performance from '../pages/performance/Performance';
 import Analytics from '../pages/analytics/Analytics';
+import { SafetyOfficerDashboard } from '../pages/dashboard/SafetyOfficerDashboard';
+import { DriverSafetyProfile } from '../pages/dashboard/DriverSafetyProfile';
+import { SafetyAnalytics } from '../pages/dashboard/SafetyAnalytics';
 
 import PrivateRoute from '../components/PrivateRoute';
 // Documentation pages
@@ -83,15 +86,23 @@ export const router = createBrowserRouter([
         path: 'vehicle-registry',
         element: <PrivateRoute requiredRoles={['manager', 'dispatcher'] as UserRole[]}><Vehicle /></PrivateRoute>,
       },
-      // Drivers - Manager only (full access), Dispatcher read-only (view only)
+      // Drivers - Manager only (full access), Dispatcher read-only (view only), Safety Officer read-only (safety profile)
       {
         path: 'driver-registry',
-        element: <PrivateRoute requiredRoles={['manager', 'dispatcher'] as UserRole[]}><AddEmployee /></PrivateRoute>,
+        element: (
+          <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer'] as UserRole[]}>
+            <AddEmployee />
+          </PrivateRoute>
+        ),
       },
-      // Trips - Manager, Dispatcher
+      // Trips - Manager, Dispatcher, Safety Officer (read-only)
       {
         path: 'trip-dispatcher',
-        element: <PrivateRoute requiredRoles={['manager', 'dispatcher'] as UserRole[]}><Trip /></PrivateRoute>,
+        element: (
+          <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer'] as UserRole[]}>
+            <Trip />
+          </PrivateRoute>
+        ),
       },
       // Team Page - Manager only
       {
@@ -112,10 +123,14 @@ export const router = createBrowserRouter([
         path: 'performance',
         element: <PrivateRoute requiredRoles={['manager', 'safety_officer'] as UserRole[]}><Performance /></PrivateRoute>,
       },
-      // Analytics - Manager & Financial Analyst
-      { 
+      // Analytics - Manager, Financial Analyst, Safety Officer (role-specific data)
+      {
         path: 'analytics',
-        element: <PrivateRoute requiredRoles={['manager', 'financial_analyst'] as UserRole[]}><Analytics /></PrivateRoute>,
+        element: (
+          <PrivateRoute requiredRoles={['manager', 'financial_analyst', 'safety_officer'] as UserRole[]}>
+            <Analytics />
+          </PrivateRoute>
+        ),
       },
     ],
   },
