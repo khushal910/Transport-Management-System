@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNotification } from '../../hooks/useNotification';
+import PaginationContainer from '../../components/PaginationContainer';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
