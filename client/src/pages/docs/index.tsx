@@ -47,6 +47,18 @@ export default function DocsIndex() {
       description: 'Track and manage fleet expenses and budgets',
       path: '/docs/expenses',
     },
+    {
+      title: 'Role-Based Access',
+      icon: '🔐',
+      description: 'Understand user roles, permissions, and access control',
+      path: '/docs/rbac',
+    },
+    {
+      title: 'Email Notifications',
+      icon: '📧',
+      description: 'Automated email updates for employee account changes',
+      path: '/docs/email-notifications',
+    },
   ];
 
   return (

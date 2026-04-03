@@ -26,6 +26,8 @@ import DriverManagement from '../pages/docs/driver-management';
 import TripManagement from '../pages/docs/trip-management';
 import Maintenance from '../pages/docs/maintenance';
 import Expenses from '../pages/docs/expenses';
+import RBACDocs from '../pages/docs/rbac';
+import EmailNotificationsDocs from '../pages/docs/email-notifications';
 // Role-based access control
 import { UserRole } from '../config/rolePermissions';
 
@@ -148,6 +150,14 @@ export const router = createBrowserRouter([
       {
         path: 'expenses',
         element: <Expenses />,
+      },
+      {
+        path: 'rbac',
+        element: <RBACDocs />,
+      },
+      {
+        path: 'email-notifications',
+        element: <EmailNotificationsDocs />,
       },
     ],
   },
