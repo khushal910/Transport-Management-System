@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, ChangeEvent, FormEvent } from "react";
 import { useNotification } from '../../hooks/useNotification';
+import { DEFAULT_PAGE_SIZE } from '../../config/paginationConfig';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 import { PageContainer, PageHeader } from '../../components/ui';
@@ -61,7 +62,7 @@ const VehicleRegistry = () => {
 
   // pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(3);
+  const [itemsPerPage] = useState(DEFAULT_PAGE_SIZE);
 
   // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);

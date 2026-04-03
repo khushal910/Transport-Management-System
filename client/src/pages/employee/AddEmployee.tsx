@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNotification } from '../../hooks/useNotification';
 import PaginationContainer from '../../components/PaginationContainer';
+import { DEFAULT_PAGE_SIZE } from '../../config/paginationConfig';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
@@ -40,7 +41,7 @@ export default function EmployeeManagement() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(3);
+  const [itemsPerPage] = useState(DEFAULT_PAGE_SIZE);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
