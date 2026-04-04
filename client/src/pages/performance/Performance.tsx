@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNotification } from '../../hooks/useNotification';
-import { FaShieldAlt } from "react-icons/fa";
+import { FaShieldAlt, FaHistory } from "react-icons/fa";
 import driverBaseURL from "../../api/driverBaseURL";
 import driverStatusBaseURL from "../../api/driverStatusBaseURL";
 import DriverStatusModal from "../../components/DriverStatusModal";
@@ -8,6 +8,7 @@ import DriverStatusBadge from "../../components/DriverStatusBadge";
 import { PageContainer, PageHeader } from '../../components/ui';
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import PaginationContainer from '../../components/PaginationContainer';
+import { UserRole } from '../../config/rolePermissions';
 
 const INITIAL_FILTERS = {
   status: "",
@@ -167,10 +168,25 @@ const Performance = () => {
   const [selectedDriverId, setSelectedDriverId] = useState(null);
   const [selectedDriverName, setSelectedDriverName] = useState(null);
   const [driverInfo, setDriverInfo] = useState({});
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isModalReadOnly, setIsModalReadOnly] = useState(false);
 
   const filterMenuRef = useRef(null);
   const sortMenuRef = useRef(null);
   const groupMenuRef = useRef(null);
+
+  // Get user role from localStorage
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        setUserRole(userData.role as UserRole);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
 
   const fetchDrivers = useCallback(
     async (pageToFetch = currentPage) => {
@@ -850,17 +866,34 @@ const Performance = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-center">
-                    <button
-                      onClick={() => {
-                        setSelectedDriverId(driver._id);
-                        setSelectedDriverName(driver.name);
-                        setIsStatusModalOpen(true);
-                      }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition duration-200"
-                    >
-                      <FaShieldAlt size={12} />
-                      Status
-                    </button>
+                    {userRole === 'safety_officer' ? (
+                      <button
+                        onClick={() => {
+                          setSelectedDriverId(driver._id);
+                          setSelectedDriverName(driver.name);
+                          setIsModalReadOnly(true);
+                          setIsStatusModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition duration-200"
+                        title="View status history only"
+                      >
+                        <FaHistory size={12} />
+                        History
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedDriverId(driver._id);
+                          setSelectedDriverName(driver.name);
+                          setIsModalReadOnly(false);
+                          setIsStatusModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition duration-200"
+                      >
+                        <FaShieldAlt size={12} />
+                        Status
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -996,17 +1029,34 @@ const Performance = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-center">
-                          <button
-                            onClick={() => {
-                              setSelectedDriverId(driver._id);
-                              setSelectedDriverName(driver.name);
-                              setIsStatusModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition duration-200"
-                          >
-                            <FaShieldAlt size={12} />
-                            Status
-                          </button>
+                          {userRole === 'safety_officer' ? (
+                            <button
+                              onClick={() => {
+                                setSelectedDriverId(driver._id);
+                                setSelectedDriverName(driver.name);
+                                setIsModalReadOnly(true);
+                                setIsStatusModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition duration-200"
+                              title="View status history only"
+                            >
+                              <FaHistory size={12} />
+                              History
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSelectedDriverId(driver._id);
+                                setSelectedDriverName(driver.name);
+                                setIsModalReadOnly(false);
+                                setIsStatusModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition duration-200"
+                            >
+                              <FaShieldAlt size={12} />
+                              Status
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -1080,10 +1130,12 @@ const Performance = () => {
         <DriverStatusModal
           driverId={selectedDriverId}
           driverName={selectedDriverName}
+          readOnly={isModalReadOnly}
           onClose={() => {
             setIsStatusModalOpen(false);
             setSelectedDriverId(null);
             setSelectedDriverName(null);
+            setIsModalReadOnly(false);
           }}
           onStatusUpdated={() => {
             fetchDrivers(currentPage);

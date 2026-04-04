@@ -15,7 +15,7 @@ const driverStatusRouter = express.Router();
  */
 driverStatusRouter.get(
   '/history/:driverId',
-  roleMiddleware('manager', 'dispatcher', 'driver'),
+  roleMiddleware('manager', 'dispatcher', 'driver', 'safety_officer'),
   getDriverStatusHistory
 );
 

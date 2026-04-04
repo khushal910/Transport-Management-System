@@ -3,13 +3,13 @@ import { useNotification } from '../hooks/useNotification';
 import { FaHistory, FaTimes, FaCircle } from 'react-icons/fa';
 import driverStatusBaseURL from '../api/driverStatusBaseURL';
 
-export default function DriverStatusModal({ driverId, driverName, onClose, onStatusUpdated }) {
+export default function DriverStatusModal({ driverId, driverName, onClose, onStatusUpdated, readOnly = false }) {
   const { notifyError, notifySuccess, notifyInfo } = useNotification();
   const [currentStatus, setCurrentStatus] = useState(null);
   const [statusHistory, setStatusHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState('status'); // 'status' or 'history'
+  const [activeTab, setActiveTab] = useState(readOnly ? 'history' : 'status'); // 'status' or 'history'
 
   const statusColors = {
     available: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
@@ -115,7 +115,14 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b bg-white sticky top-0 z-10">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Driver Status Management</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-gray-900">Driver Status Management</h2>
+              {readOnly && (
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                  View Only
+                </span>
+              )}
+            </div>
             <p className="text-gray-500 text-sm mt-1">{driverName}</p>
           </div>
           <button
@@ -136,19 +143,21 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
           <>
             {/* Tabs */}
             <div className="flex border-b bg-gray-50">
-              <button
-                onClick={() => setActiveTab('status')}
-                className={`flex-1 px-4 py-4 font-medium transition duration-200 ${
-                  activeTab === 'status'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Update Status
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => setActiveTab('status')}
+                  className={`flex-1 px-4 py-4 font-medium transition duration-200 ${
+                    activeTab === 'status'
+                      ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Update Status
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab('history')}
-                className={`flex-1 px-4 py-4 font-medium transition duration-200 flex items-center justify-center gap-2 ${
+                className={`${!readOnly ? 'flex-1' : 'w-full'} px-4 py-4 font-medium transition duration-200 flex items-center justify-center gap-2 ${
                   activeTab === 'history'
                     ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
                     : 'text-gray-600 hover:text-gray-900'
@@ -161,7 +170,7 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
 
             {/* Content */}
             <div className="p-6">
-              {activeTab === 'status' ? (
+              {activeTab === 'status' && !readOnly ? (
                 <div className="space-y-6">
                   {/* Current Status */}
                   <div>
