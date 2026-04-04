@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNotification } from '../hooks/useNotification';
-import { FaHistory, FaTimes, FaCircle } from 'react-icons/fa';
+import { FaHistory, FaTimes, FaCircle, FaExclamationCircle, FaCheckCircle, FaInfoCircle } from 'react-icons/fa';
 import driverStatusBaseURL from '../api/driverStatusBaseURL';
 
 export default function DriverStatusModal({ driverId, driverName, onClose, onStatusUpdated, readOnly = false }) {
-  const { notifyError, notifySuccess, notifyInfo } = useNotification();
   const [currentStatus, setCurrentStatus] = useState(null);
   const [statusHistory, setStatusHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState(readOnly ? 'history' : 'status'); // 'status' or 'history'
+  
+  // Local error/success states for this modal
+  const [localError, setLocalError] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const statusColors = {
     available: { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
@@ -37,22 +39,29 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
     if (driverId) {
       fetchStatusHistory();
     } else {
-      notifyError('Driver ID is missing');
+      setLocalError({ message: 'Driver ID is missing', type: 'error' });
     }
   }, [driverId]);
 
   const fetchStatusHistory = async () => {
     try {
       setIsLoading(true);
+      setLocalError(null);
       const response = await driverStatusBaseURL.get(`/history/${driverId}`);
       if (response.data.success) {
         setCurrentStatus(response.data.data.currentStatus);
         setStatusHistory(response.data.data.statusHistory || []);
       } else {
-        notifyError(response.data?.message || 'Failed to load driver status');
+        setLocalError({ 
+          message: response.data?.message || 'Failed to load driver status',
+          type: 'error'
+        });
       }
     } catch (error) {
-      notifyError(error.response?.data?.message || 'Failed to load driver status');
+      setLocalError({ 
+        message: error.response?.data?.message || 'Failed to load driver status',
+        type: 'error'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -60,26 +69,36 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
 
   const handleStatusChange = async (newStatus) => {
     if (newStatus === currentStatus) {
-      notifyInfo('Driver already has this status');
+      setLocalError({ message: 'Driver already has this status', type: 'info' });
       return;
     }
 
     try {
       setIsUpdating(true);
+      setLocalError(null);
+      setSuccessMessage(null);
+      
       const response = await driverStatusBaseURL.post(`/${driverId}`, {
         status: newStatus,
       });
 
       if (response.data.success) {
         setCurrentStatus(newStatus);
-        notifySuccess(response.data.message);
+        setSuccessMessage(response.data.message || 'Status updated successfully');
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
+        
         onStatusUpdated?.();
         // Refresh history
         await fetchStatusHistory();
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      notifyError(error.response?.data?.message || 'Failed to update status');
+      setLocalError({ 
+        message: error.response?.data?.message || 'Failed to update status',
+        type: 'error'
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -141,8 +160,48 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
           </div>
         ) : (
           <>
+            {/* Local Error/Success Alert */}
+            {localError && (
+              <div className={`mx-6 mt-4 p-4 rounded-lg flex items-start gap-3 ${
+                localError.type === 'error' 
+                  ? 'bg-red-50 border border-red-200' 
+                  : localError.type === 'success'
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-blue-50 border border-blue-200'
+              }`}>
+                {localError.type === 'error' ? (
+                  <FaExclamationCircle className={`text-lg flex-shrink-0 ${
+                    localError.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                  }`} />
+                ) : (
+                  <FaInfoCircle className="text-lg flex-shrink-0 text-blue-600" />
+                )}
+                <div>
+                  <p className={`font-medium ${
+                    localError.type === 'error' ? 'text-red-800' : 'text-blue-800'
+                  }`}>
+                    {localError.type === 'error' ? 'Error' : 'Info'}
+                  </p>
+                  <p className={`text-sm ${
+                    localError.type === 'error' ? 'text-red-700' : 'text-blue-700'
+                  }`}>
+                    {localError.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mx-6 mt-4 p-4 rounded-lg flex items-start gap-3 bg-green-50 border border-green-200">
+                <FaCheckCircle className="text-lg flex-shrink-0 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-800">Success</p>
+                  <p className="text-sm text-green-700">{successMessage}</p>
+                </div>
+              </div>
+            )}
             {/* Tabs */}
-            <div className="flex border-b bg-gray-50">
+            <div className="flex border-b bg-gray-50 mt-4">
               {!readOnly && (
                 <button
                   onClick={() => setActiveTab('status')}
@@ -169,7 +228,7 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="p-6 pt-4">
               {activeTab === 'status' && !readOnly ? (
                 <div className="space-y-6">
                   {/* Current Status */}
