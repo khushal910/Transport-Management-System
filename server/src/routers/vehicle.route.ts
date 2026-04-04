@@ -6,12 +6,14 @@ import getVehicleList from '../controllers/vehicle/vehicle.getList';
 import deleteVehicle from '../controllers/vehicle/vehicle.delete';
 import getDeletedVehicleList from '../controllers/vehicle/vehicle.getDeletedList';
 import recoverVehicle from '../controllers/vehicle/vehicle.recover';
+import updateVehicleStatus from '../controllers/vehicle/vehicle.updateStatus';
 
 const vehicleRoute = Router();
 
 vehicleRoute.post('/register', requiredRole('manager'), vehicleRegister);
 vehicleRoute.post('/update/:vehicleId', requiredRole('manager'), vehicleUpdate);
-vehicleRoute.get('/list', requiredRole('manager', 'dispatcher'), getVehicleList);
+vehicleRoute.get('/list', requiredRole('manager', 'dispatcher', 'safety_officer'), getVehicleList);
+vehicleRoute.patch('/:vehicleId/status', requiredRole('manager', 'safety_officer', 'dispatcher'), updateVehicleStatus);
 vehicleRoute.delete('/delete/:vehicleId', requiredRole('manager'), deleteVehicle);
 vehicleRoute.get('/deleted/list', requiredRole('manager'), getDeletedVehicleList);
 vehicleRoute.post('/recover/:vehicleId', requiredRole('manager'), recoverVehicle);

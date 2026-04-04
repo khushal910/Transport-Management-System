@@ -7,6 +7,10 @@ export interface AlertItem {
   title: string;
   message: string;
   icon?: React.ReactNode;
+  action?: {
+    label: string;
+    onClick: () => void | Promise<void>;
+  };
 }
 
 interface SafetyAlertBannerProps {
@@ -72,13 +76,23 @@ export const SafetyAlertBanner: React.FC<SafetyAlertBannerProps> = ({
           {criticalAlerts.map((alert) => (
             <div
               key={alert.id}
-              className="bg-red-50 border-l-4 border-red-500 p-4 rounded flex items-start gap-3"
+              className="bg-red-50 border-l-4 border-red-500 p-4 rounded flex items-start gap-3 justify-between"
             >
-              <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-red-800">{alert.title}</h3>
-                <p className="text-sm text-red-700 mt-1">{alert.message}</p>
+              <div className="flex items-start gap-3 flex-1">
+                <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-800">{alert.title}</h3>
+                  <p className="text-sm text-red-700 mt-1">{alert.message}</p>
+                </div>
               </div>
+              {alert.action && (
+                <button
+                  onClick={alert.action.onClick}
+                  className="ml-3 px-4 py-2 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 transition shrink-0"
+                >
+                  {alert.action.label}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -90,13 +104,23 @@ export const SafetyAlertBanner: React.FC<SafetyAlertBannerProps> = ({
           {warningAlerts.map((alert) => (
             <div
               key={alert.id}
-              className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded flex items-start gap-3"
+              className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded flex items-start gap-3 justify-between"
             >
-              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-yellow-800">{alert.title}</h3>
-                <p className="text-sm text-yellow-700 mt-1">{alert.message}</p>
+              <div className="flex items-start gap-3 flex-1">
+                <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-yellow-800">{alert.title}</h3>
+                  <p className="text-sm text-yellow-700 mt-1">{alert.message}</p>
+                </div>
               </div>
+              {alert.action && (
+                <button
+                  onClick={alert.action.onClick}
+                  className="ml-3 px-4 py-2 bg-yellow-600 text-white rounded text-sm font-medium hover:bg-yellow-700 transition shrink-0"
+                >
+                  {alert.action.label}
+                </button>
+              )}
             </div>
           ))}
         </div>

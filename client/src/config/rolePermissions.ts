@@ -42,9 +42,12 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
     icon: '🛡️',
     accessiblePages: [
       '/main/dashboard', // Safety data only
+      '/main/vehicle', // Vehicle safety status
+      '/main/employee', // Driver safety and compliance
       '/main/performance', // Driver performance & safety
       '/main/driver-registry', // Driver safety profiles (read-only)
       '/main/trip-dispatcher', // Trips read-only (view violations only)
+      '/main/maintenance', // Maintenance status
       '/main/analytics', // Safety analytics only
     ],
   },
@@ -77,6 +80,18 @@ export const navItems: NavItem[] = [
     icon: '📊',
     requiredRoles: ['manager', 'dispatcher', 'safety_officer', 'financial_analyst'],
     dashboardType: 'full',
+  },
+  {
+    path: '/main/vehicle',
+    label: 'Fleet Safety',
+    icon: '🚗',
+    requiredRoles: ['safety_officer'],
+  },
+  {
+    path: '/main/employee',
+    label: 'Driver Compliance',
+    icon: '👨‍✈️',
+    requiredRoles: ['safety_officer'],
   },
   {
     path: '/main/trip-dispatcher',

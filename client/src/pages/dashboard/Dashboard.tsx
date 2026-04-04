@@ -92,12 +92,17 @@ const ManagerDashboardView = () => {
       } else {
         notifyError(response.data?.message || 'Failed to fetch dashboard data');
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Silently handle 403 errors - this component may not be for this user's role
+      if (error.response?.status === 403) {
+        console.warn('Dashboard access denied - user role may not be permitted for this view');
+        return;
+      }
       notifyError(error.response?.data?.message || 'Error fetching dashboard data');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [notifyError]);
 
   // Initial load
   useEffect(() => {
@@ -705,6 +710,7 @@ const ManagerDashboardView = () => {
  */
 const Dashboard = () => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isLoadingRole, setIsLoadingRole] = useState(true);
 
   useEffect(() => {
     try {
@@ -715,8 +721,24 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error parsing user role:', error);
+    } finally {
+      setIsLoadingRole(false);
     }
   }, []);
+
+  // Show loading state while determining user role
+  if (isLoadingRole) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading dashboard...</p>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
 
   // Return role-specific dashboard
   if (userRole === 'dispatcher') {

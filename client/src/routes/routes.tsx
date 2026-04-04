@@ -17,6 +17,8 @@ import Expense from '../pages/expense/Expense';
 import Performance from '../pages/performance/Performance';
 import Analytics from '../pages/analytics/Analytics';
 import { SafetyOfficerDashboard } from '../pages/dashboard/SafetyOfficerDashboard';
+import { SafetyOfficerVehicles } from '../pages/dashboard/SafetyOfficerVehicles';
+import { SafetyOfficerDrivers } from '../pages/dashboard/SafetyOfficerDrivers';
 import { DriverSafetyProfile } from '../pages/dashboard/DriverSafetyProfile';
 import { SafetyAnalytics } from '../pages/dashboard/SafetyAnalytics';
 
@@ -81,12 +83,26 @@ export const router = createBrowserRouter([
         path: 'dashboard',
         element: <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer', 'financial_analyst'] as UserRole[]}><Dashboard /></PrivateRoute>,
       },
-      // Vehicles - Manager only (full access), Dispatcher read-only (view only)
+      // Vehicles - Manager, Dispatcher, Safety Officer
+      {
+        path: 'vehicle',
+        element: <PrivateRoute requiredRoles={['safety_officer'] as UserRole[]}><SafetyOfficerVehicles /></PrivateRoute>,
+      },
+      // Vehicles Registry - Manager only (full access), Dispatcher read-only (view only)
       {
         path: 'vehicle-registry',
         element: <PrivateRoute requiredRoles={['manager', 'dispatcher'] as UserRole[]}><Vehicle /></PrivateRoute>,
       },
-      // Drivers - Manager only (full access), Dispatcher read-only (view only), Safety Officer read-only (safety profile)
+      // Drivers - Manager only (full access), Dispatcher read-only (view only), Safety Officer specific view
+      {
+        path: 'employee',
+        element: (
+          <PrivateRoute requiredRoles={['safety_officer'] as UserRole[]}>
+            <SafetyOfficerDrivers />
+          </PrivateRoute>
+        ),
+      },
+      // Drivers Registry - Manager only (full access), Dispatcher read-only (view only), Safety Officer read-only (safety profile)
       {
         path: 'driver-registry',
         element: (
@@ -96,6 +112,15 @@ export const router = createBrowserRouter([
         ),
       },
       // Trips - Manager, Dispatcher, Safety Officer (read-only)
+      {
+        path: 'trip',
+        element: (
+          <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer'] as UserRole[]}>
+            <Trip />
+          </PrivateRoute>
+        ),
+      },
+      // Trips Dispatcher - Manager, Dispatcher, Safety Officer (read-only)
       {
         path: 'trip-dispatcher',
         element: (
@@ -111,7 +136,7 @@ export const router = createBrowserRouter([
       },
       { 
         path: 'maintenance',
-        element: <PrivateRoute requiredRoles={['manager'] as UserRole[]}><MaintenancePage /></PrivateRoute>,
+        element: <PrivateRoute requiredRoles={['manager', 'safety_officer'] as UserRole[]}><MaintenancePage /></PrivateRoute>,
       },
       // Expenses - Manager, Financial Analyst
       { 

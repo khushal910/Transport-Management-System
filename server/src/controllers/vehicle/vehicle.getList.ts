@@ -25,6 +25,12 @@ const getVehicleList = async (req, res) => {
       isDeleted: false,
     };
 
+    // Add status filter if provided
+    const status = req.query.status;
+    if (status) {
+      query.status = status;
+    }
+
     if (search) {
       query.$text = { $search: search };
     }

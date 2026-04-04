@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../hooks/useNotification';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
+import vehicleBaseURL from '../../api/vehicleBaseURL';
+import driverBaseURL from '../../api/driverBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
 import { PageContainer, PageHeader } from '../../components/ui';
-import { TrendingUp, BarChart3, AlertCircle } from 'lucide-react';
+import { SafetyAlertBanner } from '../../components/SafetyAlertBanner';
+import { TrendingUp, BarChart3, AlertCircle, Wrench, AlertTriangle, CheckCircle } from 'lucide-react';
 
 /**
  * Manager Dashboard - Full Control
@@ -293,24 +296,28 @@ export const DispatcherDashboard = () => {
  * Driver performance and safety metrics
  */
 export const SafetyOfficerDashboard = () => {
+  const navigate = useNavigate();
   const { notifyError } = useNotification();
-  const [safetyStats, setSafetyStats] = useState(null);
+  const [safetyStats, setSafetyStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch safety metrics only
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSafetyMetrics = async () => {
+      setIsLoading(true);
       try {
-        const response = await dashboardBaseURL.get('/kpis');
-        if (response.data?.success) {
-          setSafetyStats(response.data.data);
+        const safetyRes = await dashboardBaseURL.get('/safety-metrics');
+        if (safetyRes.data?.success) {
+          setSafetyStats(safetyRes.data.data);
         }
-      } catch (error) {
-        notifyError('Failed to fetch safety data');
+      } catch (safetyError: any) {
+        console.error('Safety metrics fetch failed:', safetyError?.response?.status, safetyError?.response?.data);
+        notifyError(`Safety metrics error: ${safetyError?.response?.data?.message || 'Unknown error'}`);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
+    fetchSafetyMetrics();
   }, [notifyError]);
 
   return (
@@ -320,70 +327,95 @@ export const SafetyOfficerDashboard = () => {
           <span className="text-4xl">🛡️</span>
           <div>
             <PageHeader 
-              title="Safety Officer Dashboard - Compliance" 
-              description="Monitor driver safety and compliance"
+              title="Safety Officer Dashboard" 
+              description="Monitor key safety metrics and compliance"
             />
           </div>
         </div>
 
-        {/* Safety Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <p className="text-sm text-gray-600 mb-2">Fleet Safety Score</p>
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-bold text-green-600">91</span>
-              <span className="text-lg text-green-600 mb-1">/100</span>
-            </div>
-            <p className="text-xs text-green-600 mt-3">✓ Excellent condition</p>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading dashboard data...</p>
           </div>
+        )}
 
+        {/* Error State */}
+        {!isLoading && !safetyStats && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <p className="text-sm text-gray-600 mb-2">Safety Incidents (30 Days)</p>
-            <p className="text-4xl font-bold text-red-600">2</p>
-            <p className="text-xs text-red-600 mt-3">⚠️ Monitor closely</p>
+            <p className="text-red-700 font-semibold">Unable to load safety metrics</p>
+            <p className="text-red-600 text-sm mt-1">Please check the browser console for error details</p>
           </div>
-        </div>
+        )}
 
-        {/* Driver Performance */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Driver Performance</h3>
-          <div className="space-y-4">
-            {[
-              { name: 'John Smith', score: 95, violations: 0 },
-              { name: 'Mike Johnson', score: 92, violations: 1 },
-              { name: 'Sarah Davis', score: 88, violations: 2 },
-            ].map((driver) => (
-              <div key={driver.name} className="flex items-center justify-between pb-4 border-b last:border-b-0">
-                <div>
-                  <p className="font-semibold text-gray-900">{driver.name}</p>
-                  <p className="text-xs text-gray-500">{driver.violations} violations in 30 days</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-2xl font-bold ${driver.score >= 90 ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {driver.score}
-                  </p>
-                  <p className="text-xs text-gray-500">Safety Score</p>
-                </div>
-              </div>
-            ))}
+        {/* Safety Metrics Cards - Clickable Navigation */}
+        {safetyStats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Expired Licenses Card */}
+            <button
+              onClick={() => navigate('/main/employee')}
+              className="bg-red-50 border border-red-200 rounded-lg p-6 hover:bg-red-100 hover:border-red-300 transition cursor-pointer text-left"
+            >
+              <p className="text-sm text-gray-600 mb-2">Expired Licenses</p>
+              <p className="text-4xl font-bold text-red-600">{safetyStats.expiredLicenses || 0}</p>
+              <p className="text-xs text-red-600 mt-3">Click to view drivers</p>
+            </button>
+
+            {/* Recent Accidents Card */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+              <p className="text-sm text-gray-600 mb-2">Recent Accidents</p>
+              <p className="text-4xl font-bold text-orange-600">{safetyStats.recentAccidents || 0}</p>
+              <p className="text-xs text-orange-600 mt-3">Last 30 days</p>
+            </div>
+
+            {/* Low Safety Scores Card */}
+            <button
+              onClick={() => navigate('/main/employee')}
+              className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 hover:bg-yellow-100 hover:border-yellow-300 transition cursor-pointer text-left"
+            >
+              <p className="text-sm text-gray-600 mb-2">Low Safety Scores</p>
+              <p className="text-4xl font-bold text-yellow-600">{safetyStats.lowSafetyScores || 0}</p>
+              <p className="text-xs text-yellow-600 mt-3">Click to view drivers</p>
+            </button>
+
+            {/* Maintenance Alerts Card */}
+            <button
+              onClick={() => navigate('/main/maintenance')}
+              className="bg-red-100 border border-red-300 rounded-lg p-6 hover:bg-red-200 hover:border-red-400 transition cursor-pointer text-left"
+            >
+              <p className="text-sm text-gray-600 mb-2">Maintenance Alerts</p>
+              <p className="text-4xl font-bold text-red-600">{safetyStats.maintenanceAlerts || 0}</p>
+              <p className="text-xs text-red-600 mt-3">Click to manage vehicles</p>
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* Compliance Checklist */}
+        {/* Quick Links Section */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Compliance Status</h3>
-          <div className="space-y-3">
-            {[
-              { item: 'Vehicle Inspections Current', status: true },
-              { item: 'Driver License Validations', status: true },
-              { item: 'Insurance Documentation', status: true },
-              { item: 'Maintenance Schedule', status: false },
-            ].map((check) => (
-              <div key={check.item} className="flex items-center gap-3">
-                <span className={`text-xl ${check.status ? '✅' : '⚠️'}`}></span>
-                <span className={check.status ? 'text-gray-700' : 'text-yellow-700 font-semibold'}>{check.item}</span>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => navigate('/main/employee')}
+              className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition"
+            >
+              <span className="text-2xl">👥</span>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">View All Drivers</p>
+                <p className="text-sm text-gray-600">Check driver details and licenses</p>
               </div>
-            ))}
+            </button>
+
+            <button
+              onClick={() => navigate('/main/maintenance')}
+              className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition"
+            >
+              <span className="text-2xl">🔧</span>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">View Maintenance</p>
+                <p className="text-sm text-gray-600">Check vehicle maintenance status</p>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -396,6 +428,7 @@ export const SafetyOfficerDashboard = () => {
  * Financial metrics and analytics
  */
 export const FinancialAnalystDashboard = () => {
+  const navigate = useNavigate();
   const { notifyError } = useNotification();
   const [financialData, setFinancialData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -423,7 +456,7 @@ export const FinancialAnalystDashboard = () => {
           <span className="text-4xl">📊</span>
           <div>
             <PageHeader 
-              title="Financial Analyst Dashboard - Finance" 
+              title="Financial Analyst Dashboard" 
               description="Track expenses and financial analytics"
             />
           </div>
@@ -431,77 +464,137 @@ export const FinancialAnalystDashboard = () => {
 
         {/* Financial KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+          <button
+            onClick={() => navigate('/main/trip')}
+            className="bg-green-50 border border-green-200 rounded-lg p-6 hover:bg-green-100 hover:border-green-300 transition cursor-pointer text-left"
+          >
             <p className="text-sm text-gray-600">Total Revenue</p>
             <p className="text-3xl font-bold text-green-600 mt-1">$45,230</p>
             <p className="text-xs text-green-600 mt-2">↑ 12% from last month</p>
-          </div>
+          </button>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <button
+            onClick={() => navigate('/main/maintenance')}
+            className="bg-red-50 border border-red-200 rounded-lg p-6 hover:bg-red-100 hover:border-red-300 transition cursor-pointer text-left"
+          >
             <p className="text-sm text-gray-600">Total Expenses</p>
             <p className="text-3xl font-bold text-red-600 mt-1">$28,450</p>
             <p className="text-xs text-red-600 mt-2">↑ 5% from last month</p>
-          </div>
+          </button>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <button
+            onClick={() => navigate('/main/vehicle')}
+            className="bg-blue-50 border border-blue-200 rounded-lg p-6 hover:bg-blue-100 hover:border-blue-300 transition cursor-pointer text-left"
+          >
             <p className="text-sm text-gray-600">Net Profit</p>
             <p className="text-3xl font-bold text-blue-600 mt-1">$16,780</p>
             <p className="text-xs text-blue-600 mt-2">37% profit margin</p>
-          </div>
+          </button>
 
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+          <button
+            onClick={() => navigate('/main/employee')}
+            className="bg-purple-50 border border-purple-200 rounded-lg p-6 hover:bg-purple-100 hover:border-purple-300 transition cursor-pointer text-left"
+          >
             <p className="text-sm text-gray-600">Cost per Trip</p>
             <p className="text-3xl font-bold text-purple-600 mt-1">$45.20</p>
-            <p className="text-xs text-purple-600 mt-2">↓ 2% from target</p>
+            <p className="text-xs text-purple-600 mt-2">Average</p>
+          </button>
+        </div>
+
+        {/* Expense Categories */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+          <div className="space-y-4">
+            <button
+              onClick={() => navigate('/main/vehicle')}
+              className="w-full text-left p-4 rounded-lg hover:bg-blue-50 transition"
+            >
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-700">Fuel Costs</span>
+                <span className="font-semibold text-gray-900">$12,450</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '45%' }}></div>
+              </div>
+            </button>
+            <button
+              onClick={() => navigate('/main/maintenance')}
+              className="w-full text-left p-4 rounded-lg hover:bg-orange-50 transition"
+            >
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-700">Maintenance</span>
+                <span className="font-semibold text-gray-900">$8,200</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-orange-600 h-2 rounded-full" style={{ width: '30%' }}></div>
+              </div>
+            </button>
+            <button
+              onClick={() => navigate('/main/employee')}
+              className="w-full text-left p-4 rounded-lg hover:bg-green-50 transition"
+            >
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-700">Driver Wages</span>
+                <span className="font-semibold text-gray-900">$5,800</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-green-600 h-2 rounded-full" style={{ width: '21%' }}></div>
+              </div>
+            </button>
+            <div className="p-4 rounded-lg">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-700">Other Expenses</span>
+                <span className="font-semibold text-gray-900">$2,000</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-gray-600 h-2 rounded-full" style={{ width: '7%' }}></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Expense Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Financial Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Expense Breakdown</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Summary</h3>
             <div className="space-y-3">
-              {[
-                { category: 'Fuel', amount: 12500, percentage: 44 },
-                { category: 'Maintenance', amount: 8200, percentage: 29 },
-                { category: 'Salaries', amount: 5400, percentage: 19 },
-                { category: 'Insurance', amount: 2350, percentage: 8 },
-              ].map((item) => (
-                <div key={item.category}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-gray-700">{item.category}</span>
-                    <span className="text-sm font-semibold text-gray-900">${item.amount.toLocaleString()}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full" 
-                      style={{ width: `${item.percentage}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">{item.percentage}% of total</p>
-                </div>
-              ))}
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">Total Trips</span>
+                <span className="font-semibold text-gray-900">1,250</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">Avg Trip Value</span>
+                <span className="font-semibold text-gray-900">$36.18</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">Total Distance (km)</span>
+                <span className="font-semibold text-gray-900">45,230</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-gray-600">Fuel Efficiency</span>
+                <span className="font-semibold text-gray-900">8.5 km/L</span>
+              </div>
             </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between pb-3 border-b">
-                <span className="text-gray-700">Monthly Revenue</span>
-                <span className="font-semibold text-green-600">$45,230</span>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Health</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">Gross Margin</span>
+                <span className="font-semibold text-green-600">37%</span>
               </div>
-              <div className="flex justify-between pb-3 border-b">
-                <span className="text-gray-700">Monthly Expenses</span>
-                <span className="font-semibold text-red-600">$28,450</span>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">Operating Expenses Ratio</span>
+                <span className="font-semibold text-orange-600">63%</span>
               </div>
-              <div className="flex justify-between pb-3 border-b">
-                <span className="text-gray-700">Net Profit</span>
-                <span className="font-semibold text-blue-600">$16,780</span>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-gray-600">ROI</span>
+                <span className="font-semibold text-blue-600">12.4%</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-700 font-semibold">Profit Margin</span>
-                <span className="font-bold text-lg text-green-600">37%</span>
+              <div className="flex justify-between py-2">
+                <span className="text-gray-600">Break-even Trips/Day</span>
+                <span className="font-semibold text-gray-900">18</span>
               </div>
             </div>
           </div>
@@ -510,3 +603,4 @@ export const FinancialAnalystDashboard = () => {
     </PageContainer>
   );
 };
+
