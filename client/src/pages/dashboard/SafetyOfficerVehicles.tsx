@@ -12,15 +12,15 @@ export const SafetyOfficerVehicles = () => {
   const { notifyError } = useNotification();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchVehicles = async () => {
       setIsLoading(true);
+      setFetchError(null);
       try {
-        // Fetch vehicle maintenance data from safety endpoint
         const response = await safetyBaseURL.get('/metrics');
         if (response.data?.success) {
-          // Use mock vehicle data for now
           setVehicles([
             {
               _id: '1',
@@ -50,10 +50,16 @@ export const SafetyOfficerVehicles = () => {
               lastServiceDate: '2024-01-05',
             },
           ]);
+        } else {
+          const message = response.data?.message || 'Unexpected response from safety API';
+          setFetchError(message);
+          notifyError(message);
         }
       } catch (error: any) {
-        notifyError('Failed to fetch vehicles');
-        console.error('Fetch error:', error?.response?.data);
+        const message = error?.response?.data?.message || error?.message || 'Failed to connect to safety API';
+        setFetchError(message);
+        notifyError(message);
+        console.error('Fetch error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -125,7 +131,14 @@ export const SafetyOfficerVehicles = () => {
         {/* Vehicles Table */}
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Vehicle Fleet Details</h3>
-          
+
+          {fetchError && (
+            <div className="bg-red-50 border border-red-300 rounded-lg p-4 mb-4">
+              <p className="font-semibold text-red-700">Unable to load vehicle data</p>
+              <p className="text-red-600 text-sm">{fetchError}</p>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">Loading vehicles...</div>
           ) : vehicles.length === 0 ? (

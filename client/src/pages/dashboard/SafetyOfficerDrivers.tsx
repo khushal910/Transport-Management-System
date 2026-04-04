@@ -12,18 +12,26 @@ export const SafetyOfficerDrivers = () => {
   const { notifyError } = useNotification();
   const [drivers, setDrivers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDrivers = async () => {
       setIsLoading(true);
+      setFetchError(null);
       try {
         const response = await safetyBaseURL.get('/drivers');
         if (response.data?.success) {
           setDrivers(response.data.data || []);
+        } else {
+          const message = response.data?.message || 'Unexpected response from safety API';
+          setFetchError(message);
+          notifyError(message);
         }
       } catch (error: any) {
-        notifyError('Failed to fetch drivers');
-        console.error('Fetch error:', error?.response?.data);
+        const message = error?.response?.data?.message || error?.message || 'Failed to connect to safety API';
+        setFetchError(message);
+        notifyError(message);
+        console.error('Fetch error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -105,6 +113,13 @@ export const SafetyOfficerDrivers = () => {
         </div>
 
         {/* Expired Licenses Alert */}
+        {fetchError && (
+          <div className="bg-red-50 border border-red-300 rounded-lg p-6">
+            <p className="text-red-700 font-semibold">Unable to load driver safety data</p>
+            <p className="text-red-600 text-sm mt-1">{fetchError}</p>
+          </div>
+        )}
+
         {expiredLicenses > 0 && (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
             <div className="flex items-center gap-2 mb-4">

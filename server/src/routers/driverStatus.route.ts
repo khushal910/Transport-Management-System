@@ -36,7 +36,7 @@ driverStatusRouter.post(
  */
 driverStatusRouter.get(
   '/',
-  roleMiddleware('manager', 'dispatcher'),
+  roleMiddleware('manager', 'dispatcher', 'safety_officer'),
   getDriversByStatus
 );
 

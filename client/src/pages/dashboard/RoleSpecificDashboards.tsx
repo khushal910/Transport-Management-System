@@ -4,6 +4,7 @@ import { useNotification } from '../../hooks/useNotification';
 import dashboardBaseURL from '../../api/dashboardBaseURL';
 import vehicleBaseURL from '../../api/vehicleBaseURL';
 import driverBaseURL from '../../api/driverBaseURL';
+import safetyBaseURL from '../../api/safetyBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
 import { PageContainer, PageHeader } from '../../components/ui';
 import { SafetyAlertBanner } from '../../components/SafetyAlertBanner';
@@ -299,16 +300,59 @@ export const SafetyOfficerDashboard = () => {
   const navigate = useNavigate();
   const { notifyError } = useNotification();
   const [safetyStats, setSafetyStats] = useState<any>(null);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch safety metrics only
+  // Helper function to get days until license expiry
+  const getDaysUntilExpiry = (expiryDate: string) => {
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const diff = expiry.getTime() - today.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  // Fetch safety metrics, drivers, and vehicles
   useEffect(() => {
-    const fetchSafetyMetrics = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
+        // Fetch safety metrics
         const safetyRes = await dashboardBaseURL.get('/safety-metrics');
         if (safetyRes.data?.success) {
           setSafetyStats(safetyRes.data.data);
+        }
+
+        // Fetch drivers data
+        try {
+          const driversRes = await safetyBaseURL.get('/drivers');
+          if (driversRes.data?.success) {
+            setDrivers(driversRes.data.data || []);
+          }
+        } catch (dErr) {
+          console.error('Drivers fetch error:', dErr);
+        }
+
+        // Fetch vehicle data (mock for now)
+        try {
+          setVehicles([
+            {
+              _id: '1',
+              licensePlate: 'KL-01-AB-1234',
+              model: 'Tata 1412',
+              maintenanceStatus: 'needs_maintenance',
+              lastServiceDate: '2023-12-15',
+            },
+            {
+              _id: '2',
+              licensePlate: 'KL-01-CD-5678',
+              model: 'Maruti Suzuki',
+              maintenanceStatus: 'in_shop',
+              lastServiceDate: '2024-01-05',
+            },
+          ]);
+        } catch (vErr) {
+          console.error('Vehicles fetch error:', vErr);
         }
       } catch (safetyError: any) {
         console.error('Safety metrics fetch failed:', safetyError?.response?.status, safetyError?.response?.data);
@@ -317,8 +361,19 @@ export const SafetyOfficerDashboard = () => {
         setIsLoading(false);
       }
     };
-    fetchSafetyMetrics();
+    fetchData();
   }, [notifyError]);
+
+  // Filter drivers with license expiring in 3 days
+  const driversExpiringIn3Days = drivers.filter(driver => {
+    const daysLeft = getDaysUntilExpiry(driver.licenseExpiry);
+    return daysLeft > 0 && daysLeft <= 3;
+  });
+
+  // Filter vehicles with pending maintenance
+  const pendingMaintenanceVehicles = vehicles.filter(
+    v => v.maintenanceStatus === 'needs_maintenance' || v.maintenanceStatus === 'in_shop'
+  );
 
   return (
     <PageContainer>
@@ -418,6 +473,100 @@ export const SafetyOfficerDashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* Drivers with License Expiring in 3 Days - Alert */}
+        {!isLoading && driversExpiringIn3Days.length > 0 && (
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              <h3 className="text-lg font-semibold text-yellow-800">⚠️ Licenses Expiring in 3 Days</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-yellow-100">
+                    <th className="text-left py-3 px-4 font-semibold text-yellow-900">Driver Name</th>
+                    <th className="text-left py-3 px-4 font-semibold text-yellow-900">License Number</th>
+                    <th className="text-left py-3 px-4 font-semibold text-yellow-900">Expiry Date</th>
+                    <th className="text-center py-3 px-4 font-semibold text-yellow-900">Days Left</th>
+                    <th className="text-center py-3 px-4 font-semibold text-yellow-900">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {driversExpiringIn3Days.map((driver) => (
+                    <tr key={driver._id} className="border-b hover:bg-yellow-100">
+                      <td className="py-3 px-4 font-semibold text-gray-900">{driver.name || 'N/A'}</td>
+                      <td className="py-3 px-4 font-mono text-yellow-600">{driver.licenseNumber || 'N/A'}</td>
+                      <td className="py-3 px-4">{new Date(driver.licenseExpiry).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="inline-block px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full font-bold">
+                          {getDaysUntilExpiry(driver.licenseExpiry)} days
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => navigate('/main/employee')}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Vehicles with Pending Maintenance - Alert */}
+        {!isLoading && pendingMaintenanceVehicles.length > 0 && (
+          <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Wrench className="h-6 w-6 text-orange-600" />
+              <h3 className="text-lg font-semibold text-orange-800">🔧 Vehicles Requiring Maintenance</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-orange-100">
+                    <th className="text-left py-3 px-4 font-semibold text-orange-900">License Plate</th>
+                    <th className="text-left py-3 px-4 font-semibold text-orange-900">Model</th>
+                    <th className="text-center py-3 px-4 font-semibold text-orange-900">Maintenance Status</th>
+                    <th className="text-center py-3 px-4 font-semibold text-orange-900">Last Serviced</th>
+                    <th className="text-center py-3 px-4 font-semibold text-orange-900">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingMaintenanceVehicles.map((vehicle) => (
+                    <tr key={vehicle._id} className="border-b hover:bg-orange-100">
+                      <td className="py-3 px-4 font-mono font-semibold text-blue-600">{vehicle.licensePlate}</td>
+                      <td className="py-3 px-4">{vehicle.model || 'N/A'}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          vehicle.maintenanceStatus === 'in_shop' ? 'bg-orange-200 text-orange-900' : 'bg-red-200 text-red-900'
+                        }`}>
+                          {vehicle.maintenanceStatus === 'in_shop' ? 'In Shop' : 'Needs Maintenance'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center text-gray-600">
+                        {vehicle.lastServiceDate ? new Date(vehicle.lastServiceDate).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => navigate('/main/vehicle')}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition"
+                        >
+                          View Fleet
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </PageContainer>
   );

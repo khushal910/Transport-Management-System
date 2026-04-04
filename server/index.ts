@@ -13,6 +13,7 @@ import driverRouter from './src/routers/driver.route';
 import driverStatusRouter from './src/routers/driverStatus.route';
 import analyticsRouter from './src/routers/analytics.route';
 import dashboardRouter from './src/routers/dashboard.route';
+import safetyRouter from './src/routers/safety.route';
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/driver', driverRouter)
 app.use('/api/driver-status', driverStatusRouter)
 app.use('/api/analytics', analyticsRouter)
 app.use('/api/dashboard', dashboardRouter)
+app.use('/api/safety', safetyRouter)
 
 const port = process.env.PORT || 3000;
 
