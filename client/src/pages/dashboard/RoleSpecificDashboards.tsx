@@ -8,7 +8,7 @@ import safetyBaseURL from '../../api/safetyBaseURL';
 import DashboardKPIs from '../../components/DashboardKPIs';
 import { PageContainer, PageHeader } from '../../components/ui';
 import { SafetyAlertBanner } from '../../components/SafetyAlertBanner';
-import { TrendingUp, BarChart3, AlertCircle, Wrench, AlertTriangle, CheckCircle } from 'lucide-react';
+import { TrendingUp, BarChart3, AlertCircle, Wrench, AlertTriangle, CheckCircle, Users, Shield, Gauge, Clock } from 'lucide-react';
 
 /**
  * Manager Dashboard - Full Control
@@ -377,139 +377,167 @@ export const SafetyOfficerDashboard = () => {
 
   return (
     <PageContainer>
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <span className="text-4xl">🛡️</span>
-          <div>
-            <PageHeader 
-              title="Safety Officer Dashboard" 
-              description="Monitor key safety metrics and compliance"
-            />
-          </div>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <PageHeader 
+            title="Safety & Compliance Dashboard" 
+            description="Real-time monitoring of safety metrics, compliance status, and fleet maintenance"
+          />
         </div>
 
         {/* Loading State */}
         {isLoading && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 flex flex-col items-center justify-center">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-12 flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600">Loading dashboard data...</p>
+            <p className="text-gray-600 font-medium">Loading safety dashboard...</p>
           </div>
         )}
 
         {/* Error State */}
         {!isLoading && !safetyStats && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <p className="text-red-700 font-semibold">Unable to load safety metrics</p>
-            <p className="text-red-600 text-sm mt-1">Please check the browser console for error details</p>
+          <div className="bg-red-50 border border-red-300 rounded-xl p-6 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-900 font-semibold">Unable to load safety metrics</p>
+              <p className="text-red-700 text-sm mt-1">Please check the browser console for error details</p>
+            </div>
           </div>
         )}
 
-        {/* Safety Metrics Cards - Clickable Navigation */}
-        {safetyStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Safety Metrics KPI Cards */}
+        {safetyStats && !isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Expired Licenses Card */}
             <button
               onClick={() => navigate('/main/employee')}
-              className="bg-red-50 border border-red-200 rounded-lg p-6 hover:bg-red-100 hover:border-red-300 transition cursor-pointer text-left"
+              className="bg-white border border-red-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 text-left group"
             >
-              <p className="text-sm text-gray-600 mb-2">Expired Licenses</p>
-              <p className="text-4xl font-bold text-red-600">{safetyStats.expiredLicenses || 0}</p>
-              <p className="text-xs text-red-600 mt-3">Click to view drivers</p>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2 bg-red-50 rounded-lg group-hover:bg-red-100 transition">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">Critical</span>
+              </div>
+              <p className="text-sm font-medium text-gray-600">Expired Licenses</p>
+              <p className="text-3xl font-bold text-red-600 mt-2">{safetyStats.expiredLicenses || 0}</p>
+              <p className="text-xs text-gray-500 mt-3">Requires immediate review</p>
             </button>
 
             {/* Recent Accidents Card */}
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-              <p className="text-sm text-gray-600 mb-2">Recent Accidents</p>
-              <p className="text-4xl font-bold text-orange-600">{safetyStats.recentAccidents || 0}</p>
-              <p className="text-xs text-orange-600 mt-3">Last 30 days</p>
+            <div className="bg-white border border-orange-200 rounded-xl p-6 shadow-sm hover:shadow-lg transition-all">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <Shield className="h-5 w-5 text-orange-600" />
+                </div>
+                <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded">Alert</span>
+              </div>
+              <p className="text-sm font-medium text-gray-600">Recent Incidents</p>
+              <p className="text-3xl font-bold text-orange-600 mt-2">{safetyStats.recentAccidents || 0}</p>
+              <p className="text-xs text-gray-500 mt-3">Last 30 days</p>
             </div>
 
             {/* Low Safety Scores Card */}
             <button
               onClick={() => navigate('/main/employee')}
-              className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 hover:bg-yellow-100 hover:border-yellow-300 transition cursor-pointer text-left"
+              className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 text-left group"
             >
-              <p className="text-sm text-gray-600 mb-2">Low Safety Scores</p>
-              <p className="text-4xl font-bold text-yellow-600">{safetyStats.lowSafetyScores || 0}</p>
-              <p className="text-xs text-yellow-600 mt-3">Click to view drivers</p>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition">
+                  <Gauge className="h-5 w-5 text-amber-600" />
+                </div>
+                <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Warning</span>
+              </div>
+              <p className="text-sm font-medium text-gray-600">Low Safety Scores</p>
+              <p className="text-3xl font-bold text-amber-600 mt-2">{safetyStats.lowSafetyScores || 0}</p>
+              <p className="text-xs text-gray-500 mt-3">Driver attention needed</p>
             </button>
 
             {/* Maintenance Alerts Card */}
             <button
-              onClick={() => navigate('/main/maintenance')}
-              className="bg-red-100 border border-red-300 rounded-lg p-6 hover:bg-red-200 hover:border-red-400 transition cursor-pointer text-left"
+              onClick={() => navigate('/main/vehicle')}
+              className="bg-white border border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 text-left group"
             >
-              <p className="text-sm text-gray-600 mb-2">Maintenance Alerts</p>
-              <p className="text-4xl font-bold text-red-600">{safetyStats.maintenanceAlerts || 0}</p>
-              <p className="text-xs text-red-600 mt-3">Click to manage vehicles</p>
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition">
+                  <Wrench className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">Info</span>
+              </div>
+              <p className="text-sm font-medium text-gray-600">Maintenance Due</p>
+              <p className="text-3xl font-bold text-blue-600 mt-2">{safetyStats.maintenanceAlerts || 0}</p>
+              <p className="text-xs text-gray-500 mt-3">Vehicles need service</p>
             </button>
           </div>
         )}
 
-        {/* Quick Links Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => navigate('/main/employee')}
-              className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition"
-            >
-              <span className="text-2xl">👥</span>
-              <div className="text-left">
-                <p className="font-semibold text-gray-900">View All Drivers</p>
-                <p className="text-sm text-gray-600">Check driver details and licenses</p>
+        {/* Quick Access Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <button
+            onClick={() => navigate('/main/employee')}
+            className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition">
+                <Users className="h-6 w-6 text-blue-600" />
               </div>
-            </button>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 group-hover:text-blue-600 transition">Driver Safety & Compliance</p>
+                <p className="text-sm text-gray-600 mt-1">Review licenses, safety scores, and driver performance</p>
+                <p className="text-xs text-blue-600 mt-2 font-medium">Go to drivers →</p>
+              </div>
+            </div>
+          </button>
 
-            <button
-              onClick={() => navigate('/main/maintenance')}
-              className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition"
-            >
-              <span className="text-2xl">🔧</span>
-              <div className="text-left">
-                <p className="font-semibold text-gray-900">View Maintenance</p>
-                <p className="text-sm text-gray-600">Check vehicle maintenance status</p>
+          <button
+            onClick={() => navigate('/main/vehicle')}
+            className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition">
+                <Wrench className="h-6 w-6 text-amber-600" />
               </div>
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 group-hover:text-amber-600 transition">Fleet Maintenance Status</p>
+                <p className="text-sm text-gray-600 mt-1">Monitor vehicle maintenance schedules and service status</p>
+                <p className="text-xs text-amber-600 mt-2 font-medium">Go to fleet →</p>
+              </div>
+            </div>
+          </button>
         </div>
 
-        {/* Drivers with License Expiring in 3 Days - Alert */}
+        {/* Drivers with License Expiring Soon */}
         {!isLoading && driversExpiringIn3Days.length > 0 && (
-          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle className="h-6 w-6 text-yellow-600" />
-              <h3 className="text-lg font-semibold text-yellow-800">⚠️ Licenses Expiring in 3 Days</h3>
+          <div className="bg-white border border-red-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-red-100 flex items-center gap-3">
+              <div className="p-2 bg-red-50 rounded-lg">
+                <Clock className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">⚠️ Licenses Expiring in 3 Days</h3>
+              <span className="ml-auto bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
+                {driversExpiringIn3Days.length}
+              </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-yellow-100">
-                    <th className="text-left py-3 px-4 font-semibold text-yellow-900">Driver Name</th>
-                    <th className="text-left py-3 px-4 font-semibold text-yellow-900">License Number</th>
-                    <th className="text-left py-3 px-4 font-semibold text-yellow-900">Expiry Date</th>
-                    <th className="text-center py-3 px-4 font-semibold text-yellow-900">Days Left</th>
-                    <th className="text-center py-3 px-4 font-semibold text-yellow-900">Action</th>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm">Driver Name</th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm">License ID</th>
+                    <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm">Expiry Date</th>
+                    <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm">Days Remaining</th>
                   </tr>
                 </thead>
                 <tbody>
                   {driversExpiringIn3Days.map((driver) => (
-                    <tr key={driver._id} className="border-b hover:bg-yellow-100">
-                      <td className="py-3 px-4 font-semibold text-gray-900">{driver.name || 'N/A'}</td>
-                      <td className="py-3 px-4 font-mono text-yellow-600">{driver.licenseNumber || 'N/A'}</td>
-                      <td className="py-3 px-4">{new Date(driver.licenseExpiry).toLocaleDateString()}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-block px-3 py-1 bg-yellow-200 text-yellow-900 rounded-full font-bold">
+                    <tr key={driver._id} className="border-b border-gray-100 hover:bg-red-50 transition">
+                      <td className="py-4 px-6 text-gray-900 font-medium">{driver.name || 'N/A'}</td>
+                      <td className="py-4 px-6 text-gray-600 font-mono">{driver.licenseNumber || 'N/A'}</td>
+                      <td className="py-4 px-6 text-center text-gray-600">{new Date(driver.licenseExpiry).toLocaleDateString()}</td>
+                      <td className="py-4 px-6 text-center">
+                        <span className="inline-block px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">
                           {getDaysUntilExpiry(driver.licenseExpiry)} days
                         </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          onClick={() => navigate('/main/employee')}
-                          className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition"
-                        >
-                          View Details
-                        </button>
                       </td>
                     </tr>
                   ))}
@@ -519,43 +547,50 @@ export const SafetyOfficerDashboard = () => {
           </div>
         )}
 
-        {/* Vehicles with Pending Maintenance - Alert */}
+        {/* Vehicles with Pending Maintenance */}
         {!isLoading && pendingMaintenanceVehicles.length > 0 && (
-          <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Wrench className="h-6 w-6 text-orange-600" />
-              <h3 className="text-lg font-semibold text-orange-800">🔧 Vehicles Requiring Maintenance</h3>
+          <div className="bg-white border border-amber-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-amber-100 flex items-center gap-3">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Wrench className="h-5 w-5 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">🔧 Vehicles with Pending Maintenance</h3>
+              <span className="ml-auto bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-semibold">
+                {pendingMaintenanceVehicles.length}
+              </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-orange-100">
-                    <th className="text-left py-3 px-4 font-semibold text-orange-900">License Plate</th>
-                    <th className="text-left py-3 px-4 font-semibold text-orange-900">Model</th>
-                    <th className="text-center py-3 px-4 font-semibold text-orange-900">Maintenance Status</th>
-                    <th className="text-center py-3 px-4 font-semibold text-orange-900">Last Serviced</th>
-                    <th className="text-center py-3 px-4 font-semibold text-orange-900">Action</th>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm">License Plate</th>
+                    <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm">Model</th>
+                    <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm">Maintenance Status</th>
+                    <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm">Last Serviced</th>
+                    <th className="text-center py-4 px-6 font-semibold text-gray-700 text-sm">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pendingMaintenanceVehicles.map((vehicle) => (
-                    <tr key={vehicle._id} className="border-b hover:bg-orange-100">
-                      <td className="py-3 px-4 font-mono font-semibold text-blue-600">{vehicle.licensePlate}</td>
-                      <td className="py-3 px-4">{vehicle.model || 'N/A'}</td>
-                      <td className="py-3 px-4 text-center">
+                    <tr key={vehicle._id} className="border-b border-gray-100 hover:bg-amber-50 transition">
+                      <td className="py-4 px-6 font-mono font-semibold text-blue-600">{vehicle.licensePlate}</td>
+                      <td className="py-4 px-6 text-gray-900 font-medium">{vehicle.model || 'N/A'}</td>
+                      <td className="py-4 px-6 text-center">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          vehicle.maintenanceStatus === 'in_shop' ? 'bg-orange-200 text-orange-900' : 'bg-red-200 text-red-900'
+                          vehicle.maintenanceStatus === 'in_shop' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
                         }`}>
-                          {vehicle.maintenanceStatus === 'in_shop' ? 'In Shop' : 'Needs Maintenance'}
+                          {vehicle.maintenanceStatus === 'in_shop' ? '🔧 In Shop' : '⚠️ Needs Maintenance'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center text-gray-600">
+                      <td className="py-4 px-6 text-center text-gray-600">
                         {vehicle.lastServiceDate ? new Date(vehicle.lastServiceDate).toLocaleDateString() : 'N/A'}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-4 px-6 text-center">
                         <button
                           onClick={() => navigate('/main/vehicle')}
-                          className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition"
+                          className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
                         >
                           View Fleet
                         </button>
