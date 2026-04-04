@@ -4,6 +4,7 @@ import Company from '../../models/company.schema';
 import response from '../../response/response';
 import authValidatorSchema from '../../validations/auth.validator';
 import bcrypt from 'bcryptjs';
+import environmentConfig from '../../config/environment';
 
 const userRegister = async (req, res) => {
   try {
@@ -21,10 +22,6 @@ const userRegister = async (req, res) => {
       return response(res, 400, false, "Email already exists");
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     // If user is a manager, create user and company for them
     if (role !== 'manager') {
       return response(res, 400, false, 'Only managers can register directly. Other users must be invited.');
@@ -39,9 +36,15 @@ const userRegister = async (req, res) => {
     if (missingFields.length > 0) {
       return response(res, 400, false, `Missing company fields: ${missingFields.join(', ')}`);
     }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const userData = {
       ...value,
       password: hashedPassword,
+      isActive: environmentConfig.isDevelopment ? true : false, // Auto-activate in dev mode
       company: null, // Will be set after company creation
     };
 
@@ -63,12 +66,18 @@ const userRegister = async (req, res) => {
 
     const companyId = company._id;
 
-    return response(res, 201, true, 'User Register', {
+    const message = environmentConfig.isDevelopment 
+      ? '✅ Dev Mode: Manager registered and automatically activated'
+      : 'Manager registered successfully';
+
+    return response(res, 201, true, message, {
       id: userCreated._id,
       name: userCreated.name,
       email: userCreated.email,
       role: userCreated.role,
+      isActive: userCreated.isActive,
       companyId: companyId,
+      environment: environmentConfig.environment,
     });
   } catch (err) {
 

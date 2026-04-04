@@ -4,33 +4,52 @@ import User from '../../models/user.schema';
 import bcrypt from 'bcryptjs';
 import joi from 'joi';
 import { sendPasswordResetSuccessEmail } from '../../utils/email.service';
+import environmentConfig from '../../config/environment';
 
-// Reset password validation schema
-const resetPasswordValidatorSchema = joi.object({
-  token: joi.string().trim().required().messages({
-    'string.empty': 'Reset token is required',
-    'any.required': 'Reset token is required',
-  }),
-  password: joi
-    .string()
-    .min(3)
-    .regex(/[A-Z]/)
-    .regex(/[a-z]/)
-    .regex(/[0-9]/)
-    .regex(/[!@#$%^&*]/)
-    .trim()
-    .required()
-    .messages({
-      'string.min': 'Password must be at least 3 characters long',
-      'string.pattern.base':
-        'Password must contain uppercase, lowercase, number, and special character',
+// Reset password validation schema - uses environment config
+const getResetPasswordValidatorSchema = () => {
+  const minLength = environmentConfig.getMinPasswordLength();
+  const isDev = environmentConfig.isDevelopment;
+
+  let passwordRule = joi.string().trim();
+
+  if (isDev) {
+    // Development mode: minimal requirements
+    passwordRule = passwordRule.min(1).required().messages({
+      'string.min': 'Password must be at least 1 character',
       'any.required': 'Password is required',
+    });
+  } else {
+    // Production mode: strict requirements
+    passwordRule = passwordRule
+      .min(minLength)
+      .regex(/[A-Z]/)
+      .regex(/[a-z]/)
+      .regex(/[0-9]/)
+      .regex(/[!@#$%^&*]/)
+      .required()
+      .messages({
+        'string.min': `Password must be at least ${minLength} characters long`,
+        'string.pattern.base':
+          'Password must contain uppercase, lowercase, number, and special character',
+        'any.required': 'Password is required',
+      });
+  }
+
+  return joi.object({
+    token: joi.string().trim().required().messages({
+      'string.empty': 'Reset token is required',
+      'any.required': 'Reset token is required',
     }),
-  passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
-    'any.only': 'Passwords do not match',
-    'any.required': 'Password confirmation is required',
-  }),
-});
+    password: passwordRule,
+    passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
+      'any.only': 'Passwords do not match',
+      'any.required': 'Password confirmation is required',
+    }),
+  });
+};
+
+const resetPasswordValidatorSchema = getResetPasswordValidatorSchema();
 
 const userResetPassword = async (req, res) => {
   try {

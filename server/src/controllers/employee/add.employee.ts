@@ -6,6 +6,7 @@ import addEmployeeValidatorSchema from '../../validations/add.employee.validator
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { sendEmployeeSetupEmail } from '../../utils/email.service';
+import environmentConfig from '../../config/environment';
 
 const addEmployee = async (req, res) => {
   try {
@@ -32,21 +33,40 @@ const addEmployee = async (req, res) => {
       }
     }
 
-    // Generate password setup token (64 character random string)
-    const setupToken = crypto.randomBytes(32).toString('hex');
-    const hashedSetupToken = await bcrypt.hash(setupToken, 10);
-    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // In development mode: set default password and mark as active
+    let userData;
+    if (environmentConfig.isDevelopment) {
+      const defaultPassword = environmentConfig.getDefaultPassword();
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
-    const userData = {
-      name,
-      email,
-      password: null, // No password until employee sets it
-      isPasswordSet: false, // Employee hasn't set password yet
-      role,
-      company: managerCompanyId,
-      passwordResetToken: hashedSetupToken, // Reuse field for setup token
-      passwordResetExpires: tokenExpiry,
-    };
+      userData = {
+        name,
+        email,
+        password: hashedPassword, // Set default password
+        isPasswordSet: true, // Mark password as set
+        isActive: true, // Automatically activate in dev mode
+        role,
+        company: managerCompanyId,
+      };
+    } else {
+      // Production mode: require email setup
+      const setupToken = crypto.randomBytes(32).toString('hex');
+      const hashedSetupToken = await bcrypt.hash(setupToken, 10);
+      const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      userData = {
+        name,
+        email,
+        password: null, // No password until employee sets it
+        isPasswordSet: false, // Employee hasn't set password yet
+        isActive: false, // Requires email activation
+        role,
+        company: managerCompanyId,
+        passwordResetToken: hashedSetupToken, // Reuse field for setup token
+        passwordResetExpires: tokenExpiry,
+      };
+    }
 
     // Create user
     const newEmployee = await User.create(userData);
@@ -63,18 +83,30 @@ const addEmployee = async (req, res) => {
       });
     }
 
-    // Send password setup email
-    const emailResult = await sendEmployeeSetupEmail(email, name, setupToken);
-    if (!emailResult.success) {
-      console.warn('Failed to send employee setup email:', emailResult.error);
+    // Send email based on environment
+    let emailResult = { success: true };
+    if (environmentConfig.isDevelopment) {
+      // In dev mode: just log it, don't require email
+      console.info(`✅ [DEV MODE] Employee created with default password: ${environmentConfig.getDefaultPassword()}`);
+    } else {
+      // In production: send password setup email
+      const setupToken = crypto.randomBytes(32).toString('hex');
+      emailResult = await sendEmployeeSetupEmail(email, name, setupToken);
+      if (!emailResult.success) {
+        console.warn('Failed to send employee setup email:', emailResult.error);
+      }
     }
 
-    return response(res, 201, true, 'Employee added successfully. Setup link sent to email.', {
+    return response(res, 201, true, 'Employee added successfully.', {
       id: newEmployee._id,
       name: newEmployee.name,
       email: newEmployee.email,
       role: newEmployee.role,
+      isActive: newEmployee.isActive,
       companyId: newEmployee.company,
+      message: environmentConfig.isDevelopment 
+        ? `✅ Dev Mode: Employee is active with default password "${environmentConfig.getDefaultPassword()}"`
+        : 'Setup link sent to email.',
       ...(role === 'driver' && {
         driver: {
           driverId: driverRecord._id,
