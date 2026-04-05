@@ -8,6 +8,7 @@ declare global {
     interface Request {
       user?: {
         id: string;
+        userId?: string;
         role: string;
         companyId: string;
       };
@@ -52,6 +53,7 @@ const requiredRole = (...allowedRoles: string[]) => {
 
       req.user = {
         id: decoded.id,
+        userId: decoded.id,
         role: decoded.role,
         companyId: companyId,
       };

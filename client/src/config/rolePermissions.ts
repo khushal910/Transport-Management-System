@@ -21,6 +21,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/trip-expense',
       '/main/performance',
       '/main/analytics',
+      '/main/gps-tracking',
     ],
   },
 
@@ -33,6 +34,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/vehicle-registry', // View only
       '/main/driver-registry', // View only
       '/main/trip-dispatcher',
+      '/main/gps-tracking',
     ],
   },
 
@@ -49,6 +51,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/trip-dispatcher', // Trips read-only (view violations only)
       '/main/maintenance', // Maintenance status
       '/main/analytics', // Safety analytics only
+      '/main/gps-tracking',
     ],
   },
 
@@ -60,6 +63,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/dashboard', // Financial metrics
       '/main/trip-expense',
       '/main/analytics',
+      '/main/gps-tracking',
     ],
   },
 };
@@ -134,6 +138,12 @@ export const navItems: NavItem[] = [
     label: 'Analytics',
     icon: '📉',
     requiredRoles: ['manager', 'financial_analyst'],
+  },
+  {
+    path: '/main/gps-tracking',
+    label: 'GPS Tracking',
+    icon: '📍',
+    requiredRoles: ['manager', 'dispatcher', 'safety_officer', 'financial_analyst'],
   },
   {
     path: '/main/team',
