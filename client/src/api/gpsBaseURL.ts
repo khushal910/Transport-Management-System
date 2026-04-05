@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance for GPS API
 const gpsBaseURL = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/gps`,
+  baseURL: 'http://localhost:3000/api/gps',
   withCredentials: true,
 });
 

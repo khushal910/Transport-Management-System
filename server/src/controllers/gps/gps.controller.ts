@@ -3,7 +3,7 @@ import GPSLocation from '../../models/gpsLocation.schema';
 import { Trip } from '../../models/trip.schema';
 import Vehicle from '../../models/vehicle.schema';
 import Driver from '../../models/driver.schema';
-import StandardResponse from '../../response/response';
+import response from '../../response/response';
 import {
   getLatestTripLocation,
   getTripGPSHistory,
@@ -64,34 +64,23 @@ export const getActiveTrips = async (
       });
     }
 
-    const response = new StandardResponse(
-      true,
-      'Active trips retrieved successfully',
-      {
-        trips: trips.map((trip) => ({
-          _id: trip._id,
-          vehicleName: trip.vehicle?.name,
-          licensePlate: trip.vehicle?.licensePlate,
-          driverName: trip.driver?.user?.email,
-          startLocation: trip.startLocation,
-          endLocation: trip.endLocation,
-          cargoWeight: trip.cargoWeight,
-          status: trip.status,
-          createdAt: trip.createdAt,
-        })),
-        total: trips.length,
-      }
-    );
-
-    res.json(response);
+    return response(res, 200, true, 'Active trips retrieved successfully', {
+      trips: trips.map((trip) => ({
+        _id: trip._id,
+        vehicleName: trip.vehicle?.name,
+        licensePlate: trip.vehicle?.licensePlate,
+        driverName: trip.driver?.user?.email,
+        startLocation: trip.startLocation,
+        endLocation: trip.endLocation,
+        cargoWeight: trip.cargoWeight,
+        status: trip.status,
+        createdAt: trip.createdAt,
+      })),
+      total: trips.length,
+    });
   } catch (error: any) {
     console.error('Error in getActiveTrips:', error);
-    const response = new StandardResponse(
-      false,
-      error.message || 'Failed to retrieve active trips',
-      null
-    );
-    res.status(500).json(response);
+    return response(res, 500, false, error.message || 'Failed to retrieve active trips');
   }
 };
 
@@ -109,13 +98,7 @@ export const getTripLatestLocation = async (
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
 
     if (!mongoose.isValidObjectId(tripId)) {
-      const response = new StandardResponse(
-        false,
-        'Invalid trip ID format',
-        null
-      );
-      res.status(400).json(response);
-      return;
+      return response(res, 400, false, 'Invalid trip ID format');
     }
 
     // Validate trip exists and belongs to user's company
@@ -125,35 +108,17 @@ export const getTripLatestLocation = async (
     }).populate('driver');
 
     if (!trip) {
-      const response = new StandardResponse(
-        false,
-        'Trip not found or access denied',
-        null
-      );
-      res.status(404).json(response);
-      return;
+      return response(res, 404, false, 'Trip not found or access denied');
     }
 
     // Driver can only view their own trip
     if (userRole === 'driver') {
       if (!userId) {
-        const response = new StandardResponse(
-          false,
-          'Unauthorized: Driver identity missing',
-          null
-        );
-        res.status(401).json(response);
-        return;
+        return response(res, 401, false, 'Unauthorized: Driver identity missing');
       }
       const driverData = await Driver.findOne({ user: userId });
       if (!driverData || trip.driver._id.toString() !== driverData._id.toString()) {
-        const response = new StandardResponse(
-          false,
-          'You can only view your own trip GPS',
-          null
-        );
-        res.status(403).json(response);
-        return;
+        return response(res, 403, false, 'You can only view your own trip GPS');
       }
     }
 
@@ -161,51 +126,34 @@ export const getTripLatestLocation = async (
     const latestLocation = await getLatestTripLocation(tripId);
 
     if (!latestLocation) {
-      const response = new StandardResponse(
-        false,
-        'No GPS data available for this trip yet',
-        null
-      );
-      res.status(404).json(response);
-      return;
+      return response(res, 404, false, 'No GPS data available for this trip yet');
     }
 
-    const response = new StandardResponse(
-      true,
-      'Latest GPS location retrieved',
-      {
-        location: {
-          latitude: latestLocation.latitude,
-          longitude: latestLocation.longitude,
-          speed: latestLocation.speed,
-          heading: latestLocation.heading,
-          accuracy: latestLocation.accuracy,
-          altitude: latestLocation.altitude,
-          timestamp: latestLocation.timestamp,
-        },
-        vehicle: {
-          name: trip.vehicle?.name,
-          licensePlate: trip.vehicle?.licensePlate,
-        },
-        driver: {
-          email: trip.driver?.user?.email,
-        },
-        route: {
-          startLocation: trip.startLocation,
-          endLocation: trip.endLocation,
-        },
-      }
-    );
-
-    res.json(response);
+    return response(res, 200, true, 'Latest GPS location retrieved', {
+      location: {
+        latitude: latestLocation.latitude,
+        longitude: latestLocation.longitude,
+        speed: latestLocation.speed,
+        heading: latestLocation.heading,
+        accuracy: latestLocation.accuracy,
+        altitude: latestLocation.altitude,
+        timestamp: latestLocation.timestamp,
+      },
+      vehicle: {
+        name: trip.vehicle?.name,
+        licensePlate: trip.vehicle?.licensePlate,
+      },
+      driver: {
+        email: trip.driver?.user?.email,
+      },
+      route: {
+        startLocation: trip.startLocation,
+        endLocation: trip.endLocation,
+      },
+    });
   } catch (error: any) {
     console.error('Error in getTripLatestLocation:', error);
-    const response = new StandardResponse(
-      false,
-      error.message || 'Failed to retrieve trip location',
-      null
-    );
-    res.status(500).json(response);
+    return response(res, 500, false, error.message || 'Failed to retrieve trip location');
   }
 };
 
@@ -225,13 +173,7 @@ export const getTripLocationHistory = async (
 
     // Validate inputs
     if (!mongoose.isValidObjectId(tripId)) {
-      const response = new StandardResponse(
-        false,
-        'Invalid trip ID format',
-        null
-      );
-      res.status(400).json(response);
-      return;
+      return response(res, 400, false, 'Invalid trip ID format');
     }
     const parsedLimit = Math.min(parseInt(limit) || 100, 500); // Max 500 records
 
@@ -242,35 +184,17 @@ export const getTripLocationHistory = async (
     }).populate('driver');
 
     if (!trip) {
-      const response = new StandardResponse(
-        false,
-        'Trip not found or access denied',
-        null
-      );
-      res.status(404).json(response);
-      return;
+      return response(res, 404, false, 'Trip not found or access denied');
     }
 
     // Driver can only view their own trip
     if (userRole === 'driver') {
       if (!userId) {
-        const response = new StandardResponse(
-          false,
-          'Unauthorized: Driver identity missing',
-          null
-        );
-        res.status(401).json(response);
-        return;
+        return response(res, 401, false, 'Unauthorized: Driver identity missing');
       }
       const driverData = await Driver.findOne({ user: userId });
       if (!driverData || trip.driver._id.toString() !== driverData._id.toString()) {
-        const response = new StandardResponse(
-          false,
-          'You can only view your own trip GPS',
-          null
-        );
-        res.status(403).json(response);
-        return;
+        return response(res, 403, false, 'You can only view your own trip GPS');
       }
     }
 
@@ -278,48 +202,31 @@ export const getTripLocationHistory = async (
     const history = await getTripGPSHistory(tripId, parsedLimit);
 
     if (!history.length) {
-      const response = new StandardResponse(
-        false,
-        'No GPS data available for this trip',
-        null
-      );
-      res.status(404).json(response);
-      return;
+      return response(res, 404, false, 'No GPS data available for this trip');
     }
 
-    const response = new StandardResponse(
-      true,
-      `Retrieved ${history.length} GPS records`,
-      {
-        history: history.map((loc) => ({
-          latitude: loc.latitude,
-          longitude: loc.longitude,
-          speed: loc.speed,
-          heading: loc.heading,
-          accuracy: loc.accuracy,
-          altitude: loc.altitude,
-          timestamp: loc.timestamp,
-        })),
-        tripInfo: {
-          vehicleName: trip.vehicle?.name,
-          licensePlate: trip.vehicle?.licensePlate,
-          driverEmail: trip.driver?.user?.email,
-          startLocation: trip.startLocation,
-          endLocation: trip.endLocation,
-        },
-        totalRecords: history.length,
-      }
-    );
-
-    res.json(response);
+    return response(res, 200, true, `Retrieved ${history.length} GPS records`, {
+      history: history.map((loc) => ({
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        speed: loc.speed,
+        heading: loc.heading,
+        accuracy: loc.accuracy,
+        altitude: loc.altitude,
+        timestamp: loc.timestamp,
+      })),
+      tripInfo: {
+        vehicleName: trip.vehicle?.name,
+        licensePlate: trip.vehicle?.licensePlate,
+        driverEmail: trip.driver?.user?.email,
+        startLocation: trip.startLocation,
+        endLocation: trip.endLocation,
+      },
+      totalRecords: history.length,
+    });
   } catch (error: any) {
     console.error('Error in getTripLocationHistory:', error);
-    const response = new StandardResponse(
-      false,
-      error.message || 'Failed to retrieve GPS history',
-      null
-    );
-    res.status(500).json(response);
+    return response(res, 500, false, error.message || 'Failed to retrieve GPS history');
   }
 };
 
@@ -381,24 +288,13 @@ export const getAllActiveTripsGPS = async (
       })
     );
 
-    const response = new StandardResponse(
-      true,
-      'Active trips GPS retrieved',
-      {
-        trips: tripsWithGPS,
-        total: tripsWithGPS.length,
-      }
-    );
-
-    res.json(response);
+    return response(res, 200, true, 'Active trips GPS retrieved', {
+      trips: tripsWithGPS,
+      total: tripsWithGPS.length,
+    });
   } catch (error: any) {
     console.error('Error in getAllActiveTripsGPS:', error);
-    const response = new StandardResponse(
-      false,
-      error.message || 'Failed to retrieve active trips GPS',
-      null
-    );
-    res.status(500).json(response);
+    return response(res, 500, false, error.message || 'Failed to retrieve active trips GPS');
   }
 };
 
