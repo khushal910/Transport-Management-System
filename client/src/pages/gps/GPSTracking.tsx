@@ -328,11 +328,92 @@ const GPSTracking: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
-        {/* Left Panel - Trip Selection */}
-        <div className="lg:col-span-1 flex flex-col bg-white rounded-lg shadow">
+      {/* Professional Layout: Map + Sidebar */}
+      <div className="flex gap-4 h-[calc(100vh-220px)]">
+        {/* Main Map Area - Takes 85% */}
+        <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden relative">
+          {/* Map Container */}
+          <div
+            ref={mapContainerRef}
+            className="flex-1"
+            style={{ height: '100%' }}
+          />
+          
+          {/* GPS Info Overlay - Bottom Left Corner */}
+          {tripLocationData && (
+            <div className="absolute bottom-4 left-4 bg-white rounded-xl shadow-xl p-4 max-w-sm border border-gray-200 z-40">
+              <div className="mb-3 pb-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <MapPin size={16} className="text-blue-600" />
+                  {tripLocationData.vehicle.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">{tripLocationData.vehicle.licensePlate}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Speed</div>
+                  <div className="font-bold text-lg text-blue-600 flex items-center gap-1">
+                    {tripLocationData.location.speed}
+                    <span className="text-xs">km/h</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Heading</div>
+                  <div className="font-bold text-lg text-green-600 flex items-center gap-1">
+                    {tripLocationData.location.heading}
+                    <span className="text-xs">°</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Altitude</div>
+                  <div className="font-bold text-lg text-purple-600 flex items-center gap-1">
+                    {tripLocationData.location.altitude}
+                    <span className="text-xs">m</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Accuracy</div>
+                  <div className="font-bold text-lg text-orange-600 flex items-center gap-1">
+                    ±{tripLocationData.location.accuracy}
+                    <span className="text-xs">m</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 flex items-center justify-between">
+                <span>Updated: {new Date(tripLocationData.location.timestamp).toLocaleTimeString()}</span>
+                {isFetchingGPS && (
+                  <Loader2 size={14} className="text-blue-500 animate-spin" />
+                )}
+              </div>
+            </div>
+          )}
+
+          {!selectedTripId && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-transparent to-gray-900/10 z-30 rounded-xl">
+              <div className="text-center bg-white/95 backdrop-blur py-8 px-12 rounded-2xl">
+                <MapPin size={48} className="mx-auto mb-3 text-blue-400 opacity-70" />
+                <p className="text-lg font-semibold text-gray-700">Select a trip to view GPS tracking</p>
+                <p className="text-sm text-gray-500 mt-1">Choose from the list on the right →</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar - Trip List - Takes 15% */}
+        <div className="w-80 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4 text-white">
+            <h2 className="font-semibold text-base">Active Trips</h2>
+            <p className="text-xs opacity-90 mt-1">{trips.length} trips available</p>
+          </div>
+
           {/* Search */}
-          <div className="p-4 border-b">
+          <div className="p-3 border-b border-gray-100 bg-gray-50">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-3 text-gray-400" />
               <input
@@ -340,7 +421,7 @@ const GPSTracking: React.FC = () => {
                 placeholder="Search trips..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -349,14 +430,24 @@ const GPSTracking: React.FC = () => {
           <div className="overflow-y-auto flex-1">
             {isLoading && (
               <div className="flex items-center justify-center h-full">
-                <Loader2 size={24} className="animate-spin text-blue-500" />
+                <div className="text-center">
+                  <Loader2 size={24} className="animate-spin text-blue-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Loading trips...</p>
+                </div>
               </div>
             )}
 
             {error && !trips.length && (
-              <div className="p-4 flex items-start gap-2 text-amber-700 bg-amber-50">
-                <AlertCircle size={16} className="flex-shrink-0 mt-1" />
+              <div className="p-3 flex items-start gap-2 text-amber-700 bg-amber-50 m-2 rounded-lg">
+                <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                 <div className="text-sm">{error}</div>
+              </div>
+            )}
+
+            {!isLoading && trips.length === 0 && (
+              <div className="p-4 text-center text-gray-500">
+                <MapPin size={24} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No active trips</p>
               </div>
             )}
 
@@ -364,95 +455,32 @@ const GPSTracking: React.FC = () => {
               <button
                 key={trip._id}
                 onClick={() => handleTripSelection(trip._id)}
-                className={`w-full text-left p-3 border-b transition-colors ${
+                className={`w-full text-left p-3 border-b transition-all ${
                   selectedTripId === trip._id
-                    ? 'bg-blue-50 border-l-4 border-l-blue-500'
-                    : 'hover:bg-gray-50'
+                    ? 'bg-blue-50 border-l-4 border-l-blue-600 shadow-md'
+                    : 'hover:bg-gray-50 border-gray-100'
                 }`}
               >
-                <div className="font-medium text-sm text-gray-900">
-                  {trip.vehicleName}
-                </div>
-                <div className="text-xs text-gray-500">{trip.licensePlate}</div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {trip.startLocation} → {trip.endLocation}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Driver: {trip.driverName}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm text-gray-900 truncate">
+                      {trip.vehicleName}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">{trip.licensePlate}</div>
+                    <div className="text-xs text-gray-500 mt-1 truncate">
+                      📍 {trip.startLocation.substring(0, 20)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">
+                      📍 {trip.endLocation.substring(0, 20)}
+                    </div>
+                  </div>
+                  {selectedTripId === trip._id && (
+                    <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-2" />
+                  )}
                 </div>
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Right Panel - Map */}
-        <div className="lg:col-span-2 flex flex-col bg-white rounded-lg shadow">
-          {/* Map */}
-          <div
-            ref={mapContainerRef}
-            className="flex-1 rounded-lg"
-            style={{ height: '100%', minHeight: '400px' }}
-          />
-
-          {/* GPS Info Card */}
-          {tripLocationData && (
-            <div className="border-t p-4 bg-gray-50">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <Navigation size={14} className="text-blue-500" />
-                  <div>
-                    <div className="text-gray-500">Heading</div>
-                    <div className="font-semibold text-gray-900">
-                      {tripLocationData.location.heading}°
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Gauge size={14} className="text-green-500" />
-                  <div>
-                    <div className="text-gray-500">Speed</div>
-                    <div className="font-semibold text-gray-900">
-                      {tripLocationData.location.speed} km/h
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-gray-500">Altitude</div>
-                  <div className="font-semibold text-gray-900">
-                    {tripLocationData.location.altitude}m
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-gray-500">Accuracy</div>
-                  <div className="font-semibold text-gray-900">
-                    ±{tripLocationData.location.accuracy}m
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 text-xs text-gray-500">
-                Updated:{' '}
-                {new Date(tripLocationData.location.timestamp).toLocaleTimeString()}
-                {isFetchingGPS && (
-                  <span className="ml-2 text-blue-500">
-                    <Loader2 size={12} className="inline animate-spin" />
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {!selectedTripId && (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <MapPin size={32} className="mx-auto mb-2 opacity-50" />
-                <p>Select a trip to view GPS tracking</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </PageContainer>
