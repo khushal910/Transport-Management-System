@@ -319,6 +319,15 @@ const GPSTracking: React.FC = () => {
         description="Track active vehicle locations in real-time"
       />
 
+      {/* Info Banner */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+        <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1" />
+        <div className="text-sm text-blue-800">
+          <span className="font-semibold">📍 Note:</span> This page shows only <span className="font-semibold">dispatched trips</span> currently in transit. 
+          Completed or cancelled trips will not appear on the map.
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
         {/* Left Panel - Trip Selection */}
         <div className="lg:col-span-1 flex flex-col bg-white rounded-lg shadow">
