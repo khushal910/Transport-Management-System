@@ -367,6 +367,16 @@ export default function EmployeeManagement() {
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
+  const getDriverStatusBadgeColor = (status) => {
+    const colors: { [key: string]: string } = {
+      available: 'bg-green-100 text-green-800',
+      off_duty: 'bg-yellow-100 text-yellow-800',
+      on_trip: 'bg-blue-100 text-blue-800',
+      suspended: 'bg-red-100 text-red-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
   // Get pending employees (those who haven't set password)
   const getPendingEmployees = () => {
     return employeeList.filter((emp) => !emp.isPasswordSet);
@@ -563,6 +573,7 @@ export default function EmployeeManagement() {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                    {isDriverRegistry && <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Driver Status</th>}
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Password Status</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
                     {!isReadOnly && <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>}
@@ -578,6 +589,17 @@ export default function EmployeeManagement() {
                           {employee?.role ? employee.role.replaceAll('_', ' ').toUpperCase() : 'N/A'}
                         </span>
                       </td>
+                      {isDriverRegistry && (
+                        <td className="px-4 py-3 text-sm">
+                          {employee?.role === 'driver' && employee?.status ? (
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDriverStatusBadgeColor(employee.status)}`}>
+                              {employee.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">N/A</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-sm">
                         {employee?.isPasswordSet ? (
                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

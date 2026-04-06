@@ -248,29 +248,21 @@ const Trip = () => {
     const fetchDrivers = async () => {
       try {
         const res = await driverBaseURL.get("/list?page=1&limit=1000");
-        console.log("Driver API response:", res.data);
         if (res.data?.success && res.data?.data?.drivers) {
-          console.log("Drivers fetched:", res.data.data.drivers);
           setDrivers(res.data.data.drivers);
-        } else {
-          console.log("Driver API response data structure unexpected:", res.data);
         }
       } catch (error) {
-        console.error("Failed to fetch drivers:", error);
-        console.log("Trying fallback employee API...");
         // Fallback to employee list if driver API is unavailable
         try {
           const fallbackRes = await authBaseURL.get("/employees");
-          console.log("Employee API response:", fallbackRes.data);
           if (fallbackRes.data?.success && fallbackRes.data?.data?.employees) {
             const availableDrivers = fallbackRes.data.data.employees.filter(
               (d) => d.role === "driver"
             );
-            console.log("Drivers from fallback (employees):", availableDrivers);
             setDrivers(availableDrivers);
           }
         } catch (fallbackError) {
-          console.error("Driver fallback fetch failed:", fallbackError);
+          console.error("Failed to fetch drivers:", fallbackError);
         }
       }
     };
@@ -363,10 +355,7 @@ const Trip = () => {
     // Handle driver email search - show available if empty, filter if text entered
     if (name === "driverEmail") {
       if (value.trim() === "") {
-        // Show drivers with available or off_duty status
-        console.log("All drivers in state:", drivers);
         const availableDriversList = drivers.filter((d) => d.status === "available" || d.status === "off_duty");
-        console.log("Filtered available/off-duty drivers:", availableDriversList);
         setDriverSuggestions(availableDriversList);
         setShowDriverSuggestions(true);
       } else {
@@ -376,7 +365,6 @@ const Trip = () => {
             (d.name || "").toLowerCase().includes(value.toLowerCase())
           )
         );
-        console.log("Filtered drivers for search term:", value, filtered);
         setDriverSuggestions(filtered);
         setShowDriverSuggestions(true);
       }
@@ -1381,7 +1369,7 @@ const Trip = () => {
                   onFocus={() => {
                     setShowDriverSuggestions(true);
                     if (tripForm.driverEmail.trim() === "") {
-                      const availableDriversList = drivers.filter((d) => d.status === "available");
+                      const availableDriversList = drivers.filter((d) => d.status === "available" || d.status === "off_duty");
                       setDriverSuggestions(availableDriversList);
                     }
                   }}
@@ -1392,16 +1380,32 @@ const Trip = () => {
                 />
                 {showDriverSuggestions && driverSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {driverSuggestions.map((driver) => (
-                      <div
-                        key={driver._id}
-                        onClick={() => selectDriver(driver)}
-                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                      >
-                        <div className="font-semibold">{driver.email}</div>
-                        <div className="text-xs text-gray-600">{driver.name}</div>
-                      </div>
-                    ))}
+                    {driverSuggestions.map((driver) => {
+                      const statusColorMap: { [key: string]: string } = {
+                        available: 'bg-green-100 text-green-800',
+                        off_duty: 'bg-yellow-100 text-yellow-800',
+                        on_trip: 'bg-blue-100 text-blue-800',
+                        suspended: 'bg-red-100 text-red-800',
+                      };
+                      const statusColor = statusColorMap[driver.status] || 'bg-gray-100 text-gray-800';
+                      return (
+                        <div
+                          key={driver._id}
+                          onClick={() => selectDriver(driver)}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold">{driver.email}</div>
+                              <div className="text-xs text-gray-600">{driver.name}</div>
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ml-2 ${statusColor}`}>
+                              {driver.status}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1577,7 +1581,7 @@ const Trip = () => {
                   onFocus={() => {
                     setShowDriverSuggestions(true);
                     if (tripForm.driverEmail.trim() === "") {
-                      const availableDriversList = drivers.filter((d) => d.status === "available");
+                      const availableDriversList = drivers.filter((d) => d.status === "available" || d.status === "off_duty");
                       setDriverSuggestions(availableDriversList);
                     }
                   }}
@@ -1588,16 +1592,32 @@ const Trip = () => {
                 />
                 {showDriverSuggestions && driverSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {driverSuggestions.map((driver) => (
-                      <div
-                        key={driver._id}
-                        onClick={() => selectDriver(driver)}
-                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
-                      >
-                        <div className="font-semibold">{driver.email}</div>
-                        <div className="text-xs text-gray-600">{driver.name}</div>
-                      </div>
-                    ))}
+                    {driverSuggestions.map((driver) => {
+                      const statusColorMap: { [key: string]: string } = {
+                        available: 'bg-green-100 text-green-800',
+                        off_duty: 'bg-yellow-100 text-yellow-800',
+                        on_trip: 'bg-blue-100 text-blue-800',
+                        suspended: 'bg-red-100 text-red-800',
+                      };
+                      const statusColor = statusColorMap[driver.status] || 'bg-gray-100 text-gray-800';
+                      return (
+                        <div
+                          key={driver._id}
+                          onClick={() => selectDriver(driver)}
+                          className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold">{driver.email}</div>
+                              <div className="text-xs text-gray-600">{driver.name}</div>
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ml-2 ${statusColor}`}>
+                              {driver.status}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
