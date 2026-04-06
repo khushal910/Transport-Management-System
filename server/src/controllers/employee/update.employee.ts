@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import User from '../../models/user.schema';
+import Driver from '../../models/driver.schema';
 import response from '../../response/response';
 import updateEmployeeValidatorSchema from '../../validations/update.employee.validator';
 import { sendEmployeeDetailsUpdatedEmail } from '../../utils/email.service';
@@ -15,7 +16,7 @@ const updateEmployee = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
 
-    const { name, email, role, password } = value;
+    const { name, email, role, password, licenseNumber, licenseExpiry, licenseCategory } = value;
     const managerCompanyId = req.user.companyId;
 
     if (!employeeId) {
@@ -45,14 +46,12 @@ const updateEmployee = async (req, res) => {
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
     if (role) {
       if (role === 'manager') {
         return response(res, 400, false, 'Cannot assign manager role');
       }
       updateData.role = role;
-    }    
+    }
     // Hash password if provided
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -64,6 +63,21 @@ const updateEmployee = async (req, res) => {
       updateData,
       { new: true }
     ).select('-password');
+
+    // Update driver-specific profile if provided
+    const driverUpdateData: any = {};
+    if (licenseNumber) driverUpdateData.licenseNumber = licenseNumber.trim().toUpperCase();
+    if (licenseExpiry) driverUpdateData.licenseExpiry = new Date(licenseExpiry);
+    if (licenseCategory) driverUpdateData.licenseCategory = licenseCategory;
+
+    if (Object.keys(driverUpdateData).length > 0) {
+      const driverRecord = await Driver.findOne({ user: employee._id });
+      if (!driverRecord) {
+        return response(res, 400, false, 'Driver profile not found for this employee');
+      }
+
+      await Driver.findByIdAndUpdate(driverRecord._id, driverUpdateData, { new: true });
+    }
 
     if (!updatedEmployee) {
       return response(res, 404, false, 'Employee not found');

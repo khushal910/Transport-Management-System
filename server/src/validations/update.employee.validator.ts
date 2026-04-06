@@ -14,6 +14,9 @@ const updateEmployeeValidatorSchema: ObjectSchema = joi.object({
       'financial_analyst'
     )
     .optional(),
+  licenseNumber: joi.string().alphanum().min(5).max(20).optional(),
+  licenseExpiry: joi.date().iso().optional(),
+  licenseCategory: joi.string().valid('truck', 'van', 'bike').optional(),
 }).min(1); // At least one field must be provided
 
 export default updateEmployeeValidatorSchema;
