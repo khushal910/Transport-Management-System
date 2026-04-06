@@ -298,9 +298,64 @@ export const getAllActiveTripsGPS = async (
   }
 };
 
+export const shareDriverLocation = async (req: any, res: any): Promise<void> => {
+  try {
+    const { latitude, longitude, speed = 0, heading = 0, accuracy = 10, altitude = 0 } = req.body;
+    const userId = (req.user as any)?.userId || (req.user as any)?.id;
+
+    if (!userId) {
+      return response(res, 401, false, 'Unauthorized: Driver identity missing');
+    }
+
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+      return response(res, 400, false, 'Latitude and longitude must be numeric');
+    }
+
+    const driverData = await Driver.findOne({ user: userId });
+    if (!driverData) {
+      return response(res, 404, false, 'Driver profile not found');
+    }
+
+    const activeTrip = await Trip.findOne({ driver: driverData._id, status: 'dispatched' });
+    if (!activeTrip) {
+      return response(res, 404, false, 'No active dispatched trip found for this driver');
+    }
+
+    const sharedLocation = await GPSLocation.create({
+      trip: activeTrip._id,
+      vehicle: activeTrip.vehicle,
+      driver: driverData._id,
+      latitude,
+      longitude,
+      speed,
+      heading,
+      accuracy,
+      altitude,
+      timestamp: new Date(),
+    });
+
+    return response(res, 201, true, 'Live location shared successfully', {
+      location: {
+        latitude: sharedLocation.latitude,
+        longitude: sharedLocation.longitude,
+        speed: sharedLocation.speed,
+        heading: sharedLocation.heading,
+        accuracy: sharedLocation.accuracy,
+        altitude: sharedLocation.altitude,
+        timestamp: sharedLocation.timestamp,
+      },
+      tripId: activeTrip._id,
+    });
+  } catch (error: any) {
+    console.error('Error in shareDriverLocation:', error);
+    return response(res, 500, false, error.message || 'Failed to share live location');
+  }
+};
+
 export default {
   getActiveTrips,
   getTripLatestLocation,
   getTripLocationHistory,
   getAllActiveTripsGPS,
+  shareDriverLocation,
 };

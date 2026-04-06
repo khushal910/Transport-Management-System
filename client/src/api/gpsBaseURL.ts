@@ -58,4 +58,22 @@ export const getAllActiveTripsGPS = async () => {
   }
 };
 
+// Share driver live location for current dispatched trip
+export const postDriverLocation = async (payload: {
+  latitude: number;
+  longitude: number;
+  speed: number;
+  heading: number;
+  accuracy: number;
+  altitude: number;
+}) => {
+  try {
+    const response = await gpsBaseURL.post('/share', payload);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error sharing driver location:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export default gpsBaseURL;

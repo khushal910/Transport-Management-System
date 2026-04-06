@@ -6,6 +6,7 @@ import {
   getActiveTrips,
   getTripLatestLocation,
   getTripLocationHistory,
+  postDriverLocation,
 } from '../../api/gpsBaseURL';
 import { optimizeGPSPath } from '../../utils/polylineSimplification';
 import { PageContainer, PageHeader } from '../../components/ui';
@@ -69,11 +70,15 @@ const GPSTracking: React.FC = () => {
   const [isFetchingGPS, setIsFetchingGPS] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSharingLocation, setIsSharingLocation] = useState(false);
+  const [shareStatus, setShareStatus] = useState('Not sharing');
+  const [driverLocationSharingError, setDriverLocationSharingError] = useState<string | null>(null);
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const watchIdRef = useRef<number | null>(null);
 
   // Get user role
   const getUser = useCallback(() => {
@@ -126,6 +131,81 @@ const GPSTracking: React.FC = () => {
       setIsLoading(false);
     }
   }, [searchQuery, isDriver, driverEmail]);
+
+  const shareLiveLocation = useCallback(async (coords: {
+    latitude: number;
+    longitude: number;
+    speed: number;
+    heading: number;
+    accuracy: number;
+    altitude: number;
+  }) => {
+    try {
+      const response = await postDriverLocation(coords);
+      if (response.success) {
+        setShareStatus('Live location shared');
+        setDriverLocationSharingError(null);
+      }
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Failed to share live location';
+      setDriverLocationSharingError(message);
+      setShareStatus('Share failed');
+      console.error('Live location share error:', message);
+    }
+  }, []);
+
+  const startLocationSharing = () => {
+    if (!navigator.geolocation) {
+      setDriverLocationSharingError('Geolocation is not supported by your browser');
+      setShareStatus('Not supported');
+      return;
+    }
+
+    setShareStatus('Waiting for permission...');
+    const watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        const coords = position.coords;
+        await shareLiveLocation({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          speed: Number(coords.speed ?? 0),
+          heading: Number(coords.heading ?? 0),
+          accuracy: Number(coords.accuracy ?? 0),
+          altitude: Number(coords.altitude ?? 0),
+        });
+        setIsSharingLocation(true);
+        setShareStatus('Sharing live location');
+      },
+      (error) => {
+        setDriverLocationSharingError(error.message);
+        setShareStatus('Permission denied');
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000,
+      }
+    );
+
+    watchIdRef.current = watchId;
+  };
+
+  const stopLocationSharing = () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setIsSharingLocation(false);
+    setShareStatus('Not sharing');
+  };
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, []);
 
   // Fetch GPS location for selected trip
   const fetchTripLocation = useCallback(async (tripId: string) => {
@@ -418,6 +498,52 @@ const GPSTracking: React.FC = () => {
                 <span>Updated: {new Date(tripLocationData.location.timestamp).toLocaleTimeString()}</span>
                 {isFetchingGPS && (
                   <Loader2 size={14} className="text-blue-500 animate-spin" />
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-slate-50 p-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Location sharing</p>
+                    <p className="text-sm font-semibold text-gray-900">{shareStatus}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={isSharingLocation ? stopLocationSharing : startLocationSharing}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      isSharingLocation
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isSharingLocation ? 'Stop sharing' : 'Share live location'}
+                  </button>
+                </div>
+                {driverLocationSharingError && (
+                  <p className="text-xs text-red-600">{driverLocationSharingError}</p>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-slate-50 p-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Location sharing</p>
+                    <p className="text-sm font-semibold text-gray-900">{shareStatus}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={isSharingLocation ? stopLocationSharing : startLocationSharing}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      isSharingLocation
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isSharingLocation ? 'Stop sharing' : 'Share live location'}
+                  </button>
+                </div>
+                {driverLocationSharingError && (
+                  <p className="text-xs text-red-600">{driverLocationSharingError}</p>
                 )}
               </div>
             </div>

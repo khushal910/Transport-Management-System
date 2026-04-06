@@ -42,4 +42,11 @@ gpsRouter.get(
   gpsController.getAllActiveTripsGPS
 );
 
+// Share current driver live location
+gpsRouter.post(
+  '/share',
+  requiredRole('driver'),
+  gpsController.shareDriverLocation
+);
+
 export default gpsRouter;
