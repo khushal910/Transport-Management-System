@@ -6,6 +6,8 @@ import authBaseURL from "../../api/authBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 import { PageContainer, PageHeader } from '../../components/ui';
 import PaginationContainer from '../../components/PaginationContainer';
+import LocationInput from '../../components/LocationInput';
+import { LocationSuggestion } from '../../api/locationBaseURL';
 
 const INITIAL_FORM = {
   vehiclePlateNumber: "",
@@ -139,6 +141,15 @@ const Trip = () => {
   const [formMessage, setFormMessage] = useState("");
   const [formMessageType, setFormMessageType] = useState("");
   const [selectedVehicleCapacity, setSelectedVehicleCapacity] = useState(null);
+  
+  // Location autocomplete states
+  const [startLocationSuggestions, setStartLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [endLocationSuggestions, setEndLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showStartLocationSuggestions, setShowStartLocationSuggestions] = useState(false);
+  const [showEndLocationSuggestions, setShowEndLocationSuggestions] = useState(false);
+  const [isStartLocationLoading, setIsStartLocationLoading] = useState(false);
+  const [isEndLocationLoading, setIsEndLocationLoading] = useState(false);
+  
   const filterMenuRef = useRef(null);
   const sortMenuRef = useRef(null);
   const groupMenuRef = useRef(null);
@@ -390,6 +401,28 @@ const Trip = () => {
     }));
     setShowDriverSuggestions(false);
     setDriverSuggestions([]);
+  };
+
+  // Location selection handlers
+  const selectStartLocation = (location: LocationSuggestion) => {
+    // Use display_name formatted to show city/area
+    const locationName = location.display_name.split(',')[0]; // Get main location name
+    setTripForm((prev) => ({
+      ...prev,
+      startLocation: locationName,
+    }));
+    setShowStartLocationSuggestions(false);
+    setStartLocationSuggestions([]);
+  };
+
+  const selectEndLocation = (location: LocationSuggestion) => {
+    const locationName = location.display_name.split(',')[0]; // Get main location name
+    setTripForm((prev) => ({
+      ...prev,
+      endLocation: locationName,
+    }));
+    setShowEndLocationSuggestions(false);
+    setEndLocationSuggestions([]);
   };
 
   // Close suggestions when clicking outside
@@ -1392,30 +1425,34 @@ const Trip = () => {
                 />
               </div>
 
-              <input
-                name="startLocation"
-                type="text"
-                placeholder="Start Location"
-                autoComplete="off"
+              <LocationInput
                 value={tripForm.startLocation}
                 onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 4)}
-                ref={(el) => (inputRefs.current[4] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
+                onSelect={selectStartLocation}
+                name="startLocation"
+                placeholder="Search start location..."
+                label="Start Location"
+                showSuggestions={showStartLocationSuggestions}
+                setShowSuggestions={setShowStartLocationSuggestions}
+                suggestions={startLocationSuggestions}
+                setSuggestions={setStartLocationSuggestions}
+                isLoading={isStartLocationLoading}
+                setIsLoading={setIsStartLocationLoading}
               />
 
-              <input
-                name="endLocation"
-                type="text"
-                placeholder="End Location"
-                autoComplete="off"
+              <LocationInput
                 value={tripForm.endLocation}
                 onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 5)}
-                ref={(el) => (inputRefs.current[5] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
+                onSelect={selectEndLocation}
+                name="endLocation"
+                placeholder="Search end location..."
+                label="End Location"
+                showSuggestions={showEndLocationSuggestions}
+                setShowSuggestions={setShowEndLocationSuggestions}
+                suggestions={endLocationSuggestions}
+                setSuggestions={setEndLocationSuggestions}
+                isLoading={isEndLocationLoading}
+                setIsLoading={setIsEndLocationLoading}
               />
 
               <div className="col-span-1 mt-2 flex gap-3 sm:col-span-2">
@@ -1584,30 +1621,34 @@ const Trip = () => {
                 />
               </div>
 
-              <input
-                name="startLocation"
-                type="text"
-                placeholder="Start Location"
-                autoComplete="off"
+              <LocationInput
                 value={tripForm.startLocation}
                 onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 4)}
-                ref={(el) => (inputRefs.current[4] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
+                onSelect={selectStartLocation}
+                name="startLocation"
+                placeholder="Search start location..."
+                label="Start Location"
+                showSuggestions={showStartLocationSuggestions}
+                setShowSuggestions={setShowStartLocationSuggestions}
+                suggestions={startLocationSuggestions}
+                setSuggestions={setStartLocationSuggestions}
+                isLoading={isStartLocationLoading}
+                setIsLoading={setIsStartLocationLoading}
               />
 
-              <input
-                name="endLocation"
-                type="text"
-                placeholder="End Location"
-                autoComplete="off"
+              <LocationInput
                 value={tripForm.endLocation}
                 onChange={handleFormChange}
-                onKeyDown={(e) => handleKeyDown(e, 5)}
-                ref={(el) => (inputRefs.current[5] = el)}
-                className="w-full border px-3 py-2 rounded"
-                required
+                onSelect={selectEndLocation}
+                name="endLocation"
+                placeholder="Search end location..."
+                label="End Location"
+                showSuggestions={showEndLocationSuggestions}
+                setShowSuggestions={setShowEndLocationSuggestions}
+                suggestions={endLocationSuggestions}
+                setSuggestions={setEndLocationSuggestions}
+                isLoading={isEndLocationLoading}
+                setIsLoading={setIsEndLocationLoading}
               />
 
               <div className="col-span-1 mt-2 flex gap-3 sm:col-span-2">
