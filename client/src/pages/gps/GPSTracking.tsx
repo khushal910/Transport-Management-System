@@ -24,6 +24,7 @@ interface Trip {
   vehicleName: string;
   licensePlate: string;
   driverName: string;
+  driverEmail?: string;
   startLocation: string;
   endLocation: string;
   cargoWeight: string;
@@ -74,6 +75,20 @@ const GPSTracking: React.FC = () => {
   const polylineRef = useRef<any>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Get user role
+  const getUser = useCallback(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const user = getUser();
+  const isDriver = user?.role === 'driver';
+  const driverEmail = user?.email;
+
   // Fetch active trips
   const fetchActiveTrips = useCallback(async () => {
     setIsLoading(true);
@@ -81,9 +96,23 @@ const GPSTracking: React.FC = () => {
     try {
       const response = await getActiveTrips(searchQuery);
       if (response.success) {
-        setTrips(response.data.trips);
-        if (response.data.trips.length === 0) {
-          setError('No active trips found');
+        let filteredTrips = response.data.trips;
+
+        // If driver role, filter to only their own trip
+        if (isDriver && driverEmail) {
+          filteredTrips = filteredTrips.filter(
+            (trip: Trip) => trip.driverEmail === driverEmail || trip.driverName === user?.name
+          );
+
+          // Auto-select driver's trip if available
+          if (filteredTrips.length > 0 && !selectedTripId) {
+            setSelectedTripId(filteredTrips[0]._id);
+          }
+        }
+
+        setTrips(filteredTrips);
+        if (filteredTrips.length === 0) {
+          setError(isDriver ? 'No active trip assigned' : 'No active trips found');
         }
       } else {
         setError(response.message || 'Failed to fetch active trips');
@@ -96,7 +125,7 @@ const GPSTracking: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, isDriver, driverEmail]);
 
   // Fetch GPS location for selected trip
   const fetchTripLocation = useCallback(async (tripId: string) => {
@@ -315,29 +344,106 @@ const GPSTracking: React.FC = () => {
     <PageContainer>
       <PageHeader
         Icon={MapPin}
-        title="Real-Time GPS Tracking"
-        description="Track active vehicle locations in real-time"
+        title={isDriver ? "My Live Location" : "Real-Time GPS Tracking"}
+        description={isDriver ? "View your current location and trip route" : "Track active vehicle locations in real-time"}
       />
 
       {/* Info Banner */}
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
         <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1" />
         <div className="text-sm text-blue-800">
-          <span className="font-semibold">📍 Note:</span> This page shows only <span className="font-semibold">dispatched trips</span> currently in transit. 
-          Completed or cancelled trips will not appear on the map.
+          <span className="font-semibold">📍 Note:</span> {isDriver ? "Your live location updates every 10 seconds while you're on a trip." : "This page shows only dispatched trips currently in transit. Completed or cancelled trips will not appear on the map."}
         </div>
       </div>
 
-      {/* Professional Layout: Map + Sidebar */}
-      <div className="flex gap-4 h-[calc(100vh-220px)]">
-        {/* Main Map Area - Takes 85% */}
-        <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden relative">
+      {/* DRIVER VIEW: Full-width map only */}
+      {isDriver ? (
+        <div className="flex flex-col bg-white rounded-xl shadow-lg overflow-hidden h-[calc(100vh-220px)] relative">
           {/* Map Container */}
           <div
             ref={mapContainerRef}
             className="flex-1"
             style={{ height: '100%' }}
           />
+          
+          {/* GPS Info Overlay - Bottom Left Corner */}
+          {tripLocationData && (
+            <div className="absolute bottom-4 left-4 bg-white rounded-xl shadow-xl p-4 max-w-sm border border-gray-200 z-40">
+              <div className="mb-3 pb-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <MapPin size={16} className="text-blue-600" />
+                  {tripLocationData.vehicle.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">{tripLocationData.vehicle.licensePlate}</p>
+                <p className="text-xs text-gray-600 mt-2">
+                  📍 {tripLocationData.route.startLocation} → {tripLocationData.route.endLocation}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Speed</div>
+                  <div className="font-bold text-lg text-blue-600 flex items-center gap-1">
+                    {tripLocationData.location.speed}
+                    <span className="text-xs">km/h</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Heading</div>
+                  <div className="font-bold text-lg text-green-600 flex items-center gap-1">
+                    {tripLocationData.location.heading}
+                    <span className="text-xs">°</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Altitude</div>
+                  <div className="font-bold text-lg text-purple-600 flex items-center gap-1">
+                    {tripLocationData.location.altitude}
+                    <span className="text-xs">m</span>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-2 rounded-lg">
+                  <div className="text-xs text-gray-600">Accuracy</div>
+                  <div className="font-bold text-lg text-orange-600 flex items-center gap-1">
+                    ±{tripLocationData.location.accuracy}
+                    <span className="text-xs">m</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 flex items-center justify-between">
+                <span>Updated: {new Date(tripLocationData.location.timestamp).toLocaleTimeString()}</span>
+                {isFetchingGPS && (
+                  <Loader2 size={14} className="text-blue-500 animate-spin" />
+                )}
+              </div>
+            </div>
+          )}
+
+          {!selectedTripId && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-transparent to-gray-900/10 z-30 rounded-xl">
+              <div className="text-center bg-white/95 backdrop-blur py-8 px-12 rounded-2xl">
+                <MapPin size={48} className="mx-auto mb-3 text-blue-400 opacity-70" />
+                <p className="text-lg font-semibold text-gray-700">No active trip assigned</p>
+                <p className="text-sm text-gray-500 mt-1">You'll see your location here once a trip is dispatched</p>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* DISPATCHER/ADMIN VIEW: Map + Sidebar */
+        <div className="flex gap-4 h-[calc(100vh-220px)]">
+          {/* Main Map Area - Takes 85% */}
+          <div className="flex-1 flex flex-col bg-white rounded-xl shadow-lg overflow-hidden relative">
+            {/* Map Container */}
+            <div
+              ref={mapContainerRef}
+              className="flex-1"
+              style={{ height: '100%' }}
+            />
           
           {/* GPS Info Overlay - Bottom Left Corner */}
           {tripLocationData && (
@@ -482,7 +588,8 @@ const GPSTracking: React.FC = () => {
             ))}
           </div>
         </div>
-      </div>
+        </div>
+      )}
     </PageContainer>
   );
 };

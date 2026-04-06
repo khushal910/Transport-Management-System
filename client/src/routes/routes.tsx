@@ -162,7 +162,7 @@ export const router = createBrowserRouter([
       {
         path: 'gps-tracking',
         element: (
-          <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer', 'financial_analyst'] as UserRole[]}>
+          <PrivateRoute requiredRoles={['manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'] as UserRole[]}>
             <GPSTracking />
           </PrivateRoute>
         ),

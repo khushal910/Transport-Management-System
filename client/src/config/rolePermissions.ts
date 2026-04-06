@@ -1,5 +1,5 @@
 // Role-Based Access Control Configuration
-export type UserRole = 'manager' | 'dispatcher' | 'safety_officer' | 'financial_analyst';
+export type UserRole = 'manager' | 'driver' | 'dispatcher' | 'safety_officer' | 'financial_analyst';
 
 export interface RoleConfig {
   name: string;
@@ -22,6 +22,16 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/performance',
       '/main/analytics',
       '/main/gps-tracking',
+    ],
+  },
+
+  // 🚗 Driver - Vehicle Operator
+  driver: {
+    name: 'Driver',
+    icon: '🚗',
+    accessiblePages: [
+      '/main/dashboard', // Basic trip info
+      '/main/gps-tracking', // Own live location only
     ],
   },
 
@@ -143,7 +153,7 @@ export const navItems: NavItem[] = [
     path: '/main/gps-tracking',
     label: 'GPS Tracking',
     icon: '📍',
-    requiredRoles: ['manager', 'dispatcher', 'safety_officer', 'financial_analyst'],
+    requiredRoles: ['manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'],
   },
   {
     path: '/main/team',
