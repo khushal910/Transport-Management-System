@@ -3,6 +3,7 @@ import { useNotification } from '../../hooks/useNotification';
 import tripBaseURL from "../../api/tripBaseURL";
 import vehicleBaseURL from "../../api/vehicleBaseURL";
 import authBaseURL from "../../api/authBaseURL";
+import driverBaseURL from "../../api/driverBaseURL";
 import { useFormNavigation } from "../../hooks/useFormNavigation";
 import { PageContainer, PageHeader } from '../../components/ui';
 import PaginationContainer from '../../components/PaginationContainer';
@@ -246,16 +247,31 @@ const Trip = () => {
 
     const fetchDrivers = async () => {
       try {
-        const res = await authBaseURL.get("/employees");
-        if (res.data?.success && res.data?.data?.employees) {
-          // Filter only drivers
-          const availableDrivers = res.data.data.employees.filter(
-            (d) => d.role === "driver"
-          );
-          setDrivers(availableDrivers);
+        const res = await driverBaseURL.get("/list?page=1&limit=1000");
+        console.log("Driver API response:", res.data);
+        if (res.data?.success && res.data?.data?.drivers) {
+          console.log("Drivers fetched:", res.data.data.drivers);
+          setDrivers(res.data.data.drivers);
+        } else {
+          console.log("Driver API response data structure unexpected:", res.data);
         }
       } catch (error) {
         console.error("Failed to fetch drivers:", error);
+        console.log("Trying fallback employee API...");
+        // Fallback to employee list if driver API is unavailable
+        try {
+          const fallbackRes = await authBaseURL.get("/employees");
+          console.log("Employee API response:", fallbackRes.data);
+          if (fallbackRes.data?.success && fallbackRes.data?.data?.employees) {
+            const availableDrivers = fallbackRes.data.data.employees.filter(
+              (d) => d.role === "driver"
+            );
+            console.log("Drivers from fallback (employees):", availableDrivers);
+            setDrivers(availableDrivers);
+          }
+        } catch (fallbackError) {
+          console.error("Driver fallback fetch failed:", fallbackError);
+        }
       }
     };
 
@@ -347,17 +363,20 @@ const Trip = () => {
     // Handle driver email search - show available if empty, filter if text entered
     if (name === "driverEmail") {
       if (value.trim() === "") {
-        // Show only available drivers
-        const availableDriversList = drivers.filter((d) => d.status === "available");
+        // Show drivers with available or off_duty status
+        console.log("All drivers in state:", drivers);
+        const availableDriversList = drivers.filter((d) => d.status === "available" || d.status === "off_duty");
+        console.log("Filtered available/off-duty drivers:", availableDriversList);
         setDriverSuggestions(availableDriversList);
         setShowDriverSuggestions(true);
       } else {
         const filtered = drivers.filter((d) =>
-          d.status === "available" && (
+          (d.status === "available" || d.status === "off_duty") && (
             (d.email || "").toLowerCase().includes(value.toLowerCase()) ||
             (d.name || "").toLowerCase().includes(value.toLowerCase())
           )
         );
+        console.log("Filtered drivers for search term:", value, filtered);
         setDriverSuggestions(filtered);
         setShowDriverSuggestions(true);
       }
