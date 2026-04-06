@@ -7,6 +7,7 @@ import {
   getTripLatestLocation,
   getTripLocationHistory,
 } from '../../api/gpsBaseURL';
+import { optimizeGPSPath } from '../../utils/polylineSimplification';
 import { PageContainer, PageHeader } from '../../components/ui';
 import { MapPin, Loader2, AlertCircle, Search, Navigation, Gauge } from 'lucide-react';
 
@@ -178,25 +179,68 @@ const GPSTracking: React.FC = () => {
 
     const map = mapRef.current;
 
-    // Remove old polyline
+    // Remove old polyline completely
     if (polylineRef.current) {
-      map.removeLayer(polylineRef.current);
+      try {
+        map.removeLayer(polylineRef.current);
+      } catch (e) {
+        console.warn('Could not remove old polyline:', e);
+      }
+      polylineRef.current = null;
     }
 
-    // Create polyline from GPS history
-    const coordinates = history.map((loc) => [loc.latitude, loc.longitude]);
+    try {
+      // Optimize GPS path - AGGRESSIVE cleanup
+      const optimizedPoints = optimizeGPSPath(history);
 
-    polylineRef.current = L.polyline(coordinates, {
-      color: '#3B82F6',
-      weight: 3,
-      opacity: 0.7,
-      dashArray: '5, 5',
-    }).addTo(map);
+      console.log(`✓ Optimized: ${history.length} points → ${optimizedPoints.length} points (${Math.round((1 - optimizedPoints.length / history.length) * 100)}% reduction)`);
 
-    // Fit map to show entire trail
-    const bounds = L.latLngBounds(coordinates);
-    map.fitBounds(bounds, { padding: [50, 50] });
-  }, []);
+      if (optimizedPoints.length < 2) {
+        console.warn('⚠ Not enough points after optimization');
+        return;
+      }
+
+      // Create coordinates array
+      const coordinates = optimizedPoints.map((loc) => [loc.latitude, loc.longitude]);
+
+      // Draw clean polyline with solid style (no dashes)
+      polylineRef.current = L.polyline(coordinates, {
+        color: '#06B6D4', // Cyan for clean path
+        weight: 4,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(map);
+
+      // Add start/end markers
+      L.circleMarker([optimizedPoints[0].latitude, optimizedPoints[0].longitude], {
+        radius: 6,
+        color: '#10B981', // Green for start
+        fill: true,
+        fillColor: '#10B981',
+        fillOpacity: 0.9,
+        weight: 2,
+      }).addTo(map).bindPopup('Trip Start');
+
+      L.circleMarker([optimizedPoints[optimizedPoints.length - 1].latitude, optimizedPoints[optimizedPoints.length - 1].longitude], {
+        radius: 6,
+        color: '#EF4444', // Red for end
+        fill: true,
+        fillColor: '#EF4444',
+        fillOpacity: 0.9,
+        weight: 2,
+      }).addTo(map).bindPopup('Trip End');
+
+      // Fit map to show entire trail with good padding
+      const bounds = L.latLngBounds(coordinates);
+      map.fitBounds(bounds, { padding: [80, 80] });
+
+      notifySuccess(`Route optimized: ${optimizedPoints.length} key points`);
+    } catch (error) {
+      console.error('✗ Error updating map with trail:', error);
+      notifyError('Error displaying route');
+    }
+  }, [notifySuccess, notifyError]);
 
   // Handle trip selection
   const handleTripSelection = useCallback(
