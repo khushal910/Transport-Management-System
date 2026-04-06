@@ -122,7 +122,7 @@ export default function DriverStatusModal({ driverId, driverName, onClose, onSta
 
   return (
     <div 
-      className="fixed inset-0 backdrop-blur-sm bg-black/20 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         // Close when clicking outside the modal (on the backdrop)
         if (e.target === e.currentTarget) {

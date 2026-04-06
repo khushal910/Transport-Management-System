@@ -48,6 +48,8 @@ export default function EmployeeManagement() {
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [formMessage, setFormMessage] = useState('');
+  const [formMessageType, setFormMessageType] = useState<'error' | 'success' | ''>('');
 
   const [employeeForm, setEmployeeForm] = useState({
     name: '',
@@ -83,6 +85,9 @@ export default function EmployeeManagement() {
     if (event.target === event.currentTarget) {
       setIsModalOpen(false);
       setIsSubmitting(false);
+      setFormMessage('');
+      setFormMessageType('');
+      setFormErrors({});
     }
   };
 
@@ -126,6 +131,10 @@ export default function EmployeeManagement() {
     }
 
     setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setFormMessage('Please fix the highlighted fields before submitting.');
+      setFormMessageType('error');
+    }
     return Object.keys(errors).length === 0;
   };
 
@@ -134,6 +143,10 @@ export default function EmployeeManagement() {
     setEmployeeForm((prev) => ({ ...prev, [name]: value }));
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+    if (formMessage) {
+      setFormMessage('');
+      setFormMessageType('');
     }
   };
 
@@ -250,6 +263,8 @@ export default function EmployeeManagement() {
       licenseCategory: '',
     });
     setFormErrors({});
+    setFormMessage('');
+    setFormMessageType('');
     setShowPassword(false);
     setIsSubmitting(false);
   };
@@ -283,7 +298,9 @@ export default function EmployeeManagement() {
         : await authBaseURL.post('/add-employee', payload);
 
       if (!response.data.success) {
-        notifyError(response.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
+        const errorMessage = response.data?.message || (isUpdate ? 'Update failed' : 'Add failed');
+        setFormMessage(errorMessage);
+        setFormMessageType('error');
         setIsSubmitting(false);
         return;
       }
@@ -293,9 +310,11 @@ export default function EmployeeManagement() {
       resetForm();
       setEditingEmployeeId(null);
       fetchEmployees();
-    } catch (error) {
+    } catch (error: any) {
       const isUpdate = !!editingEmployeeId;
-      notifyError(error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed'));
+      const errorMessage = error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed');
+      setFormMessage(errorMessage);
+      setFormMessageType('error');
     } finally {
       setIsSubmitting(false);
     }
@@ -646,7 +665,7 @@ export default function EmployeeManagement() {
       {/* Employee Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 backdrop-blur-sm bg-black/20 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
           onClick={handleCloseModal}
         >
           <div
@@ -658,6 +677,18 @@ export default function EmployeeManagement() {
             </h2>
 
             <form onSubmit={handleCreateOrUpdateEmployee} className="space-y-4">
+              {formMessage && (
+                <div
+                  className={`rounded-lg p-3 text-sm ${
+                    formMessageType === 'error'
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : 'bg-green-50 text-green-700 border border-green-200'
+                  }`}
+                >
+                  {formMessage}
+                </div>
+              )}
+
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   Name

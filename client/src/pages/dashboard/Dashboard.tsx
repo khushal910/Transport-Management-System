@@ -608,7 +608,7 @@ const ManagerDashboardView = () => {
       {isDetailModalOpen && detailTrip && (
         <div
           onClick={handleCloseDetailModal}
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40"
         >
           <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white px-6 pt-6 pb-4 mb-6 border-b border-gray-200 flex items-center justify-between rounded-t-lg">

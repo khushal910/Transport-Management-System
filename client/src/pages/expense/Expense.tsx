@@ -28,6 +28,8 @@ const Expense = () => {
   const [showGroupPanel, setShowGroupPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expenseFormMessage, setExpenseFormMessage] = useState('');
+  const [expenseFormMessageType, setExpenseFormMessageType] = useState<'error' | 'success' | ''>('');
 
   // Filter & Sort state
   const [filterState, setFilterState] = useState({
@@ -154,6 +156,8 @@ const Expense = () => {
       setShowEditModal(false);
       setEditingExpenseId(null);
       setExpenseForm({ fuelCost: '', miscExpense: '', distance: '' });
+      setExpenseFormMessage('');
+      setExpenseFormMessageType('');
     }
   };
 
@@ -182,25 +186,31 @@ const Expense = () => {
   // Validate form
   const validateForm = () => {
     if (!expenseForm.fuelCost) {
-      notifyError('Fuel Cost is required');
+      setExpenseFormMessage('Fuel Cost is required');
+      setExpenseFormMessageType('error');
       return false;
     }
 
     if (Number(expenseForm.fuelCost) < 0) {
-      notifyError('Fuel Cost cannot be negative');
+      setExpenseFormMessage('Fuel Cost cannot be negative');
+      setExpenseFormMessageType('error');
       return false;
     }
 
     if (expenseForm.miscExpense && isNaN(expenseForm.miscExpense)) {
-      notifyError('Misc Expense must be a valid number');
+      setExpenseFormMessage('Misc Expense must be a valid number');
+      setExpenseFormMessageType('error');
       return false;
     }
 
     if (expenseForm.distance && isNaN(expenseForm.distance)) {
-      notifyError('Distance must be a valid number');
+      setExpenseFormMessage('Distance must be a valid number');
+      setExpenseFormMessageType('error');
       return false;
     }
 
+    setExpenseFormMessage('');
+    setExpenseFormMessageType('');
     return true;
   };
 
@@ -225,11 +235,14 @@ const Expense = () => {
         setShowEditModal(false);
         setEditingExpenseId(null);
         setExpenseForm({ fuelCost: '', miscExpense: '', distance: '' });
+        setExpenseFormMessage('');
+        setExpenseFormMessageType('');
         fetchExpenses();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating expense:', error);
-      notifyError('Failed to update expense: ' + (error.response?.data?.message || error.message));
+      setExpenseFormMessage('Failed to update expense: ' + (error.response?.data?.message || error.message));
+      setExpenseFormMessageType('error');
     } finally {
       setIsSubmitting(false);
     }
@@ -465,11 +478,16 @@ const Expense = () => {
         {/* Edit Expense Modal */}
         {showEditModal && (
           <div
-            className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 p-4"
+            className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 p-4"
             onClick={handleCloseModal}
           >
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Fill Expense Data</h2>
+              {expenseFormMessage && (
+                <div className={`rounded-lg p-3 mb-4 text-sm ${expenseFormMessageType === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+                  {expenseFormMessage}
+                </div>
+              )}
 
               <div className="space-y-4">
                 {/* Fuel Cost */}
