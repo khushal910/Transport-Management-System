@@ -17,16 +17,17 @@ const getEmployees = async (req, res) => {
       role: { $ne: 'manager' },
     }).select('-password');
 
-    // For drivers, populate their driver status
+    // For drivers, populate their driver status and ID
     const employeesWithStatus = await Promise.all(
       employees.map(async (employee) => {
         const emp = employee.toObject();
         
         if (emp.role === 'driver') {
           try {
-            const driverData = await Driver.findOne({ user: employee._id }).select('status');
+            const driverData = await Driver.findOne({ user: employee._id }).select('_id status');
             if (driverData) {
               emp.status = driverData.status;
+              emp.driverId = driverData._id;
             }
           } catch (err) {
             console.error(`Failed to fetch driver status for user ${employee._id}:`, err);

@@ -19,6 +19,8 @@ const updateDriverStatus = async (req, res) => {
     const userId = req.user.userId;
     const companyId = req.user.companyId;
 
+    console.log(`[Backend] Status update request:`, { driverId, newStatus: status, userId, companyId });
+
     // Validate input
     if (!status) {
       return response(res, 400, false, 'Driver status is required');
@@ -31,24 +33,35 @@ const updateDriverStatus = async (req, res) => {
 
     // Check if driver exists
     const driver = await Driver.findById(driverId).populate('user', 'company');
+    console.log(`[Backend] Driver lookup result:`, { found: !!driver, driverId });
+    
     if (!driver) {
+      console.error(`[Backend] Driver not found: ${driverId}`);
       return response(res, 404, false, 'Driver not found');
     }
 
     // Verify driver belongs to manager's company
     if (driver.user.company.toString() !== companyId.toString()) {
+      console.error(`[Backend] Company mismatch:`, {
+        driverCompany: driver.user.company.toString(),
+        userCompany: companyId.toString(),
+      });
       return response(res, 403, false, 'Unauthorized: Driver does not belong to your company');
     }
+
+    console.log(`[Backend] Current driver status: ${driver.status}, New status: ${status}`);
 
     // Validate status transition
     try {
       validateStatusTransition(driver.status, status);
     } catch (error) {
+      console.error(`[Backend] Transition validation failed:`, error.message);
       return response(res, 400, false, error.message);
     }
 
     // If changing to same status, return success
     if (driver.status === status) {
+      console.log(`[Backend] Driver already has status ${status}`);
       return response(res, 200, true, 'Driver status unchanged', {
         driverId: driver._id,
         currentStatus: driver.status,
@@ -58,6 +71,7 @@ const updateDriverStatus = async (req, res) => {
 
     // Check if driver is ON_TRIP - cannot manually change
     if (driver.status === DRIVER_STATUS.ON_TRIP) {
+      console.error(`[Backend] Cannot update driver on trip`);
       return response(res, 400, false, 'Driver is currently on a trip and cannot be updated manually. Wait for trip completion.');
     }
 
@@ -67,12 +81,16 @@ const updateDriverStatus = async (req, res) => {
       changedBy: userId,
     });
 
+    console.log(`[Backend] Update data:`, updateData);
+
     // Update driver
     const updatedDriver = await Driver.findByIdAndUpdate(
       driverId,
       updateData,
       { new: true }
     ).populate('user', 'name email');
+
+    console.log(`[Backend] Update complete. New status: ${updatedDriver.status}`);
 
     return response(res, 200, true, 'Driver status updated successfully', {
       driverId: updatedDriver._id,

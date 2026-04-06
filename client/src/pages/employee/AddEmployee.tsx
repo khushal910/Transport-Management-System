@@ -5,6 +5,7 @@ import { DEFAULT_PAGE_SIZE } from '../../config/paginationConfig';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
+import { updateDriverStatusAPI } from '../../api/driverStatusBaseURL';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function EmployeeManagement() {
@@ -14,6 +15,7 @@ export default function EmployeeManagement() {
   // Get user role to determine read-only mode for dispatcher
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
+  const canChangeDriverStatus = ['manager', 'dispatcher'].includes(user?.role);
   const isReadOnly = user?.role === 'dispatcher';
   
   // Employee list from backend
@@ -50,6 +52,14 @@ export default function EmployeeManagement() {
   const [formErrors, setFormErrors] = useState({});
   const [formMessage, setFormMessage] = useState('');
   const [formMessageType, setFormMessageType] = useState<'error' | 'success' | ''>('');
+
+  // Driver status change modal state
+  const [statusChangeModalOpen, setStatusChangeModalOpen] = useState(false);
+  const [driverToChangeStatus, setDriverToChangeStatus] = useState(null);
+  const [newDriverStatus, setNewDriverStatus] = useState('');
+  const [statusChangeLoading, setStatusChangeLoading] = useState(false);
+  const [statusChangeError, setStatusChangeError] = useState('');
+  const [statusChangeSuccess, setStatusChangeSuccess] = useState('');
 
   const [employeeForm, setEmployeeForm] = useState({
     name: '',
@@ -382,6 +392,123 @@ export default function EmployeeManagement() {
     return employeeList.filter((emp) => !emp.isPasswordSet);
   };
 
+  /**
+   * Get valid status transitions for a driver
+   * Rules:
+   * - available → off_duty, suspended
+   * - off_duty → available, suspended
+   * - suspended → available, off_duty
+   * - on_trip → no manual changes allowed
+   */
+  const getValidStatusTransitions = (currentStatus: string): string[] => {
+    const transitions: { [key: string]: string[] } = {
+      available: ['off_duty', 'suspended'],
+      off_duty: ['available', 'suspended'],
+      suspended: ['available', 'off_duty'],
+      on_trip: [], // Cannot manually change
+    };
+    return transitions[currentStatus] || [];
+  };
+
+  const handleOpenStatusChangeModal = (driver) => {
+    setDriverToChangeStatus(driver);
+    setNewDriverStatus('');
+    setStatusChangeModalOpen(true);
+  };
+
+  const handleCloseStatusChangeModal = () => {
+    setStatusChangeModalOpen(false);
+    setDriverToChangeStatus(null);
+    setNewDriverStatus('');
+    setStatusChangeError('');
+    setStatusChangeSuccess('');
+  };
+
+  const handleChangeDriverStatus = async (selectedStatus?: string) => {
+    const statusToApply = selectedStatus || newDriverStatus;
+
+    // Clear previous messages
+    setStatusChangeError('');
+    setStatusChangeSuccess('');
+
+    console.log(`[Status Update] Starting update for driver:`, driverToChangeStatus);
+    console.log(`[Status Update] New status: ${statusToApply}`);
+
+    if (!driverToChangeStatus || !statusToApply) {
+      setStatusChangeError('Please select a new status');
+      return;
+    }
+
+    if (statusToApply === driverToChangeStatus.status) {
+      setStatusChangeError('Driver already has this status');
+      return;
+    }
+
+    setStatusChangeLoading(true);
+    try {
+      // Verify driver ID before sending
+      if (!driverToChangeStatus.driverId) {
+        setStatusChangeError('Invalid driver ID. Please close and try again.');
+        setStatusChangeLoading(false);
+        return;
+      }
+
+      console.log(`[Status Update] Sending API request for driver ID: ${driverToChangeStatus.driverId}`);
+      const response = await updateDriverStatusAPI(driverToChangeStatus.driverId, statusToApply);
+      
+      console.log(`[Status Update] Response received:`, response);
+
+      if (response.success) {
+        const successMsg = `Driver status updated to ${statusToApply.replace('_', ' ').toUpperCase()}`;
+        setStatusChangeSuccess(successMsg);
+        notifySuccess(successMsg);
+        
+        // Update the employee in the list with the response data
+        // Backend returns: currentStatus, previousStatus, driverId
+        const updatedStatus = response.data?.currentStatus || statusToApply;
+        console.log(`[Status Update] Updating local list with status: ${updatedStatus}`);
+        setEmployeeList((prev) =>
+          prev.map((emp) =>
+            emp._id === driverToChangeStatus._id
+              ? { ...emp, status: updatedStatus }
+              : emp
+          )
+        );
+        
+        // Refetch employees to ensure frontend and backend are in sync
+        setTimeout(() => {
+          console.log(`[Status Update] Refetching employees from backend`);
+          fetchEmployees();
+          handleCloseStatusChangeModal();
+        }, 500);
+      } else {
+        const errorMsg = response.message || 'Failed to update driver status';
+        console.error(`[Status Update] API returned error:`, response);
+        setStatusChangeError(errorMsg);
+      }
+    } catch (error: any) {
+      const errorStatus = error.response?.status;
+      const errorMessage = error.response?.data?.message;
+      
+      console.error(`[Status Update] Error occurred:`, {
+        status: errorStatus,
+        message: errorMessage,
+        fullError: error,
+      });
+      
+      let errorDisplay = errorMessage || 'Failed to update driver status';
+      if (errorStatus === 404) {
+        errorDisplay = `Driver not found. Driver ID: ${driverToChangeStatus._id}`;
+      } else if (errorStatus === 403) {
+        errorDisplay = 'Unauthorized: Driver does not belong to your company or you do not have permission';
+      }
+      
+      setStatusChangeError(errorDisplay);
+    } finally {
+      setStatusChangeLoading(false);
+    }
+  };
+
   const pendingEmployees = getPendingEmployees();
 
   const processedEmployees = processEmployeeList();
@@ -399,9 +526,10 @@ export default function EmployeeManagement() {
 
   // Compute header and description based on current page
   const isDriverRegistry = location.pathname.includes('driver-registry');
+  const showReadOnlyIndicator = isReadOnly && !isDriverRegistry;
   const pageTitle = isDriverRegistry ? 'Driver Registry' : 'Employee Management';
   const pageDescription = isDriverRegistry
-    ? (isReadOnly ? 'View available drivers for trip assignment' : 'Manage your fleet drivers and track their performance')
+    ? (canChangeDriverStatus ? 'Manage driver duty status for trip assignment' : 'View available drivers for trip assignment')
     : (isReadOnly ? 'View team members' : 'Manage your team and employee information');
 
   return (
@@ -412,9 +540,9 @@ export default function EmployeeManagement() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold text-gray-800">
               {pageTitle}
-              {isReadOnly && ' - Read Only'}
+              {showReadOnlyIndicator && ' - Read Only'}
             </h1>
-            {isReadOnly && (
+            {showReadOnlyIndicator && (
               <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
                 📖 View Only
               </span>
@@ -592,9 +720,24 @@ export default function EmployeeManagement() {
                       {isDriverRegistry && (
                         <td className="px-4 py-3 text-sm">
                           {employee?.role === 'driver' && employee?.status ? (
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getDriverStatusBadgeColor(employee.status)}`}>
+                            <button
+                              onClick={() => handleOpenStatusChangeModal(employee)}
+                              disabled={!canChangeDriverStatus || employee.status === 'on_trip'}
+                              className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
+                                !canChangeDriverStatus || employee.status === 'on_trip'
+                                  ? `${getDriverStatusBadgeColor(employee.status)} cursor-not-allowed opacity-60`
+                                  : `${getDriverStatusBadgeColor(employee.status)} hover:shadow-md hover:brightness-95`
+                              }`}
+                              title={
+                                !canChangeDriverStatus
+                                  ? 'You do not have permission to change driver status'
+                                  : employee.status === 'on_trip'
+                                  ? 'Cannot change status while driver is on trip'
+                                  : 'Click to change driver status'
+                              }
+                            >
                               {employee.status.replace('_', ' ').toUpperCase()}
-                            </span>
+                            </button>
                           ) : (
                             <span className="text-gray-400 text-xs">N/A</span>
                           )}
@@ -682,6 +825,8 @@ export default function EmployeeManagement() {
             )}
           </>
         )}
+      </div>
+
       </div>
 
       {/* Employee Modal */}
@@ -895,7 +1040,111 @@ export default function EmployeeManagement() {
           </div>
         </div>
       )}
-      </div>
+
+      {/* Driver Status Change Modal */}
+      {statusChangeModalOpen && driverToChangeStatus && (
+        <div
+          className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
+          onClick={handleCloseStatusChangeModal}
+        >
+          <div
+            className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold mb-4">Change Driver Status</h2>
+            
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold">Driver:</span> {driverToChangeStatus.name}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold">Current Status:</span>{' '}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDriverStatusBadgeColor(driverToChangeStatus.status)}`}>
+                  {driverToChangeStatus.status.replace('_', ' ').toUpperCase()}
+                </span>
+              </p>
+            </div>
+
+            {/* Error Message - Display in modal, not globally */}
+            {statusChangeError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <span className="font-semibold">⚠️ Error:</span> {statusChangeError}
+                </p>
+              </div>
+            )}
+
+            {/* Success Message - Display in modal */}
+            {statusChangeSuccess && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <span className="font-semibold">✓ Success:</span> {statusChangeSuccess}
+                </p>
+              </div>
+            )}
+
+            {driverToChangeStatus.status === 'on_trip' ? (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  ⚠️ <span className="font-semibold">Cannot change status</span> - Driver is currently on an active trip. Please wait for trip completion.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Status
+                  </label>
+                  <select
+                    value={newDriverStatus}
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      setNewDriverStatus(selected);
+                      if (selected) {
+                        handleChangeDriverStatus(selected);
+                      }
+                    }}
+                    disabled={statusChangeLoading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">-- Select New Status --</option>
+                    {getValidStatusTransitions(driverToChangeStatus.status).map((status) => (
+                      <option key={status} value={status}>
+                        {status.replace('_', ' ').toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {newDriverStatus && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-800">
+                      <span className="font-semibold">Transition:</span>{' '}
+                      {driverToChangeStatus.status.replace('_', ' ').toUpperCase()} → {newDriverStatus.replace('_', ' ').toUpperCase()}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    Status updates immediately after selection.
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseStatusChangeModal}
+                    disabled={statusChangeLoading}
+                    className="flex-1 bg-gray-400 text-white p-2 rounded font-medium hover:bg-gray-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
+                  >
+                    {statusChangeLoading ? 'Updating...' : 'Close'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
