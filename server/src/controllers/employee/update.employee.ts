@@ -71,12 +71,27 @@ const updateEmployee = async (req, res) => {
     if (licenseCategory) driverUpdateData.licenseCategory = licenseCategory;
 
     if (Object.keys(driverUpdateData).length > 0) {
-      const driverRecord = await Driver.findOne({ user: employee._id });
+      let driverRecord = await Driver.findOne({ user: employee._id });
       if (!driverRecord) {
-        return response(res, 400, false, 'Driver profile not found for this employee');
-      }
+        // If the employee is a driver and no driver profile exists, create one.
+        if (employee.role !== 'driver' && role !== 'driver') {
+          return response(res, 400, false, 'Driver profile not found for this employee');
+        }
 
-      await Driver.findByIdAndUpdate(driverRecord._id, driverUpdateData, { new: true });
+        if (!driverUpdateData.licenseNumber || !driverUpdateData.licenseExpiry || !driverUpdateData.licenseCategory) {
+          return response(res, 400, false, 'Missing required driver profile data to create/update driver record');
+        }
+
+        driverRecord = await Driver.create({
+          user: employee._id,
+          licenseNumber: driverUpdateData.licenseNumber,
+          licenseExpiry: driverUpdateData.licenseExpiry,
+          licenseCategory: driverUpdateData.licenseCategory,
+          status: 'off_duty',
+        });
+      } else {
+        await Driver.findByIdAndUpdate(driverRecord._id, driverUpdateData, { new: true });
+      }
     }
 
     if (!updatedEmployee) {
