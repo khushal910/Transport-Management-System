@@ -79,6 +79,7 @@ const GPSTracking: React.FC = () => {
   const polylineRef = useRef<any>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const lastOptimizedPointCountRef = useRef<number | null>(null);
 
   // Get user role
   const getUser = useCallback(() => {
@@ -344,7 +345,11 @@ const GPSTracking: React.FC = () => {
       const bounds = L.latLngBounds(coordinates);
       map.fitBounds(bounds, { padding: [80, 80] });
 
-      notifySuccess(`Route optimized: ${optimizedPoints.length} key points`);
+      const pointsMessage = `Route optimized: ${optimizedPoints.length} key points`;
+      if (lastOptimizedPointCountRef.current !== optimizedPoints.length) {
+        notifySuccess(pointsMessage);
+        lastOptimizedPointCountRef.current = optimizedPoints.length;
+      }
     } catch (error) {
       console.error('✗ Error updating map with trail:', error);
       notifyError('Error displaying route');
@@ -356,6 +361,7 @@ const GPSTracking: React.FC = () => {
     (tripId: string) => {
       setSelectedTripId(tripId);
       setError(null);
+      lastOptimizedPointCountRef.current = null;
       fetchTripLocation(tripId);
     },
     [fetchTripLocation]
