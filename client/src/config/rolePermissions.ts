@@ -32,6 +32,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
     accessiblePages: [
       '/main/dashboard', // Basic trip info
       '/main/gps-tracking', // Own live location only
+      '/main/driver-trips', // Trip details and history
     ],
   },
 
@@ -154,6 +155,12 @@ export const navItems: NavItem[] = [
     label: 'GPS Tracking',
     icon: '📍',
     requiredRoles: ['manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'],
+  },
+  {
+    path: '/main/driver-trips',
+    label: 'My Trips',
+    icon: '🚚',
+    requiredRoles: ['driver'],
   },
   {
     path: '/main/team',

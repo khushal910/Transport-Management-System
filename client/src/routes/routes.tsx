@@ -11,6 +11,7 @@ import MainLayout from '../layout/MainLayout';
 import Dashboard from '../pages/dashboard/Dashboard';
 import Vehicle from '../pages/vehicle/vehicle';
 import Trip from '../pages/trip/trip';
+import DriverTripHistory from '../pages/trip/DriverTripHistory';
 import AddEmployee from '../pages/employee/AddEmployee';
 import MaintenancePage from '../pages/maintenance/Maintenance';
 import Expense from '../pages/expense/Expense';
@@ -127,6 +128,15 @@ export const router = createBrowserRouter([
         element: (
           <PrivateRoute requiredRoles={['manager', 'dispatcher', 'safety_officer'] as UserRole[]}>
             <Trip />
+          </PrivateRoute>
+        ),
+      },
+      // Driver Trip History - Driver view of their trips and history
+      {
+        path: 'driver-trips',
+        element: (
+          <PrivateRoute requiredRoles={['driver'] as UserRole[]}>
+            <DriverTripHistory />
           </PrivateRoute>
         ),
       },
