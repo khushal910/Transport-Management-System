@@ -9,6 +9,7 @@ import analyticsBaseURL from './analyticsBaseURL';
 import gpsBaseURL from './gpsBaseURL';
 import safetyBaseURL from './safetyBaseURL';
 import dashboardBaseURL from './dashboardBaseURL';
+import profileBaseURL from './profileBaseURL';
 
 // List of all axios instances
 const apiInstances = [
@@ -22,6 +23,7 @@ const apiInstances = [
   gpsBaseURL,
   safetyBaseURL,
   dashboardBaseURL,
+  profileBaseURL,
 ];
 
 // Flag to prevent multiple redirects

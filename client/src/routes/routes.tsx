@@ -23,6 +23,7 @@ import { SafetyOfficerDrivers } from '../pages/dashboard/SafetyOfficerDrivers';
 import { DriverSafetyProfile } from '../pages/dashboard/DriverSafetyProfile';
 import { SafetyAnalytics } from '../pages/dashboard/SafetyAnalytics';
 import GPSTracking from '../pages/gps/GPSTracking';
+import { UserProfilePage } from '../pages/profile/UserProfile';
 
 import PrivateRoute from '../components/PrivateRoute';
 // Documentation pages
@@ -174,6 +175,15 @@ export const router = createBrowserRouter([
         element: (
           <PrivateRoute requiredRoles={['manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'] as UserRole[]}>
             <GPSTracking />
+          </PrivateRoute>
+        ),
+      },
+      // User Profile - All authenticated roles
+      {
+        path: 'profile',
+        element: (
+          <PrivateRoute requiredRoles={['manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'] as UserRole[]}>
+            <UserProfilePage />
           </PrivateRoute>
         ),
       },

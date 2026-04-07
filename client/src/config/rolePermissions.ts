@@ -22,6 +22,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/performance',
       '/main/analytics',
       '/main/gps-tracking',
+      '/main/profile',
     ],
   },
 
@@ -33,6 +34,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/dashboard', // Basic trip info
       '/main/gps-tracking', // Own live location only
       '/main/driver-trips', // Trip details and history
+      '/main/profile', // Profile view
     ],
   },
 
@@ -46,6 +48,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/driver-registry', // View only
       '/main/trip-dispatcher',
       '/main/gps-tracking',
+      '/main/profile', // Profile view
     ],
   },
 
@@ -63,6 +66,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/maintenance', // Maintenance status
       '/main/analytics', // Safety analytics only
       '/main/gps-tracking',
+      '/main/profile', // Profile view
     ],
   },
 
@@ -75,6 +79,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/trip-expense',
       '/main/analytics',
       '/main/gps-tracking',
+      '/main/profile', // Profile view
     ],
   },
 };

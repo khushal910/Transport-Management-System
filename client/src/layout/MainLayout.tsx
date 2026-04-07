@@ -3,7 +3,7 @@ import { useState } from 'react'
 import authBaseURL from '../api/authBaseURL'
 import { useNotification } from '../hooks/useNotification'
 import NotificationBanner from '../components/NotificationPanel'
-import { Menu, X, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, X, LogOut, ChevronDown, User } from 'lucide-react'
 import { navItems, UserRole } from '../config/rolePermissions'
 import { useSidebar } from '../context/SidebarContext'
 
@@ -146,6 +146,14 @@ const MainLayout = () => {
                       </span>
                     </div>
                   </div>
+                  <Link
+                    to="/main/profile"
+                    onClick={() => setShowProfilePanel(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100"
+                  >
+                    <User className="w-4 h-4" />
+                    View Profile
+                  </Link>
                   <button
                     onClick={() => {
                       handleLogout()
