@@ -3,8 +3,12 @@ import authBaseURL from './authBaseURL';
 import tripBaseURL from './tripBaseURL';
 import vehicleBaseURL from './vehicleBaseURL';
 import driverBaseURL from './driverBaseURL';
+import driverStatusBaseURL from './driverStatusBaseURL';
 import expenseBaseURL from './expenseBaseURL';
 import analyticsBaseURL from './analyticsBaseURL';
+import gpsBaseURL from './gpsBaseURL';
+import safetyBaseURL from './safetyBaseURL';
+import dashboardBaseURL from './dashboardBaseURL';
 
 // List of all axios instances
 const apiInstances = [
@@ -12,8 +16,12 @@ const apiInstances = [
   tripBaseURL,
   vehicleBaseURL,
   driverBaseURL,
+  driverStatusBaseURL,
   expenseBaseURL,
   analyticsBaseURL,
+  gpsBaseURL,
+  safetyBaseURL,
+  dashboardBaseURL,
 ];
 
 // Flag to prevent multiple redirects
