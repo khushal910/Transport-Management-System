@@ -5,6 +5,7 @@ import userLogout from '../controllers/athentication/user.logout';
 import userForgotPassword from '../controllers/athentication/user.forgot-password';
 import userResetPassword from '../controllers/athentication/user.reset-password';
 import getProfile from '../controllers/athentication/get-profile';
+import updateProfile from '../controllers/athentication/update-profile';
 import setupPassword from '../controllers/employee/setup-password';
 import addEmployee from '../controllers/employee/add.employee';
 import getEmployees from '../controllers/employee/get.employees';
@@ -20,10 +21,21 @@ authRouter.post('/logout', userLogout);
 authRouter.post('/forgot-password', userForgotPassword);
 authRouter.post('/reset-password', userResetPassword);
 authRouter.get('/profile', getProfile);
+authRouter.put('/profile', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), updateProfile);
 authRouter.post('/setup-password', setupPassword);
 authRouter.post('/add-employee', requiredRole('manager'), addEmployee);
 authRouter.get('/employees', requiredRole('manager', 'dispatcher'), getEmployees);
 authRouter.put('/employee/:employeeId', requiredRole('manager'), updateEmployee);
 authRouter.delete('/employee/:employeeId', requiredRole('manager'), deleteEmployee);
+
+// TEST ROUTE: Simple endpoint to verify server is running latest code
+authRouter.get('/test', (req, res) => {
+  res.json({ success: true, message: 'Auth router is responding correctly', timestamp: new Date().toISOString() });
+});
+
+// TEST ROUTE: Test PUT method
+authRouter.put('/test', (req, res) => {
+  res.json({ success: true, message: 'PUT method works on auth router', timestamp: new Date().toISOString() });
+});
 
 export default authRouter;

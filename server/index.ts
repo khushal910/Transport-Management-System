@@ -41,6 +41,13 @@ app.use('/api/dashboard', dashboardRouter)
 app.use('/api/safety', safetyRouter)
 app.use('/api/gps', gpsRouter)
 
+// Debug: Log all registered routes
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 const port = process.env.PORT || 3000;
 
 const startServer = async () => {

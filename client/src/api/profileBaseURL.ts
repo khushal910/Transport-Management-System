@@ -49,6 +49,11 @@ export interface UserProfile {
   driver?: DriverDetails;
 }
 
+export interface UpdateUserProfilePayload {
+  name?: string;
+  email?: string;
+}
+
 /**
  * Fetch current user's profile with personal, company, and driver details (if applicable)
  */
@@ -59,6 +64,19 @@ export const fetchUserProfile = async (): Promise<UserProfile> => {
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch profile';
     console.error('Error fetching user profile:', errorMessage);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (
+  payload: UpdateUserProfilePayload
+): Promise<UserProfile> => {
+  try {
+    const response = await profileBaseURL.put('/profile', payload);
+    return response.data?.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile';
+    console.error('Error updating user profile:', errorMessage);
     throw error;
   }
 };

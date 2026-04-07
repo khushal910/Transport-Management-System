@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useNotification } from '../../hooks/useNotification';
-import { fetchUserProfile, UserProfile } from '../../api/profileBaseURL';
-import { Mail, Phone, MapPin, FileText, Award, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { fetchUserProfile, updateUserProfile, UpdateUserProfilePayload, UserProfile } from '../../api/profileBaseURL';
+import { Mail, Phone, MapPin, FileText, Award, CheckCircle, AlertCircle, RefreshCw, Edit3, Save, XCircle } from 'lucide-react';
 
 /**
  * User Profile Page - Production Grade
  * Displays comprehensive personal, company, and driver-specific details
  */
 export const UserProfilePage: React.FC = () => {
-  const { notifyError } = useNotification();
+  const { notifyError, notifySuccess } = useNotification();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableName, setEditableName] = useState('');
+  const [editableEmail, setEditableEmail] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -23,6 +28,8 @@ export const UserProfilePage: React.FC = () => {
       setError(null);
       const data = await fetchUserProfile();
       setProfile(data);
+      setEditableName(data.personal.name);
+      setEditableEmail(data.personal.email);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || err.message || 'Failed to load profile';
@@ -33,6 +40,66 @@ export const UserProfilePage: React.FC = () => {
     }
   };
 
+  const handleStartEdit = () => {
+    if (profile) {
+      setEditableName(profile.personal.name);
+      setEditableEmail(profile.personal.email);
+      setFormError(null);
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (profile) {
+      setEditableName(profile.personal.name);
+      setEditableEmail(profile.personal.email);
+    }
+    setFormError(null);
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    const trimmedName = editableName.trim();
+    const trimmedEmail = editableEmail.trim().toLowerCase();
+
+    if (!trimmedName || trimmedName.length < 3) {
+      setFormError('Name must be at least 3 characters long.');
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(trimmedEmail)) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!profile) {
+      setFormError('Unable to save changes at this time.');
+      return;
+    }
+
+    const updatePayload: UpdateUserProfilePayload = {
+      name: trimmedName,
+      email: trimmedEmail,
+    };
+
+    try {
+      setSaving(true);
+      setFormError(null);
+      const updatedProfile = await updateUserProfile(updatePayload);
+      setProfile(updatedProfile);
+      setIsEditing(false);
+      notifySuccess('Profile updated successfully.');
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || err.message || 'Failed to update profile';
+      setFormError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleRetry = () => {
     loadProfile();
   };
@@ -40,7 +107,7 @@ export const UserProfilePage: React.FC = () => {
   // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header Skeleton */}
           <div className="mb-8">
@@ -79,7 +146,7 @@ export const UserProfilePage: React.FC = () => {
   // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
         <div className="max-x-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
           <p className="text-gray-600 mb-8">View your personal, company, and account details</p>
@@ -108,7 +175,7 @@ export const UserProfilePage: React.FC = () => {
   // Empty State (shouldn't happen, but just in case)
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -144,7 +211,7 @@ export const UserProfilePage: React.FC = () => {
   const role = roleConfig[personal.role as keyof typeof roleConfig];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -157,7 +224,7 @@ export const UserProfilePage: React.FC = () => {
           {/* Profile Header with Avatar */}
           <div className="flex items-start gap-6 mb-8 pb-8 border-b border-gray-200">
             {/* Avatar */}
-            <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-5xl font-bold text-white shadow-md">
+            <div className="w-32 h-32 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-5xl font-bold text-white shadow-md">
               {initials}
             </div>
 
@@ -197,27 +264,87 @@ export const UserProfilePage: React.FC = () => {
               <span>👤</span>
               Personal Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <p className="text-gray-900">{personal.name}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <p className="text-gray-900">{personal.email}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <p className="text-gray-900">{role.label}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
-                <p className="text-green-600 flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4" />
-                  Active
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <span>👤</span>
+              Personal Details
             </div>
+            {!isEditing ? (
+              <button
+                onClick={handleStartEdit}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                <Edit3 className="w-4 h-4" />
+                Edit
+              </button>
+            ) : null}
+          </div>
+          {formError ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {formError}
+            </div>
+          ) : null}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editableName}
+                  onChange={(e) => setEditableName(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Full name"
+                />
+              ) : (
+                <p className="text-gray-900">{personal.name}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              {isEditing ? (
+                <input
+                  type="email"
+                  value={editableEmail}
+                  onChange={(e) => setEditableEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Email address"
+                />
+              ) : (
+                <p className="text-gray-900">{personal.email}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <p className="text-gray-900">{role.label}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+              <p className="text-green-600 flex items-center gap-1">
+                <CheckCircle className="w-4 h-4" />
+                Active
+              </p>
+            </div>
+          </div>
+          {isEditing ? (
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors duration-200"
+              >
+                <Save className="w-4 h-4" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                type="button"
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors duration-200"
+              >
+                <XCircle className="w-4 h-4" />
+                Cancel
+              </button>
+            </div>
+          ) : null}
           </div>
 
           {/* Company Details Section */}
@@ -291,7 +418,7 @@ export const UserProfilePage: React.FC = () => {
                 <span>🚗</span>
                 Driver Credentials & Performance
               </h3>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+              <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* License Information */}
                   <div className="bg-white rounded-lg p-4">
