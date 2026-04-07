@@ -43,37 +43,18 @@ const DriverTripHistory: React.FC = () => {
     totalPages: 1,
   });
 
-  // Get current user from localStorage
-  const getUser = useCallback(() => {
-    try {
-      const userData = localStorage.getItem('user');
-      return userData ? JSON.parse(userData) : null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const user = getUser();
-  const driverEmail = user?.email;
-
   // Fetch driver trips
   const fetchDriverTrips = useCallback(
     async (pageNum: number) => {
       setIsLoading(true);
       try {
-        const response = await tripBaseURL.get(`/?page=${pageNum}&limit=10`);
+        // Backend already filters trips by driver role, so no need for extra filtering
+        const response = await tripBaseURL.get(`/get?page=${pageNum}&limit=10`);
         
         if (response.data?.success) {
           let driverTrips = response.data.data.trips || [];
 
-          // Filter to only trips assigned to this driver
-          if (driverEmail) {
-            driverTrips = driverTrips.filter(
-              (trip: TripData) => trip.driverEmail === driverEmail || trip.driver?.user?.email === driverEmail
-            );
-          }
-
-          // Apply status filter
+          // Apply status filter on frontend (backend doesn't have status param)
           if (filterStatus !== 'all') {
             if (filterStatus === 'active') {
               driverTrips = driverTrips.filter((trip: TripData) => trip.status === 'dispatched');
@@ -93,16 +74,18 @@ const DriverTripHistory: React.FC = () => {
           });
         } else {
           notifyError(response.data?.message || 'Failed to fetch trips');
+          setTrips([]);
         }
       } catch (error: any) {
         const message = error.response?.data?.message || 'Error fetching trips';
+        console.error('Trip fetch error:', error);
         notifyError(message);
         setTrips([]);
       } finally {
         setIsLoading(false);
       }
     },
-    [driverEmail, filterStatus, notifyError]
+    [filterStatus, notifyError]
   );
 
   // Initial load and when filters change
