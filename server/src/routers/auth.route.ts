@@ -6,6 +6,8 @@ import userForgotPassword from '../controllers/athentication/user.forgot-passwor
 import userResetPassword from '../controllers/athentication/user.reset-password';
 import getProfile from '../controllers/athentication/get-profile';
 import updateProfile from '../controllers/athentication/update-profile';
+import requestEmailVerification from '../controllers/athentication/request-email-verification';
+import verifyEmailChange from '../controllers/athentication/verify-email-change';
 import setupPassword from '../controllers/employee/setup-password';
 import addEmployee from '../controllers/employee/add.employee';
 import getEmployees from '../controllers/employee/get.employees';
@@ -22,6 +24,8 @@ authRouter.post('/forgot-password', userForgotPassword);
 authRouter.post('/reset-password', userResetPassword);
 authRouter.get('/profile', getProfile);
 authRouter.put('/profile', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), updateProfile);
+authRouter.post('/request-email-verification', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), requestEmailVerification);
+authRouter.post('/verify-email-change', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), verifyEmailChange);
 authRouter.post('/setup-password', setupPassword);
 authRouter.post('/add-employee', requiredRole('manager'), addEmployee);
 authRouter.get('/employees', requiredRole('manager', 'dispatcher'), getEmployees);

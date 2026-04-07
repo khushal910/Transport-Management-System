@@ -9,6 +9,9 @@ interface IUser extends Document {
   isPasswordSet: boolean;
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
+  pendingNewEmail?: string | null;
+  emailVerificationToken: string | null;
+  emailVerificationExpires: Date | null;
   role: UserRole;
   company?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -43,6 +46,20 @@ const userSchema = new Schema<IUser>(
       default: null,
     },
     passwordResetExpires: {
+      type: Date,
+      default: null,
+    },
+    pendingNewEmail: {
+      type: String,
+      default: null,
+      lowercase: true,
+      trim: true,
+    },
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
       type: Date,
       default: null,
     },

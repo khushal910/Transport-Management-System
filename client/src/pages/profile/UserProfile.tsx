@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNotification } from '../../hooks/useNotification';
-import { fetchUserProfile, updateUserProfile, UpdateUserProfilePayload, UserProfile } from '../../api/profileBaseURL';
-import { Mail, Phone, MapPin, FileText, Award, CheckCircle, AlertCircle, RefreshCw, Edit3, Save, XCircle } from 'lucide-react';
+import { fetchUserProfile, updateUserProfile, UpdateUserProfilePayload, UserProfile, requestEmailVerification, verifyEmailChange } from '../../api/profileBaseURL';
+import { Mail, Phone, MapPin, FileText, Award, CheckCircle, AlertCircle, RefreshCw, Edit3, Save, XCircle, AlertTriangle, Loader } from 'lucide-react';
 
 /**
  * User Profile Page - Production Grade
@@ -17,10 +17,31 @@ export const UserProfilePage: React.FC = () => {
   const [editableName, setEditableName] = useState('');
   const [editableEmail, setEditableEmail] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  
+  // Email verification OTP states
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [pendingNewEmail, setPendingNewEmail] = useState<string | null>(null);
+  const [verificationOTP, setVerificationOTP] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [canResendCode, setCanResendCode] = useState(true);
 
   useEffect(() => {
     loadProfile();
   }, []);
+
+  // Timer effect for resend code button
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (resendTimer === 0 && !canResendCode) {
+      setCanResendCode(true);
+    }
+  }, [resendTimer, canResendCode]);
 
   const loadProfile = async () => {
     try {
@@ -56,6 +77,10 @@ export const UserProfilePage: React.FC = () => {
     }
     setFormError(null);
     setIsEditing(false);
+    setIsVerifyingEmail(false);
+    setPendingNewEmail(null);
+    setVerificationOTP('');
+    setOtpError(null);
   };
 
   const handleSave = async () => {
@@ -78,25 +103,120 @@ export const UserProfilePage: React.FC = () => {
       return;
     }
 
-    const updatePayload: UpdateUserProfilePayload = {
-      name: trimmedName,
-      email: trimmedEmail,
-    };
+    // Check if email is changing
+    const emailChanged = trimmedEmail !== profile.personal.email;
 
     try {
       setSaving(true);
       setFormError(null);
-      const updatedProfile = await updateUserProfile(updatePayload);
-      setProfile(updatedProfile);
-      setIsEditing(false);
-      notifySuccess('Profile updated successfully.');
+
+      if (emailChanged) {
+        // If email is changing, request OTP verification instead of direct save
+        await handleRequestEmailVerification(trimmedEmail);
+      } else {
+        // If only name is changing, update directly
+        const updatePayload: UpdateUserProfilePayload = {
+          name: trimmedName,
+        };
+        const updatedProfile = await updateUserProfile(updatePayload);
+        setProfile(updatedProfile);
+        setIsEditing(false);
+        notifySuccess('Profile updated successfully.');
+      }
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.message || err.message || 'Failed to update profile';
+        err.response?.data?.message || err.message || 'Failed to save changes';
       setFormError(errorMessage);
       notifyError(errorMessage);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRequestEmailVerification = async (newEmail: string) => {
+    try {
+      setOtpError(null);
+      setOtpLoading(true);
+      await requestEmailVerification(newEmail);
+      setPendingNewEmail(newEmail);
+      setIsVerifyingEmail(true);
+      setCanResendCode(false);
+      setResendTimer(60); // 1 minute countdown
+      notifySuccess('Verification code sent to your new email. Please check your inbox.');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to request verification';
+      setOtpError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyEmailChange = async () => {
+    if (!verificationOTP.trim()) {
+      setOtpError('Please enter the verification code.');
+      return;
+    }
+
+    const trimmedName = editableName.trim();
+
+    try {
+      setOtpError(null);
+      setOtpLoading(true);
+
+      // Verify email change with OTP
+      const updatedProfile = await verifyEmailChange(verificationOTP);
+
+      // Update name if it changed as well
+      if (updatedProfile && trimmedName !== profile?.personal.name) {
+        const nameUpdatePayload: UpdateUserProfilePayload = {
+          name: trimmedName,
+        };
+        const finalProfile = await updateUserProfile(nameUpdatePayload);
+        setProfile(finalProfile);
+      } else {
+        setProfile(updatedProfile);
+      }
+
+      setIsEditing(false);
+      setIsVerifyingEmail(false);
+      setPendingNewEmail(null);
+      setVerificationOTP('');
+      notifySuccess('Email verified and profile updated successfully!');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to verify code';
+      setOtpError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleCancelEmailVerification = () => {
+    setIsVerifyingEmail(false);
+    setPendingNewEmail(null);
+    setVerificationOTP('');
+    setOtpError(null);
+    setResendTimer(0);
+    setCanResendCode(true);
+  };
+
+  const handleResendCode = async () => {
+    if (!pendingNewEmail) return;
+    
+    try {
+      setOtpError(null);
+      setOtpLoading(true);
+      await requestEmailVerification(pendingNewEmail);
+      setCanResendCode(false);
+      setResendTimer(60);
+      notifySuccess('Verification code resent to your email.');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to resend code';
+      setOtpError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -302,13 +422,21 @@ export const UserProfilePage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               {isEditing ? (
-                <input
-                  type="email"
-                  value={editableEmail}
-                  onChange={(e) => setEditableEmail(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Email address"
-                />
+                <>
+                  <input
+                    type="email"
+                    value={editableEmail}
+                    onChange={(e) => setEditableEmail(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Email address"
+                  />
+                  {editableEmail !== personal.email && !isVerifyingEmail && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      <AlertTriangle className="w-3 h-3 inline mr-1" />
+                      A verification code will be sent to your new email
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="text-gray-900">{personal.email}</p>
               )}
@@ -325,7 +453,88 @@ export const UserProfilePage: React.FC = () => {
               </p>
             </div>
           </div>
-          {isEditing ? (
+
+          {/* Email Verification OTP Section */}
+          {isVerifyingEmail && (
+            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-5">
+              <div className="flex gap-3 mb-4">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-amber-900 mb-1">Verify Your New Email</h4>
+                  <p className="text-sm text-amber-800 mb-3">
+                    We've sent a verification code to <strong>{pendingNewEmail}</strong>. Please enter it below to confirm the email change.
+                  </p>
+                </div>
+              </div>
+
+              {otpError && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {otpError}
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Verification Code</label>
+                <input
+                  type="text"
+                  value={verificationOTP}
+                  onChange={(e) => setVerificationOTP(e.target.value)}
+                  placeholder="Enter 6-character code or full verification token"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500 font-mono text-center"
+                />
+                <p className="text-xs text-gray-500 mt-1">Check your email for the verification code</p>
+              </div>
+
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-xs text-gray-600">
+                  Didn't receive the code?
+                </p>
+                {!canResendCode ? (
+                  <p className="text-xs font-medium text-amber-600">
+                    Resend in {resendTimer}s
+                  </p>
+                ) : (
+                  <button
+                    onClick={handleResendCode}
+                    disabled={otpLoading || !canResendCode}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+                  >
+                    Resend Code
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleVerifyEmailChange}
+                  disabled={otpLoading}
+                  className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors duration-200"
+                >
+                  {otpLoading ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Verify Code
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleCancelEmailVerification}
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors duration-200"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isEditing && !isVerifyingEmail ? (
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 onClick={handleSave}

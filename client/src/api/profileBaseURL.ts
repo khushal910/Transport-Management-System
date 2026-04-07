@@ -81,4 +81,34 @@ export const updateUserProfile = async (
   }
 };
 
+/**
+ * Request email verification OTP for changing email
+ * Sends a verification code to the new email address
+ */
+export const requestEmailVerification = async (newEmail: string): Promise<any> => {
+  try {
+    const response = await profileBaseURL.post('/request-email-verification', { newEmail });
+    return response.data?.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to request verification';
+    console.error('Error requesting email verification:', errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * Verify email change with OTP token
+ * Updates the user's email after OTP verification
+ */
+export const verifyEmailChange = async (verificationToken: string): Promise<UserProfile> => {
+  try {
+    const response = await profileBaseURL.post('/verify-email-change', { verificationToken });
+    return response.data?.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to verify email change';
+    console.error('Error verifying email change:', errorMessage);
+    throw error;
+  }
+};
+
 export default profileBaseURL;

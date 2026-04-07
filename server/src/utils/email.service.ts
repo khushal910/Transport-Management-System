@@ -368,3 +368,85 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Send email verification OTP for email change
+ */
+export const sendEmailVerificationOTP = async (newEmail: string, verificationToken: string, userName: string): Promise<EmailResult> => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    // Extract OTP (first 6 characters of the token for display)
+    const displayOTP = verificationToken.substring(0, 6).toUpperCase();
+
+    const mailOptions: SendMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: newEmail,
+      subject: 'Email Verification Code - Fleet Management System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #1f2937; margin-top: 0;">Email Verification Code</h2>
+            <p style="color: #4b5563; font-size: 14px;">
+              Hi <strong>${userName}</strong>, you requested to change your email address. Please verify your new email using the code below.
+            </p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; margin-bottom: 20px;">
+              Your email verification code is (expires in <strong>30 minutes</strong>):
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; text-align: center; margin-bottom: 25px; border: 2px solid #e5e7eb;">
+              <p style="font-size: 40px; font-weight: bold; color: #1f2937; margin: 0; letter-spacing: 8px;">
+                ${displayOTP}
+              </p>
+              <p style="color: #6b7280; font-size: 12px; margin-top: 10px;">
+                Copy this code to verify your email address
+              </p>
+            </div>
+
+            <p style="color: #374151; font-size: 14px; margin-bottom: 10px;">
+              Or use the full verification code:
+            </p>
+            <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+              ${verificationToken}
+            </p>
+
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+              <p style="color: #92400e; font-size: 13px; margin: 0;">
+                <strong>Security Note:</strong> This code will expire in 30 minutes. If you didn't request this change, please ignore this email.
+              </p>
+            </div>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #4b5563; margin-bottom: 10px;">
+              <strong>What happens next:</strong>
+            </p>
+            <ul style="color: #4b5563; margin: 10px 0; padding-left: 20px;">
+              <li style="margin: 8px 0;">Enter this code in the verification field on Fleet Management System</li>
+              <li style="margin: 8px 0;">Your email will be updated once verified</li>
+              <li style="margin: 8px 0;">You may need to log in again with your new email address</li>
+            </ul>
+          </div>
+
+          <div style="color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+            <p style="margin: 5px 0;">This is an automated message. Please do not reply directly to this email.</p>
+            <p style="margin: 5px 0;">© 2026 Fleet Management System. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✓ Email verification code sent successfully to:', newEmail);
+    return { success: true, message: 'Verification code sent successfully', messageId: result.messageId };
+  } catch (error: any) {
+    console.error('❌ Email verification sending error:', error.message);
+    console.error('Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};
