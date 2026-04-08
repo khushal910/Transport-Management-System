@@ -135,15 +135,14 @@ export const UserProfilePage: React.FC = () => {
         await requestEmailVerification(trimmedEmail);
         setPendingNewEmail(trimmedEmail);
         setIsVerifyingEmail(true);
+        setIsEditing(false);
         setCanResendCode(false);
         setResendTimer(60);
-        notifySuccess('Verification code sent to your new email. Please check your inbox.');
       } else {
         const updatePayload: UpdateUserProfilePayload = { name: trimmedName };
         const updatedProfile = await updateUserProfile(updatePayload);
         setProfile(updatedProfile);
         setIsEditing(false);
-        notifySuccess('Profile updated successfully.');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to save changes';
@@ -151,6 +150,11 @@ export const UserProfilePage: React.FC = () => {
       notifyError(errorMessage);
     } finally {
       setSaving(false);
+      if (emailChanged) {
+        notifySuccess('Verification code sent to your new email. Please check your inbox.');
+      } else if (!error) {
+        notifySuccess('Profile updated successfully.');
+      }
     }
   };
 
@@ -161,6 +165,7 @@ export const UserProfilePage: React.FC = () => {
     }
 
     const trimmedName = editableName.trim();
+    let verificationSuccess = false;
 
     try {
       setOtpLoading(true);
@@ -175,13 +180,16 @@ export const UserProfilePage: React.FC = () => {
       setIsEditing(false);
       setIsVerifyingEmail(false);
       setVerificationOTP('');
-      notifySuccess('Email verified and profile updated successfully.');
+      verificationSuccess = true;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to verify email';
       setOtpError(errorMessage);
       notifyError(errorMessage);
     } finally {
       setOtpLoading(false);
+      if (verificationSuccess) {
+        notifySuccess('Email verified and profile updated successfully.');
+      }
     }
   };
 
@@ -194,19 +202,24 @@ export const UserProfilePage: React.FC = () => {
 
   const handleResendCode = async () => {
     if (!pendingNewEmail) return;
+    let resendSuccess = false;
+    
     try {
       setOtpLoading(true);
       setOtpError(null);
       await requestEmailVerification(pendingNewEmail);
       setCanResendCode(false);
       setResendTimer(60);
-      notifySuccess('Verification code resent to your email.');
+      resendSuccess = true;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to resend code';
       setOtpError(errorMessage);
       notifyError(errorMessage);
     } finally {
       setOtpLoading(false);
+      if (resendSuccess) {
+        notifySuccess('Verification code resent to your email.');
+      }
     }
   };
 
@@ -267,19 +280,24 @@ export const UserProfilePage: React.FC = () => {
       return;
     }
 
+    let saveSuccess = false;
+
     try {
       setCompanySaving(true);
       setCompanyFormError(null);
       const updatedCompany = await updateCompanyProfile(updatePayload);
       setProfile((prev) => (prev ? { ...prev, company: updatedCompany } : prev));
       setIsEditingCompany(false);
-      notifySuccess('Company information updated successfully!');
+      saveSuccess = true;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to update company';
       setCompanyFormError(errorMessage);
       notifyError(errorMessage);
     } finally {
       setCompanySaving(false);
+      if (saveSuccess) {
+        notifySuccess('Company information updated successfully!');
+      }
     }
   };
 

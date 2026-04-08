@@ -408,6 +408,8 @@ export default function EmployeeManagement() {
         notifySuccess('Email sent to employee.');
         setEmailSubject('');
         setEmailBody('');
+        // Close modal immediately after successful send
+        handleCloseSendEmailModal();
       } else {
         throw new Error(response.data?.message || 'Failed to send email');
       }
