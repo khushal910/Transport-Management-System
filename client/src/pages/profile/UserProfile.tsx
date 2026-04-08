@@ -492,25 +492,21 @@ export const UserProfilePage: React.FC = () => {
 
           {/* Personal Details Section */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <span>👤</span>
-              Personal Details
-            </h3>
             <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <span>👤</span>
-              Personal Details
+              <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                <span>👤</span>
+                Personal Details
+              </div>
+              {!isEditing ? (
+                <button
+                  onClick={handleStartEdit}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  Edit
+                </button>
+              ) : null}
             </div>
-            {!isEditing ? (
-              <button
-                onClick={handleStartEdit}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <Edit3 className="w-4 h-4" />
-                Edit
-              </button>
-            ) : null}
-          </div>
           {formError ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {formError}
