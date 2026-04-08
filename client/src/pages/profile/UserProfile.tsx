@@ -129,7 +129,21 @@ export const UserProfilePage: React.FC = () => {
 
       if (emailChanged) {
         // If email is changing, request OTP verification instead of direct save
-        await handleRequestEmailVerification(trimmedEmail);
+        // This will throw an error if email already exists
+        try {
+          await requestEmailVerification(trimmedEmail);
+          setPendingNewEmail(trimmedEmail);
+          setIsVerifyingEmail(true);
+          setCanResendCode(false);
+          setResendTimer(60); // 1 minute countdown
+          notifySuccess('Verification code sent to your new email. Please check your inbox.');
+        } catch (emailErr: any) {
+          const errorMsg = emailErr.response?.data?.message || emailErr.message || 'Failed to request verification';
+          setFormError(errorMsg);
+          notifyError(errorMsg);
+          setSaving(false);
+          return;
+        }
       } else {
         // If only name is changing, update directly
         const updatePayload: UpdateUserProfilePayload = {
@@ -147,25 +161,6 @@ export const UserProfilePage: React.FC = () => {
       notifyError(errorMessage);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleRequestEmailVerification = async (newEmail: string) => {
-    try {
-      setOtpError(null);
-      setOtpLoading(true);
-      await requestEmailVerification(newEmail);
-      setPendingNewEmail(newEmail);
-      setIsVerifyingEmail(true);
-      setCanResendCode(false);
-      setResendTimer(60); // 1 minute countdown
-      notifySuccess('Verification code sent to your new email. Please check your inbox.');
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to request verification';
-      setOtpError(errorMessage);
-      notifyError(errorMessage);
-    } finally {
-      setOtpLoading(false);
     }
   };
 

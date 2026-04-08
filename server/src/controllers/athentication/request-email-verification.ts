@@ -56,7 +56,7 @@ const requestEmailVerification = async (req, res) => {
     });
 
     if (existingUser) {
-      return response(res, 409, false, 'Email already registered in the system');
+      return response(res, 409, false, 'This email is already registered with another account. Please use a different email address.');
     }
 
     // Generate verification token (64 character random string)
