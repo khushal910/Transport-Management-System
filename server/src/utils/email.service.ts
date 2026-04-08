@@ -93,6 +93,36 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
 };
 
 /**
+ * Send generic direct user-to-user email
+ */
+export const sendDirectEmail = async (
+  email: string,
+  subject: string,
+  htmlBody: string
+): Promise<EmailResult> => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    const mailOptions: SendMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject,
+      html: htmlBody,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✓ Direct email sent successfully to:', email);
+    return { success: true, message: 'Email sent successfully', messageId: result.messageId };
+  } catch (error: any) {
+    console.error('❌ Direct email sending error:', error.message);
+    console.error('Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Send password reset success email
  */
 export const sendPasswordResetSuccessEmail = async (email: string): Promise<EmailResult> => {

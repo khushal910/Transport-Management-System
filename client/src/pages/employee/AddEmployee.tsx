@@ -53,6 +53,15 @@ export default function EmployeeManagement() {
   const [formMessage, setFormMessage] = useState('');
   const [formMessageType, setFormMessageType] = useState<'error' | 'success' | ''>('');
 
+  // Send email modal state
+  const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState(false);
+  const [selectedEmployeeForEmail, setSelectedEmployeeForEmail] = useState(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailFormError, setEmailFormError] = useState('');
+  const [emailFormSuccess, setEmailFormSuccess] = useState('');
+
   // Driver status change modal state
   const [statusChangeModalOpen, setStatusChangeModalOpen] = useState(false);
   const [driverToChangeStatus, setDriverToChangeStatus] = useState(null);
@@ -345,6 +354,70 @@ export default function EmployeeManagement() {
       role: employee.role,
     });
     setIsModalOpen(true);
+  };
+
+  const handleOpenSendEmailModal = (employee) => {
+    setSelectedEmployeeForEmail(employee);
+    setEmailSubject('');
+    setEmailBody('');
+    setEmailFormError('');
+    setEmailFormSuccess('');
+    setIsSendEmailModalOpen(true);
+  };
+
+  const handleCloseSendEmailModal = () => {
+    setIsSendEmailModalOpen(false);
+    setSelectedEmployeeForEmail(null);
+    setEmailSubject('');
+    setEmailBody('');
+    setEmailFormError('');
+    setEmailFormSuccess('');
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedEmployeeForEmail) {
+      setEmailFormError('Please select an employee to email.');
+      return;
+    }
+
+    const subject = emailSubject.trim();
+    const message = emailBody.trim();
+
+    if (!subject) {
+      setEmailFormError('Subject is required.');
+      return;
+    }
+    if (!message) {
+      setEmailFormError('Message body is required.');
+      return;
+    }
+
+    setEmailFormError('');
+    setEmailFormSuccess('');
+    setEmailSending(true);
+
+    try {
+      const response = await authBaseURL.post('/send-email', {
+        recipientUserId: selectedEmployeeForEmail._id,
+        subject,
+        message,
+      });
+
+      if (response.status === 200) {
+        setEmailFormSuccess('Email sent successfully.');
+        notifySuccess('Email sent to employee.');
+        setEmailSubject('');
+        setEmailBody('');
+      } else {
+        throw new Error(response.data?.message || 'Failed to send email');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send email';
+      setEmailFormError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   const handleDelete = async (employeeId) => {
@@ -759,6 +832,13 @@ export default function EmployeeManagement() {
                       </td>
                       <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2" style={{ display: isReadOnly ? 'none' : 'flex' }}>
                         <button
+                          onClick={() => handleOpenSendEmailModal(employee)}
+                          className="text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 bg-indigo-500 hover:bg-indigo-600"
+                        >
+                          ✉️
+                          Email
+                        </button>
+                        <button
                           onClick={() => handleEdit(employee)}
                           disabled={!employee.isPasswordSet}
                           className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 ${
@@ -828,6 +908,84 @@ export default function EmployeeManagement() {
       </div>
 
       </div>
+
+      {/* Send Email Modal */}
+      {isSendEmailModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
+          onClick={handleCloseSendEmailModal}
+        >
+          <div
+            className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Send Email to Employee</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedEmployeeForEmail?.name || 'Selected employee'} — {selectedEmployeeForEmail?.email || ''}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseSendEmailModal}
+                className="text-gray-500 hover:text-gray-800"
+                aria-label="Close send email modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {emailFormSuccess && (
+              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                {emailFormSuccess}
+              </div>
+            )}
+            {emailFormError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {emailFormError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Message subject"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  className="w-full min-h-[160px] rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Write your message to the employee"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3 justify-end">
+              <button
+                onClick={handleCloseSendEmailModal}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendEmail}
+                disabled={emailSending}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {emailSending ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Employee Modal */}
       {isModalOpen && (

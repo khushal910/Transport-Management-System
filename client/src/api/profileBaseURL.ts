@@ -61,6 +61,19 @@ export interface UpdateCompanyPayload {
   email?: string;
 }
 
+export interface TeamEmployee {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface SendUserEmailPayload {
+  recipientUserId?: string;
+  subject: string;
+  message: string;
+}
+
 /**
  * Fetch current user's profile with personal, company, and driver details (if applicable)
  */
@@ -114,6 +127,35 @@ export const verifyEmailChange = async (verificationToken: string): Promise<User
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to verify email change';
     console.error('Error verifying email change:', errorMessage);
+    throw error;
+  }
+};
+
+export const fetchCompanyEmployees = async (): Promise<TeamEmployee[]> => {
+  try {
+    const response = await profileBaseURL.get('/employees');
+    const employees = response.data?.data?.employees || [];
+    return employees.map((employee: any) => ({
+      id: employee._id || employee.id,
+      name: employee.name,
+      email: employee.email,
+      role: employee.role,
+    }));
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch employees';
+    console.error('Error fetching employees:', errorMessage);
+    throw error;
+  }
+};
+
+export const sendUserEmail = async (
+  payload: SendUserEmailPayload
+): Promise<void> => {
+  try {
+    await profileBaseURL.post('/send-email', payload);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to send email';
+    console.error('Error sending user email:', errorMessage);
     throw error;
   }
 };
