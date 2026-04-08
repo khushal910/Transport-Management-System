@@ -54,6 +54,13 @@ export interface UpdateUserProfilePayload {
   email?: string;
 }
 
+export interface UpdateCompanyPayload {
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
 /**
  * Fetch current user's profile with personal, company, and driver details (if applicable)
  */
@@ -107,6 +114,23 @@ export const verifyEmailChange = async (verificationToken: string): Promise<User
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to verify email change';
     console.error('Error verifying email change:', errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * Update company information (Manager only)
+ * Allows managers to edit their company's details
+ */
+export const updateCompanyProfile = async (
+  payload: UpdateCompanyPayload
+): Promise<CompanyDetails> => {
+  try {
+    const response = await profileBaseURL.put('/company', payload);
+    return response.data?.data?.company;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to update company information';
+    console.error('Error updating company profile:', errorMessage);
     throw error;
   }
 };

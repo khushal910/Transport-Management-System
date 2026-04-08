@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNotification } from '../../hooks/useNotification';
-import { fetchUserProfile, updateUserProfile, UpdateUserProfilePayload, UserProfile, requestEmailVerification, verifyEmailChange } from '../../api/profileBaseURL';
+import { fetchUserProfile, updateUserProfile, UpdateUserProfilePayload, UserProfile, requestEmailVerification, verifyEmailChange, updateCompanyProfile, UpdateCompanyPayload } from '../../api/profileBaseURL';
 import { Mail, Phone, MapPin, FileText, Award, CheckCircle, AlertCircle, RefreshCw, Edit3, Save, XCircle, AlertTriangle, Loader } from 'lucide-react';
 
 /**
@@ -27,6 +27,15 @@ export const UserProfilePage: React.FC = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [canResendCode, setCanResendCode] = useState(true);
 
+  // Company editing states (Manager only)
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [editableCompanyName, setEditableCompanyName] = useState('');
+  const [editableCompanyAddress, setEditableCompanyAddress] = useState('');
+  const [editableCompanyPhone, setEditableCompanyPhone] = useState('');
+  const [editableCompanyEmail, setEditableCompanyEmail] = useState('');
+  const [companySaving, setCompanySaving] = useState(false);
+  const [companyFormError, setCompanyFormError] = useState<string | null>(null);
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -51,6 +60,14 @@ export const UserProfilePage: React.FC = () => {
       setProfile(data);
       setEditableName(data.personal.name);
       setEditableEmail(data.personal.email);
+      
+      // Initialize company fields if available
+      if (data.company) {
+        setEditableCompanyName(data.company.name);
+        setEditableCompanyAddress(data.company.address);
+        setEditableCompanyPhone(data.company.phone);
+        setEditableCompanyEmail(data.company.email);
+      }
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || err.message || 'Failed to load profile';
@@ -199,6 +216,106 @@ export const UserProfilePage: React.FC = () => {
     setOtpError(null);
     setResendTimer(0);
     setCanResendCode(true);
+  };
+
+  const handleStartEditCompany = () => {
+    if (profile?.company) {
+      setEditableCompanyName(profile.company.name);
+      setEditableCompanyAddress(profile.company.address);
+      setEditableCompanyPhone(profile.company.phone);
+      setEditableCompanyEmail(profile.company.email);
+      setCompanyFormError(null);
+      setIsEditingCompany(true);
+    }
+  };
+
+  const handleCancelEditCompany = () => {
+    if (profile?.company) {
+      setEditableCompanyName(profile.company.name);
+      setEditableCompanyAddress(profile.company.address);
+      setEditableCompanyPhone(profile.company.phone);
+      setEditableCompanyEmail(profile.company.email);
+    }
+    setCompanyFormError(null);
+    setIsEditingCompany(false);
+  };
+
+  const handleSaveCompany = async () => {
+    const trimmedName = editableCompanyName.trim();
+    const trimmedAddress = editableCompanyAddress.trim();
+    const trimmedPhone = editableCompanyPhone.trim();
+    const trimmedEmail = editableCompanyEmail.trim().toLowerCase();
+
+    // Validation
+    if (!trimmedName || trimmedName.length < 3) {
+      setCompanyFormError('Company name must be at least 3 characters long.');
+      return;
+    }
+
+    if (!trimmedAddress || trimmedAddress.length < 5) {
+      setCompanyFormError('Address must be at least 5 characters long.');
+      return;
+    }
+
+    if (!trimmedPhone || trimmedPhone.length < 7) {
+      setCompanyFormError('Phone number must be at least 7 characters long.');
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(trimmedEmail)) {
+      setCompanyFormError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!profile?.company) {
+      setCompanyFormError('Company information not found.');
+      return;
+    }
+
+    try {
+      setCompanySaving(true);
+      setCompanyFormError(null);
+
+      // Prepare update payload with only changed fields
+      const updatePayload: UpdateCompanyPayload = {};
+      
+      if (trimmedName !== profile.company.name) {
+        updatePayload.name = trimmedName;
+      }
+      if (trimmedAddress !== profile.company.address) {
+        updatePayload.address = trimmedAddress;
+      }
+      if (trimmedPhone !== profile.company.phone) {
+        updatePayload.phone = trimmedPhone;
+      }
+      if (trimmedEmail !== profile.company.email) {
+        updatePayload.email = trimmedEmail;
+      }
+
+      // Only call API if there are changes
+      if (Object.keys(updatePayload).length === 0) {
+        setCompanyFormError('No changes made.');
+        return;
+      }
+
+      const updatedCompany = await updateCompanyProfile(updatePayload);
+      
+      // Update profile with new company data
+      setProfile(prev => prev ? {
+        ...prev,
+        company: updatedCompany
+      } : null);
+
+      setIsEditingCompany(false);
+      notifySuccess('Company information updated successfully!');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update company';
+      setCompanyFormError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setCompanySaving(false);
+    }
   };
 
   const handleResendCode = async () => {
@@ -559,18 +676,49 @@ export const UserProfilePage: React.FC = () => {
           {/* Company Details Section */}
           {company && (
             <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <span>🏢</span>
-                Company Information
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <span>🏢</span>
+                  Company Information
+                </h3>
+                {profile?.personal.role === 'manager' && !isEditingCompany ? (
+                  <button
+                    onClick={handleStartEditCompany}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Edit
+                  </button>
+                ) : null}
+              </div>
+
+              {companyFormError ? (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {companyFormError}
+                </div>
+              ) : null}
+
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Company Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Company Name
                     </label>
-                    <p className="text-gray-900 font-semibold">{company.name}</p>
+                    {isEditingCompany ? (
+                      <input
+                        type="text"
+                        value={editableCompanyName}
+                        onChange={(e) => setEditableCompanyName(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Company name"
+                      />
+                    ) : (
+                      <p className="text-gray-900 font-semibold">{company.name}</p>
+                    )}
                   </div>
+
+                  {/* Registration Number (Read-only) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Registration Number
@@ -580,31 +728,69 @@ export const UserProfilePage: React.FC = () => {
                       {company.registrationNumber}
                     </p>
                   </div>
+
+                  {/* Address */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <p className="text-gray-900 flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      {company.address}
-                    </p>
+                    {isEditingCompany ? (
+                      <input
+                        type="text"
+                        value={editableCompanyAddress}
+                        onChange={(e) => setEditableCompanyAddress(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Company address"
+                      />
+                    ) : (
+                      <p className="text-gray-900 flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        {company.address}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Phone Number */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Phone Number
                     </label>
-                    <p className="text-gray-900 flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      {company.phone}
-                    </p>
+                    {isEditingCompany ? (
+                      <input
+                        type="tel"
+                        value={editableCompanyPhone}
+                        onChange={(e) => setEditableCompanyPhone(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Phone number"
+                      />
+                    ) : (
+                      <p className="text-gray-900 flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        {company.phone}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Email Address */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Email Address
                     </label>
-                    <p className="text-gray-900 flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {company.email}
-                    </p>
+                    {isEditingCompany ? (
+                      <input
+                        type="email"
+                        value={editableCompanyEmail}
+                        onChange={(e) => setEditableCompanyEmail(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Company email"
+                      />
+                    ) : (
+                      <p className="text-gray-900 flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {company.email}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Status (Read-only) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <p className={`font-semibold ${
@@ -616,6 +802,28 @@ export const UserProfilePage: React.FC = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Save/Cancel buttons for company editing */}
+                {isEditingCompany && profile?.personal.role === 'manager' ? (
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      onClick={handleSaveCompany}
+                      disabled={companySaving}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors duration-200"
+                    >
+                      <Save className="w-4 h-4" />
+                      {companySaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button
+                      onClick={handleCancelEditCompany}
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 hover:border-gray-400 transition-colors duration-200"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           )}
