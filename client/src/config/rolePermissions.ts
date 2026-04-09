@@ -94,6 +94,13 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
+  // 🚚 Driver - My Trips (first for driver role)
+  {
+    path: '/main/driver-trips',
+    label: 'My Trips',
+    icon: '🚚',
+    requiredRoles: ['driver'],
+  },
   {
     path: '/main/dashboard',
     label: 'Dashboard',
@@ -160,12 +167,6 @@ export const navItems: NavItem[] = [
     label: 'GPS Tracking',
     icon: '📍',
     requiredRoles: ['manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'],
-  },
-  {
-    path: '/main/driver-trips',
-    label: 'My Trips',
-    icon: '🚚',
-    requiredRoles: ['driver'],
   },
   {
     path: '/main/team',

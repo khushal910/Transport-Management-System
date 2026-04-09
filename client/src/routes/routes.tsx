@@ -39,6 +39,34 @@ import EmailNotificationsDocs from '../pages/docs/email-notifications';
 // Role-based access control
 import { UserRole } from '../config/rolePermissions';
 
+/**
+ * DefaultDashboardRedirect - Redirects users to their role-specific default page
+ * - Drivers: /main/driver-trips (My Trips)
+ * - Other roles: /main/dashboard
+ */
+const DefaultDashboardRedirect = () => {
+  const user = localStorage.getItem('user');
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
+  
+  try {
+    const userData = JSON.parse(user);
+    const userRole = userData.role as UserRole;
+    
+    // Drivers default to their trips page
+    if (userRole === 'driver') {
+      return <Navigate to="/main/driver-trips" replace />;
+    }
+    
+    // All other roles default to dashboard
+    return <Navigate to="/main/dashboard" replace />;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return <Navigate to="/auth/login" replace />;
+  }
+};
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -81,6 +109,11 @@ export const router = createBrowserRouter([
     element: <PrivateRoute><MainLayout /></PrivateRoute>,
     errorElement: <Error />,
     children: [
+      // Default redirect based on role
+      {
+        index: true,
+        element: <DefaultDashboardRedirect />,
+      },
       // Dashboard - Accessible by all authenticated roles
       {
         path: 'dashboard',
