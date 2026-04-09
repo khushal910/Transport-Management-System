@@ -31,7 +31,7 @@ interface DecodedToken {
  * @returns Middleware function
  */
 const requiredRole = (...allowedRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction): any => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     try {
       const token = req.cookies.token;
 
@@ -54,7 +54,7 @@ const requiredRole = (...allowedRoles: string[]) => {
         res.clearCookie('token', {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'Strict',
+          sameSite: 'strict',
           path: '/',
         });
         return response(res, 401, false, 'Your account no longer exists. Please return to the landing page.');
