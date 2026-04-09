@@ -24,8 +24,16 @@ const deleteEmployee = async (req, res) => {
       return response(res, 404, false, 'Employee not found');
     }
 
-    // Delete the employee
-    await User.findByIdAndDelete(employeeId);
+    // Soft delete the employee
+    const deletedEmployee = await User.findOneAndUpdate(
+      { _id: employeeId, company: managerCompanyId, isDeleted: false },
+      { isDeleted: true },
+      { new: true }
+    );
+
+    if (!deletedEmployee) {
+      return response(res, 404, false, 'Employee not found or already deleted');
+    }
 
     // Send deletion notification email
     await sendEmployeeDeletedEmail(employee.email, employee.name, employee.company.name);

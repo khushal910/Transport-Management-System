@@ -13,6 +13,8 @@ import verifyEmailChange from '../controllers/athentication/verify-email-change'
 import setupPassword from '../controllers/employee/setup-password';
 import addEmployee from '../controllers/employee/add.employee';
 import getEmployees from '../controllers/employee/get.employees';
+import getDeletedEmployees from '../controllers/employee/get.deletedEmployees';
+import recoverEmployee from '../controllers/employee/recover.employee';
 import updateEmployee from '../controllers/employee/update.employee';
 import deleteEmployee from '../controllers/employee/delete.employee';
 import requiredRole from '../middlewares/role.middleware';
@@ -35,6 +37,8 @@ authRouter.post('/add-employee', requiredRole('manager'), addEmployee);
 authRouter.get('/employees', requiredRole('manager', 'dispatcher'), getEmployees);
 authRouter.put('/employee/:employeeId', requiredRole('manager'), updateEmployee);
 authRouter.delete('/employee/:employeeId', requiredRole('manager'), deleteEmployee);
+authRouter.get('/employees/deleted', requiredRole('manager'), getDeletedEmployees);
+authRouter.post('/employee/recover/:employeeId', requiredRole('manager'), recoverEmployee);
 
 // TEST ROUTE: Simple endpoint to verify server is running latest code
 authRouter.get('/test', (req, res) => {

@@ -48,6 +48,7 @@ const addEmployee = async (req, res) => {
         isActive: true, // Automatically activate in dev mode
         role,
         company: managerCompanyId,
+        isDeleted: false,
       };
     } else {
       // Production mode: require email setup
@@ -63,6 +64,7 @@ const addEmployee = async (req, res) => {
         isActive: false, // Requires email activation
         role,
         company: managerCompanyId,
+        isDeleted: false,
         passwordResetToken: hashedSetupToken, // Reuse field for setup token
         passwordResetExpires: tokenExpiry,
       };
@@ -125,6 +127,8 @@ const addEmployee = async (req, res) => {
     }
 
     console.error('Add employee error:', err.message);
+    console.error('Add employee error details:', err);
+    return response(res, 500, false, 'Failed to add employee');
     
     return response(res, 500, false, 'Failed to add employee');
   }

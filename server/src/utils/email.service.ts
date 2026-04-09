@@ -400,6 +400,71 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
 };
 
 /**
+ * Send email notification for employee account recovery
+ */
+export const sendEmployeeRecoveredEmail = async (
+  email: string,
+  name: string,
+  companyName: string
+): Promise<EmailResult> => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    const mailOptions: SendMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Employee Account Restored - Fleet Management System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #ebf8ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #1d4ed8; margin-top: 0;">Account Restored</h2>
+            <p style="color: #1e40af; font-size: 14px;">
+              Hi <strong>${name}</strong>, your account has been restored by your manager.
+            </p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; margin-bottom: 15px;">
+              <strong>Account Details:</strong>
+            </p>
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+              <p style="color: #475569; margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+              <p style="color: #475569; margin: 5px 0;"><strong>Company:</strong> ${companyName}</p>
+              <p style="color: #475569; margin: 5px 0;"><strong>Status:</strong> <span style="color: #0f766e; font-weight: bold;">Restored</span></p>
+            </div>
+
+            <p style="color: #374151; margin-bottom: 10px;">
+              Your access to the Fleet Management System has been restored. You can now log in again with your existing credentials.
+            </p>
+          </div>
+
+          <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+            <p style="color: #065f46; font-size: 13px; margin: 0;">
+              <strong>Security Reminder:</strong> If you did not expect this action or notice anything suspicious, please contact your manager immediately.
+            </p>
+          </div>
+
+          <div style="color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+            <p style="margin: 5px 0;">This is an automated message from your Fleet Management System.</p>
+            <p style="margin: 5px 0;">© 2026 Fleet Management System. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✓ Employee recovery email sent successfully to:', email);
+    return { success: true, message: 'Recovery notification sent successfully', messageId: result.messageId };
+  } catch (error: any) {
+    console.error('❌ Employee recovery email sending error:', error.message);
+    console.error('Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Send email verification OTP for email change
  */
 export const sendEmailVerificationOTP = async (newEmail: string, otp: string, verificationToken: string, userName: string): Promise<EmailResult> => {

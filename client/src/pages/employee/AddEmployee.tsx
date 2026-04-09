@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useNotification } from '../../hooks/useNotification';
 import PaginationContainer from '../../components/PaginationContainer';
 import { DEFAULT_PAGE_SIZE } from '../../config/paginationConfig';
 import { FaEdit, FaTrash } from 'react-icons/fa';
-import { useLocation } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
 import { updateDriverStatusAPI } from '../../api/driverStatusBaseURL';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 
 export default function EmployeeManagement() {
   const { notifyError, notifySuccess } = useNotification();
+  const navigate = useNavigate();
   const location = useLocation();
   
   // Get user role to determine read-only mode for dispatcher
@@ -17,12 +18,17 @@ export default function EmployeeManagement() {
   const user = userStr ? JSON.parse(userStr) : null;
   const canChangeDriverStatus = ['manager', 'dispatcher'].includes(user?.role);
   const isReadOnly = user?.role === 'dispatcher';
+  const isManager = user?.role === 'manager';
   
   // Employee list from backend
   const [employeeList, setEmployeeList] = useState([]);
+  const [deletedEmployeeList, setDeletedEmployeeList] = useState([]);
+  const [activeTab, setActiveTab] = useState('active');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingEmployeeId, setDeletingEmployeeId] = useState(null);
+  const [recoveringEmployeeId, setRecoveringEmployeeId] = useState(null);
+  const [deletedSearchTerm, setDeletedSearchTerm] = useState('');
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -85,20 +91,51 @@ export default function EmployeeManagement() {
     try {
       setIsLoading(true);
       const response = await authBaseURL.get('/employees');
-      if (response.status === 200) {
-        setEmployeeList(response.data.data.employees);
+      console.log('[FetchEmployees] Response:', response);
+      
+      if (response.status === 200 && response.data.success) {
+        const employees = response.data.data?.employees || [];
+        console.log('[FetchEmployees] Setting employees:', employees);
+        setEmployeeList(employees);
+      } else {
+        console.warn('[FetchEmployees] Unexpected response format:', response.data);
+        setEmployeeList([]);
       }
     } catch (error) {
-      console.error(error);
+      console.error('[FetchEmployees] Error:', error);
       notifyError(error.response?.data?.message || 'Failed to fetch employees');
+      setEmployeeList([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch deleted employees (manager only)
+  const fetchDeletedEmployees = async () => {
+    if (!isManager) return;
+    
+    try {
+      const response = await authBaseURL.get(
+        `/employees/deleted?page=1&limit=100&search=${encodeURIComponent(deletedSearchTerm)}`
+      );
+      if (response.status === 200 && response.data.success) {
+        const data = response.data.data || {};
+        setDeletedEmployeeList(data.deletedEmployees || []);
+      }
+    } catch (error) {
+      console.error('Fetch deleted employees error:', error);
     }
   };
 
   useEffect(() => {
     fetchEmployees();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'deleted') {
+      fetchDeletedEmployees();
+    }
+  }, [deletedSearchTerm, activeTab]);
 
   const handleCloseModal = (event) => {
     if (event.target === event.currentTarget) {
@@ -316,8 +353,11 @@ export default function EmployeeManagement() {
         ? await authBaseURL.put(`/employee/${editingEmployeeId}`, payload)
         : await authBaseURL.post('/add-employee', payload);
 
+      console.log('[AddEmployee] Response:', response);
+
       if (!response.data.success) {
         const errorMessage = response.data?.message || (isUpdate ? 'Update failed' : 'Add failed');
+        console.error('[AddEmployee] Error response:', response.data);
         setFormMessage(errorMessage);
         setFormMessageType('error');
         setIsSubmitting(false);
@@ -332,6 +372,12 @@ export default function EmployeeManagement() {
     } catch (error: any) {
       const isUpdate = !!editingEmployeeId;
       const errorMessage = error.response?.data?.message || (isUpdate ? 'Update failed' : 'Add failed');
+      console.error('[AddEmployee] Exception:', {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+        fullError: error,
+      });
       setFormMessage(errorMessage);
       setFormMessageType('error');
     } finally {
@@ -439,6 +485,28 @@ export default function EmployeeManagement() {
       notifyError(error.response?.data?.message || 'Failed to delete employee');
     } finally {
       setDeletingEmployeeId(null);
+    }
+  };
+
+  const handleRecover = async (employeeId: string) => {
+    if (!window.confirm('Are you sure you want to recover this employee?')) return;
+
+    if (recoveringEmployeeId) return;
+
+    setRecoveringEmployeeId(employeeId);
+    try {
+      const response = await authBaseURL.post(`/employee/recover/${employeeId}`);
+      if (response.status === 200 && response.data.success) {
+        notifySuccess('Employee recovered successfully');
+        fetchDeletedEmployees();
+        fetchEmployees();
+      } else {
+        throw new Error(response.data?.message || 'Recovery failed');
+      }
+    } catch (error) {
+      notifyError((error as any).response?.data?.message || 'Recovery failed');
+    } finally {
+      setRecoveringEmployeeId(null);
     }
   };
 
@@ -613,10 +681,7 @@ export default function EmployeeManagement() {
         {/* Header Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-gray-800">
-              {pageTitle}
-              {showReadOnlyIndicator && ' - Read Only'}
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-800">Team Management</h1>
             {showReadOnlyIndicator && (
               <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
                 📖 View Only
@@ -624,270 +689,291 @@ export default function EmployeeManagement() {
             )}
           </div>
           <p className="text-gray-600">
-            {pageDescription}
+            {isReadOnly ? 'View team members' : 'Manage your team and employee information'}
           </p>
+        </div>
 
-          {/* Search Bar */}
-          <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          </div>
-
-          {/* Controls Row */}
-          <div className="flex flex-wrap gap-4 items-center">
-          {/* Add Employee Button */}
+        {/* TAB NAVIGATION */}
+        <div className="flex gap-4 mb-6 border-b border-gray-200 bg-white rounded-t-lg px-6 py-4">
           <button
-            onClick={() => {
-              setEditingEmployeeId(null);
-              resetForm();
-              setIsModalOpen(true);
-            }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
-            style={{ display: isReadOnly ? 'none' : 'block' }}
+            onClick={() => setActiveTab('active')}
+            className={`pb-3 font-semibold transition-colors ${ 
+              activeTab === 'active'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
           >
-            + Add Employee
+            Active Employees
           </button>
-
-          {/* Filter Menu */}
-          <div className="relative" ref={filterMenuRef}>
+          {isManager && (
             <button
-              onClick={() => setShowFilterMenu(!showFilterMenu)}
-              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
+              onClick={() => setActiveTab('deleted')}
+              className={`pb-3 font-semibold transition-colors relative ${ 
+                activeTab === 'deleted'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
             >
-              Filter {(filterRole || filterPasswordStatus) && '✓'}
+              Deleted Employees
+              {deletedEmployeeList.length > 0 && (
+                <span className="absolute -top-2 right-0 bg-red-600 text-white text-xs rounded-full px-2 py-0.5 min-w-max">
+                  {deletedEmployeeList.length}
+                </span>
+              )}
             </button>
-            {showFilterMenu && (
-              <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-56">
-                <div className="p-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Role
-                    </label>
-                    <select
-                      value={filterRole}
-                      onChange={handleFilterRoleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                      <option value="">All Roles</option>
-                      <option value="driver">Driver</option>
-                      <option value="dispatcher">Dispatcher</option>
-                      <option value="safety_officer">Safety Officer</option>
-                      <option value="financial_analyst">Financial Analyst</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Password Status
-                    </label>
-                    <select
-                      value={filterPasswordStatus}
-                      onChange={handleFilterPasswordStatusChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                      <option value="">All</option>
-                      <option value="ready">✓ Ready</option>
-                      <option value="not_ready">⚠️ Not Ready</option>
-                    </select>
-                  </div>
-                  <button
-                    onClick={clearFilters}
-                    className="w-full bg-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-400 text-sm"
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sort Menu */}
-          <div className="relative" ref={sortMenuRef}>
-            <button
-              onClick={() => setShowSortMenu(!showSortMenu)}
-              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
-            >
-              Sort {sortField && '✓'}
-            </button>
-            {showSortMenu && (
-              <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-48">
-                <div className="p-4 space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sort By
-                    </label>
-                    <select
-                      value={sortField}
-                      onChange={handleSortFieldChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                      <option value="">None</option>
-                      <option value="name">Name</option>
-                      <option value="email">Email</option>
-                      <option value="role">Role</option>
-                      <option value="createdAt">Joined Date</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Order
-                    </label>
-                    <select
-                      value={sortOrder}
-                      onChange={handleSortOrderChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      disabled={!sortField}
-                    >
-                      <option value="asc">Ascending</option>
-                      <option value="desc">Descending</option>
-                    </select>
-                  </div>
-                  <button
-                    onClick={clearSort}
-                    className="w-full bg-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-400 text-sm"
-                  >
-                    Clear Sort
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+          )}
         </div>
 
-        {/* Employees Table */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {isLoading ? (
-          <div className="text-center py-8 text-gray-600">Loading employees...</div>
-        ) : paginatedEmployees.length === 0 ? (
-          <div className="text-center py-8 text-gray-600">
-            {employeeList.length === 0 ? 'No employees found. Add one to get started!' : 'No employees match your filters.'}
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
-                    {isDriverRegistry && <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Driver Status</th>}
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Password Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
-                    {!isReadOnly && <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedEmployees.map((employee) => (
-                    <tr key={employee?._id || Math.random()} className={`border-b hover:bg-gray-50 ${!employee?.isPasswordSet ? 'bg-red-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{employee?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{employee?.email || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(employee?.role)}`}>
-                          {employee?.role ? employee.role.replaceAll('_', ' ').toUpperCase() : 'N/A'}
-                        </span>
-                      </td>
-                      {isDriverRegistry && (
-                        <td className="px-4 py-3 text-sm">
-                          {employee?.role === 'driver' && employee?.status ? (
-                            <button
-                              onClick={() => handleOpenStatusChangeModal(employee)}
-                              disabled={!canChangeDriverStatus || employee.status === 'on_trip'}
-                              className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
-                                !canChangeDriverStatus || employee.status === 'on_trip'
-                                  ? `${getDriverStatusBadgeColor(employee.status)} cursor-not-allowed opacity-60`
-                                  : `${getDriverStatusBadgeColor(employee.status)} hover:shadow-md hover:brightness-95`
-                              }`}
-                              title={
-                                !canChangeDriverStatus
-                                  ? 'You do not have permission to change driver status'
-                                  : employee.status === 'on_trip'
-                                  ? 'Cannot change status while driver is on trip'
-                                  : 'Click to change driver status'
-                              }
-                            >
-                              {employee.status.replace('_', ' ').toUpperCase()}
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 text-xs">N/A</span>
-                          )}
-                        </td>
-                      )}
-                      <td className="px-4 py-3 text-sm">
-                        {employee?.isPasswordSet ? (
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            ✓ Ready
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                            ⚠️ Not Ready
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {employee?.createdAt ? new Date(employee.createdAt).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2" style={{ display: isReadOnly ? 'none' : 'flex' }}>
-                        <button
-                          onClick={() => handleOpenSendEmailModal(employee)}
-                          className="text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 bg-indigo-500 hover:bg-indigo-600"
-                        >
-                          ✉️
-                          Email
-                        </button>
-                        <button
-                          onClick={() => handleEdit(employee)}
-                          disabled={!employee.isPasswordSet}
-                          className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 ${
-                            !employee.isPasswordSet
-                              ? 'bg-gray-400 cursor-not-allowed opacity-60'
-                              : 'bg-blue-500 hover:bg-blue-600'
-                          }`}
-                          title={!employee.isPasswordSet ? 'Cannot edit - employee must set password first' : ''}
-                        >
-                          <FaEdit className="text-sm" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(employee._id)}
-                          disabled={deletingEmployeeId === employee._id}
-                          className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-300 ${
-                            deletingEmployeeId === employee._id
-                              ? 'bg-red-400 cursor-not-allowed opacity-70'
-                              : 'bg-red-500 hover:bg-red-600'
-                          }`}
-                        >
-                          {deletingEmployeeId === employee._id ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              Deleting...
-                            </>
-                          ) : (
-                            <>
-                              <FaTrash className="text-sm" />
-                              Delete
-                            </>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* ACTIVE EMPLOYEES TAB */}
+        {activeTab === 'active' && (
+          <div className="bg-white rounded-b-lg shadow-md">
+            {/* Search Bar */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && !isModalOpen && (
-              <PaginationContainer className="justify-between">
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages} ({processedEmployees.length} total)
+            {/* Controls Row */}
+            <div className="px-6 py-4 flex flex-wrap gap-4 items-center border-b border-gray-200">
+              <button
+                onClick={() => {
+                  setEditingEmployeeId(null);
+                  resetForm();
+                  setIsModalOpen(true);
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                style={{ display: isReadOnly ? 'none' : 'block' }}
+              >
+                + Add Employee
+              </button>
+
+              {/* Filter Menu */}
+              <div className="relative" ref={filterMenuRef}>
+                <button
+                  onClick={() => setShowFilterMenu(!showFilterMenu)}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
+                >
+                  Filter {(filterRole || filterPasswordStatus) && '✓'}
+                </button>
+                {showFilterMenu && (
+                  <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-56">
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select
+                          value={filterRole}
+                          onChange={handleFilterRoleChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="">All Roles</option>
+                          <option value="driver">Driver</option>
+                          <option value="dispatcher">Dispatcher</option>
+                          <option value="safety_officer">Safety Officer</option>
+                          <option value="financial_analyst">Financial Analyst</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Password Status</label>
+                        <select
+                          value={filterPasswordStatus}
+                          onChange={handleFilterPasswordStatusChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="">All</option>
+                          <option value="ready">✓ Ready</option>
+                          <option value="not_ready">⚠️ Not Ready</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={clearFilters}
+                        className="w-full bg-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-400 text-sm"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sort Menu */}
+              <div className="relative" ref={sortMenuRef}>
+                <button
+                  onClick={() => setShowSortMenu(!showSortMenu)}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
+                >
+                  Sort {sortField && '✓'}
+                </button>
+                {showSortMenu && (
+                  <div className="absolute top-full mt-2 left-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-48">
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                        <select
+                          value={sortField}
+                          onChange={handleSortFieldChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="">None</option>
+                          <option value="name">Name</option>
+                          <option value="email">Email</option>
+                          <option value="role">Role</option>
+                          <option value="createdAt">Joined Date</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+                        <select
+                          value={sortOrder}
+                          onChange={handleSortOrderChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          disabled={!sortField}
+                        >
+                          <option value="asc">Ascending</option>
+                          <option value="desc">Descending</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={clearSort}
+                        className="w-full bg-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-400 text-sm"
+                      >
+                        Clear Sort
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Employees Table */}
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-600">Loading employees...</div>
+            ) : paginatedEmployees.length === 0 ? (
+              <div className="text-center py-8 text-gray-600">
+                {employeeList.length === 0 ? 'No employees found. Add one to get started!' : 'No employees match your filters.'}
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 border-b">
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                        {isDriverRegistry && <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Driver Status</th>}
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Password Status</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
+                        {!isReadOnly && <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedEmployees.map((employee) => (
+                        <tr key={employee?._id || Math.random()} className={`border-b hover:bg-gray-50 ${!employee?.isPasswordSet ? 'bg-red-50' : ''}`}>
+                          <td className="px-4 py-3 text-sm text-gray-900">{employee?.name || 'N/A'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{employee?.email || 'N/A'}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(employee?.role)}`}>
+                              {employee?.role ? employee.role.replaceAll('_', ' ').toUpperCase() : 'N/A'}
+                            </span>
+                          </td>
+                          {isDriverRegistry && (
+                            <td className="px-4 py-3 text-sm">
+                              {employee?.role === 'driver' && employee?.status ? (
+                                <button
+                                  onClick={() => handleOpenStatusChangeModal(employee)}
+                                  disabled={!canChangeDriverStatus || employee.status === 'on_trip'}
+                                  className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
+                                    !canChangeDriverStatus || employee.status === 'on_trip'
+                                      ? `${getDriverStatusBadgeColor(employee.status)} cursor-not-allowed opacity-60`
+                                      : `${getDriverStatusBadgeColor(employee.status)} hover:shadow-md hover:brightness-95`
+                                  }`}
+                                  title={
+                                    !canChangeDriverStatus
+                                      ? 'You do not have permission to change driver status'
+                                      : employee.status === 'on_trip'
+                                      ? 'Cannot change status while driver is on trip'
+                                      : 'Click to change driver status'
+                                  }
+                                >
+                                  {employee.status.replace('_', ' ').toUpperCase()}
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-xs">N/A</span>
+                              )}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 text-sm">
+                            {employee?.isPasswordSet ? (
+                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Ready
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                ⚠️ Not Ready
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {employee?.createdAt ? new Date(employee.createdAt).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-center space-x-2 flex justify-center gap-2" style={{ display: isReadOnly ? 'none' : 'flex' }}>
+                            <button
+                              onClick={() => handleOpenSendEmailModal(employee)}
+                              className="text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 bg-indigo-500 hover:bg-indigo-600"
+                            >
+                              ✉️ Email
+                            </button>
+                            <button
+                              onClick={() => handleEdit(employee)}
+                              disabled={!employee.isPasswordSet}
+                              className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-200 ${
+                                !employee.isPasswordSet
+                                  ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                                  : 'bg-blue-500 hover:bg-blue-600'
+                              }`}
+                              title={!employee.isPasswordSet ? 'Cannot edit - employee must set password first' : ''}
+                            >
+                              <FaEdit className="text-sm" /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(employee._id)}
+                              disabled={deletingEmployeeId === employee._id}
+                              className={`text-white px-3 py-1 rounded flex items-center gap-1 transition-all duration-300 ${
+                                deletingEmployeeId === employee._id
+                                  ? 'bg-red-400 cursor-not-allowed opacity-70'
+                                  : 'bg-red-500 hover:bg-red-600'
+                              }`}
+                            >
+                              {deletingEmployeeId === employee._id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <FaTrash className="text-sm" /> Delete
+                                </>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="space-x-2">
+
+                {/* Pagination */}
+                {totalPages > 1 && !isModalOpen && (
+                  <PaginationContainer className="justify-between">
+                    <div className="text-sm text-gray-600">
+                      Page {currentPage} of {totalPages} ({processedEmployees.length} total)
+                    </div>
+                    <div className="space-x-2">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
@@ -905,10 +991,83 @@ export default function EmployeeManagement() {
                 </div>
               </PaginationContainer>
             )}
-          </>
+              </>
+            )}
+          </div>
         )}
-      </div>
 
+        {/* DELETED EMPLOYEES TAB */}
+        {activeTab === 'deleted' && isManager && (
+          <div className="bg-white rounded-b-lg shadow-md">
+            {/* Search Bar */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <input
+                type="text"
+                placeholder="Search deleted employees..."
+                value={deletedSearchTerm}
+                onChange={(e) => setDeletedSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Deleted Employees Table */}
+            {deletedEmployeeList.length === 0 ? (
+              <div className="text-center py-8 text-gray-600">
+                No deleted employees found.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 border-b">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Deleted</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deletedEmployeeList.map((employee) => (
+                      <tr key={employee._id} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-900">{employee.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{employee.email}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(employee.role)}`}>
+                            {employee.role.replaceAll('_', ' ').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {formattedDate(employee.deletedAt || employee.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center flex justify-center gap-2">
+                          <button
+                            onClick={() => handleRecover(employee._id)}
+                            disabled={recoveringEmployeeId === employee._id}
+                            className={`text-white px-4 py-2 rounded flex items-center gap-1 transition-all duration-200 ${
+                              recoveringEmployeeId === employee._id
+                                ? 'bg-gray-400 cursor-not-allowed opacity-70'
+                                : 'bg-green-500 hover:bg-green-600'
+                            }`}
+                          >
+                            {recoveringEmployeeId === employee._id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Recovering...
+                              </>
+                            ) : (
+                              <>✓ Recover</>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Send Email Modal */}
@@ -964,7 +1123,7 @@ export default function EmployeeManagement() {
                 <textarea
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
-                  className="w-full min-h-[160px] rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full min-h-40 rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:ring-blue-500"
                   placeholder="Write your message to the employee"
                 />
               </div>

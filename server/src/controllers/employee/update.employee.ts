@@ -23,11 +23,12 @@ const updateEmployee = async (req, res) => {
       return response(res, 400, false, 'Employee ID is required');
     }
 
-    // Check if employee exists and belongs to manager's company
+    // Check if employee exists, is active, and belongs to manager's company
     const employee = await User.findOne({
       _id: employeeId,
       company: managerCompanyId,
       role: { $ne: 'manager' },
+      isDeleted: false,
     });
 
     if (!employee) {

@@ -13,6 +13,7 @@ import Vehicle from '../pages/vehicle/vehicle';
 import Trip from '../pages/trip/trip';
 import DriverTripHistory from '../pages/trip/DriverTripHistory';
 import AddEmployee from '../pages/employee/AddEmployee';
+import EmployeeRecovery from '../pages/employee/EmployeeRecovery';
 import MaintenancePage from '../pages/maintenance/Maintenance';
 import Expense from '../pages/expense/Expense';
 import Performance from '../pages/performance/Performance';
@@ -178,6 +179,10 @@ export const router = createBrowserRouter([
       {
         path: 'team',
         element: <PrivateRoute requiredRoles={['manager'] as UserRole[]}><AddEmployee /></PrivateRoute>,
+      },
+      {
+        path: 'employee-recovery',
+        element: <PrivateRoute requiredRoles={['manager'] as UserRole[]}><EmployeeRecovery /></PrivateRoute>,
       },
       { 
         path: 'maintenance',

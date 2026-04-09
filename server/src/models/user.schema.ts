@@ -15,6 +15,7 @@ interface IUser extends Document {
   emailVerificationExpires: Date | null;
   role: UserRole;
   company?: mongoose.Types.ObjectId;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +77,10 @@ const userSchema = new Schema<IUser>(
     company: {
       type: Schema.Types.ObjectId,
       ref: 'Company',
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

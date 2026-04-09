@@ -16,8 +16,7 @@ export const rolePermissions: Record<UserRole, RoleConfig> = {
       '/main/dashboard',
       '/main/vehicle-registry',
       '/main/trip-dispatcher',
-      '/main/team',
-      '/main/maintenance',
+      '/main/team',      '/main/employee-recovery',      '/main/maintenance',
       '/main/trip-expense',
       '/main/performance',
       '/main/analytics',
@@ -149,6 +148,12 @@ export const navItems: NavItem[] = [
     label: 'Expenses',
     icon: '💰',
     requiredRoles: ['manager', 'financial_analyst'],
+  },
+  {
+    path: '/main/employee-recovery',
+    label: 'Employee Recovery',
+    icon: '🔄',
+    requiredRoles: ['manager'],
   },
   {
     path: '/main/performance',
