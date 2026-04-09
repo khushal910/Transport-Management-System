@@ -8,6 +8,9 @@ import Driver from '../models/driver.schema';
  * Used for testing and demo purposes
  */
 
+let simulatorInterval: NodeJS.Timeout | null = null;
+let activeLoginCount = 0;
+
 interface GPSUpdate {
   latitude: number;
   longitude: number;
@@ -169,6 +172,49 @@ export async function simulateActiveTripsGPS(): Promise<number> {
   } catch (error) {
     console.error('Error in simulateActiveTripsGPS:', error);
     throw error;
+  }
+}
+
+export function startGPSSimulator(): void {
+  if (simulatorInterval) {
+    return;
+  }
+
+  simulatorInterval = setInterval(async () => {
+    try {
+      const updates = await simulateActiveTripsGPS();
+      if (updates > 0) {
+        console.log(`[GPS Simulator] Generated ${updates} GPS updates`);
+      }
+    } catch (error) {
+      console.error('[GPS Simulator] Error:', error);
+    }
+  }, 10000);
+
+  console.log('[GPS Simulator] Started - will generate mock GPS data every 10 seconds');
+}
+
+export function stopGPSSimulator(): void {
+  if (!simulatorInterval) {
+    return;
+  }
+
+  clearInterval(simulatorInterval);
+  simulatorInterval = null;
+  console.log('[GPS Simulator] Stopped - mock GPS updates are paused until a user logs in');
+}
+
+export function userLoggedIn(): void {
+  activeLoginCount += 1;
+  if (activeLoginCount === 1) {
+    startGPSSimulator();
+  }
+}
+
+export function userLoggedOut(): void {
+  activeLoginCount = Math.max(0, activeLoginCount - 1);
+  if (activeLoginCount === 0) {
+    stopGPSSimulator();
   }
 }
 

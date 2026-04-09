@@ -5,6 +5,7 @@ import User from '../../models/user.schema';
 import Company from '../../models/company.schema';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { userLoggedIn } from '../../services/gpsSimulator';
 
 const userLogin = async (req, res) => {
   try {
@@ -39,6 +40,8 @@ const userLogin = async (req, res) => {
     const token = jwt.sign(payload, process.env.SECRET_KEY, {
       expiresIn: '1h',
     });
+
+    userLoggedIn();
 
     return res
       .cookie('token', token, {

@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import response from '../../response/response';
+import { userLoggedOut } from '../../services/gpsSimulator';
 
 const userLogout = (req, res) => {
   try {
@@ -12,6 +13,8 @@ const userLogout = (req, res) => {
   } catch (error) {
     return response(res, 500, false, 'Error during logout');
   }
+
+  userLoggedOut();
   return response(res, 200, true, 'User logged out successfully');
 };
 

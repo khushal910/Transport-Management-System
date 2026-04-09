@@ -15,8 +15,6 @@ import analyticsRouter from './src/routers/analytics.route';
 import dashboardRouter from './src/routers/dashboard.route';
 import safetyRouter from './src/routers/safety.route';
 import gpsRouter from './src/routers/gps.route';
-import { simulateActiveTripsGPS } from './src/services/gpsSimulator';
-
 const app = express();
 
 app.use(cors({
@@ -55,21 +53,7 @@ const startServer = async () => {
     await dbConnect();
     app.listen(port, () => {
       console.log(`Server running on http://localhost:${port}`);
-      
-      // Start GPS simulator for active trips (mock data generation)
-      // Runs every 10 seconds to simulate real-time GPS updates
-      setInterval(async () => {
-        try {
-          const updates = await simulateActiveTripsGPS();
-          if (updates > 0) {
-            console.log(`[GPS Simulator] Generated ${updates} GPS updates`);
-          }
-        } catch (error) {
-          console.error('[GPS Simulator] Error:', error);
-        }
-      }, 10000); // Every 10 seconds
-      
-      console.log('[GPS Simulator] Started - will generate mock GPS data every 10 seconds');
+      console.log('[GPS Simulator] Not started yet - waiting for user login to begin mock GPS updates');
     });
   } catch (error) {
     console.error('Failed to connect to database:', error);
