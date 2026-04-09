@@ -9,6 +9,7 @@ import {
   verifyEmailChange,
   updateCompanyProfile,
   UpdateCompanyPayload,
+  sendUserEmail,
 } from '../../api/profileBaseURL';
 import {
   Mail,
@@ -24,6 +25,7 @@ import {
   XCircle,
   AlertTriangle,
   Loader,
+  Send,
 } from 'lucide-react';
 
 /**
@@ -54,6 +56,11 @@ export const UserProfilePage: React.FC = () => {
   const [editableCompanyEmail, setEditableCompanyEmail] = useState('');
   const [companySaving, setCompanySaving] = useState(false);
   const [companyFormError, setCompanyFormError] = useState<string | null>(null);
+  const [showEmailCompose, setShowEmailCompose] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -303,6 +310,53 @@ export const UserProfilePage: React.FC = () => {
 
   const handleRetry = () => {
     loadProfile();
+  };
+
+  const handleSendEmailToManager = async () => {
+    // Validate form
+    if (!emailSubject.trim()) {
+      setEmailError('Subject is required');
+      return;
+    }
+    if (!emailMessage.trim()) {
+      setEmailError('Message is required');
+      return;
+    }
+    if (emailSubject.trim().length < 3) {
+      setEmailError('Subject must be at least 3 characters');
+      return;
+    }
+    if (emailMessage.trim().length < 5) {
+      setEmailError('Message must be at least 5 characters');
+      return;
+    }
+
+    try {
+      setEmailSending(true);
+      setEmailError(null);
+      await sendUserEmail({
+        subject: emailSubject.trim(),
+        message: emailMessage.trim(),
+        // Don't specify recipientUserId - backend will auto-resolve to company manager
+      });
+      notifySuccess('Email sent to your manager successfully!');
+      setEmailSubject('');
+      setEmailMessage('');
+      setShowEmailCompose(false);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to send email';
+      setEmailError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  const handleCancelEmailCompose = () => {
+    setShowEmailCompose(false);
+    setEmailSubject('');
+    setEmailMessage('');
+    setEmailError(null);
   };
 
   if (loading) {
@@ -787,6 +841,128 @@ export const UserProfilePage: React.FC = () => {
               </div>
             </div>
           ) : null}
+
+          {/* Email to Manager Section */}
+          {personal.role !== 'manager' && (
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                Send Message to Manager
+              </h3>
+              <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+                <p className="text-sm text-gray-700 mb-4">
+                  Have a question or update for your manager? Send them a direct message.
+                </p>
+                <button
+                  onClick={() => setShowEmailCompose(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+                >
+                  <Send className="w-4 h-4" />
+                  Compose Message
+                </button>
+
+                {/* Email Compose Modal */}
+                {showEmailCompose && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                      {/* Modal Header */}
+                      <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+                        <h2 className="text-2xl font-bold text-gray-900">Send Message to Manager</h2>
+                        <button
+                          onClick={handleCancelEmailCompose}
+                          className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                          aria-label="Close"
+                        >
+                          <XCircle className="w-6 h-6" />
+                        </button>
+                      </div>
+
+                      {/* Modal Body */}
+                      <div className="p-6 space-y-4">
+                        {emailError && (
+                          <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="font-medium text-red-900">Error</p>
+                              <p className="text-sm text-red-800">{emailError}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Subject Field */}
+                        <div>
+                          <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                            Subject *
+                          </label>
+                          <input
+                            id="subject"
+                            type="text"
+                            value={emailSubject}
+                            onChange={(e) => setEmailSubject(e.target.value)}
+                            placeholder="Enter subject (e.g., Trip Assignment Question, Schedule Change Request)"
+                            maxLength={120}
+                            disabled={emailSending}
+                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors duration-200"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {emailSubject.length}/120 characters
+                          </p>
+                        </div>
+
+                        {/* Message Field */}
+                        <div>
+                          <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                            Message *
+                          </label>
+                          <textarea
+                            id="message"
+                            value={emailMessage}
+                            onChange={(e) => setEmailMessage(e.target.value)}
+                            placeholder="Write your message here... (5-2000 characters)"
+                            maxLength={2000}
+                            rows={6}
+                            disabled={emailSending}
+                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors duration-200 resize-vertical"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {emailMessage.length}/2000 characters
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Modal Footer */}
+                      <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-6 flex gap-3 justify-end">
+                        <button
+                          onClick={handleCancelEmailCompose}
+                          disabled={emailSending}
+                          className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed font-medium transition-colors duration-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSendEmailToManager}
+                          disabled={emailSending}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed font-medium transition-colors duration-200"
+                        >
+                          {emailSending ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              Send Message
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 flex gap-3">
             <button
