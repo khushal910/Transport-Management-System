@@ -1,6 +1,7 @@
 ﻿import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import response from '../response/response';
+import User from '../models/user.schema';
 
 // Extend Express Request to include user property
 declare global {
@@ -46,6 +47,18 @@ const requiredRole = (...allowedRoles: string[]) => {
       const decoded = jwt.verify(token, secretKey) as DecodedToken;
       const role = decoded.role;
       const companyId = decoded.companyId;
+
+      // Verify the user still exists and has not been deleted
+      const user = await User.findById(decoded.id).select('_id role company');
+      if (!user) {
+        res.clearCookie('token', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'Strict',
+          path: '/',
+        });
+        return response(res, 401, false, 'Your account no longer exists. Please return to the landing page.');
+      }
 
       if (!allowedRoles.includes(role)) {
         return response(res, 403, false, 'Forbidden: Access denied');

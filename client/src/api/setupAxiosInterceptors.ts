@@ -44,18 +44,21 @@ export const setupAxiosInterceptors = () => {
     instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        // Handle 401 Unauthorized responses (token missing, expired, or invalid)
+        // Handle 401 Unauthorized responses (token missing, expired, invalid, or deleted account)
         if (error.response?.status === 401 && !isRedirecting) {
           isRedirecting = true;
 
-          // Clear all stored user data (httpOnly cookie is cleared by backend on logout)
+          const message =
+            error.response?.data?.message ||
+            'Your account no longer exists or your session is invalid. Please return to the landing page.';
+
+          localStorage.setItem('authRedirectMessage', message);
           localStorage.removeItem('user');
           localStorage.removeItem('userId');
           localStorage.removeItem('company');
 
-          // Redirect to login after a short delay
           setTimeout(() => {
-            window.location.href = '/auth/login';
+            window.location.href = '/';
           }, 500);
         }
 

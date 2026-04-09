@@ -36,7 +36,7 @@ const getProfile = async (req, res) => {
     );
 
     if (!user) {
-      return response(res, 404, false, 'User not found');
+      return response(res, 401, false, 'Your account no longer exists. Please return to the landing page.');
     }
 
     // If user is a driver, fetch additional driver details

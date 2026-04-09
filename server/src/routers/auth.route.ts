@@ -24,7 +24,7 @@ authRouter.post('/login', userLogin);
 authRouter.post('/logout', userLogout);
 authRouter.post('/forgot-password', userForgotPassword);
 authRouter.post('/reset-password', userResetPassword);
-authRouter.get('/profile', getProfile);
+authRouter.get('/profile', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), getProfile);
 authRouter.put('/profile', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), updateProfile);
 authRouter.put('/company', requiredRole('manager'), updateCompany);
 authRouter.post('/request-email-verification', requiredRole('manager', 'driver', 'dispatcher', 'safety_officer', 'financial_analyst'), requestEmailVerification);
