@@ -59,29 +59,32 @@ const requestEmailVerification = async (req, res) => {
       return response(res, 409, false, 'This email is already registered with another account. Please use a different email address.');
     }
 
-    // Generate verification token (64 character random string)
+    // Generate verification token (64 character random string) for reference
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
-    // Hash the token for storage
-    const hashedToken = await bcrypt.hash(verificationToken, 10);
+    // Generate 6-character OTP
+    const otp = Math.random().toString().substring(2, 8).padStart(6, '0');
+    const hashedOTP = await bcrypt.hash(otp, 10);
 
     // Set token expiration (30 minutes for email verification)
     const tokenExpiry = new Date(Date.now() + 30 * 60 * 1000);
 
-    // Store pending email and verification token
+    // Store pending email and verification data
     user.pendingNewEmail = trimmedEmail;
-    user.emailVerificationToken = hashedToken;
+    user.emailVerificationToken = verificationToken; // Store reference token as plain text
+    user.emailVerificationOTP = hashedOTP; // Store OTP hashed
     user.emailVerificationExpires = tokenExpiry;
 
     await user.save();
 
     // Send verification email with OTP
-    const emailResult = await sendEmailVerificationOTP(trimmedEmail, verificationToken, user.name);
+    const emailResult = await sendEmailVerificationOTP(trimmedEmail, otp, verificationToken, user.name);
 
     if (!emailResult.success) {
       // Revert token storage if email fails
       user.pendingNewEmail = null;
       user.emailVerificationToken = null;
+      user.emailVerificationOTP = null;
       user.emailVerificationExpires = null;
       await user.save();
 

@@ -37,7 +37,7 @@ const verifyEmailChange = async (req, res) => {
     }
 
     // Check if user has a pending email change
-    if (!user.pendingNewEmail || !user.emailVerificationToken || !user.emailVerificationExpires) {
+    if (!user.pendingNewEmail || !user.emailVerificationOTP || !user.emailVerificationExpires) {
       return response(res, 400, false, 'No pending email change request found. Please request verification first.');
     }
 
@@ -46,15 +46,16 @@ const verifyEmailChange = async (req, res) => {
       // Clear expired token
       user.pendingNewEmail = null;
       user.emailVerificationToken = null;
+      user.emailVerificationOTP = null;
       user.emailVerificationExpires = null;
       await user.save();
 
       return response(res, 400, false, 'Verification code has expired. Please request a new one.');
     }
 
-    // Compare provided token with stored hashed token
-    const isTokenValid = await bcrypt.compare(verificationToken, user.emailVerificationToken);
-    if (!isTokenValid) {
+    // Compare provided OTP with stored hashed OTP
+    const isOTPValid = await bcrypt.compare(verificationToken, user.emailVerificationOTP);
+    if (!isOTPValid) {
       return response(res, 400, false, 'Invalid verification code');
     }
 
@@ -73,6 +74,7 @@ const verifyEmailChange = async (req, res) => {
     user.email = user.pendingNewEmail;
     user.pendingNewEmail = null;
     user.emailVerificationToken = null;
+    user.emailVerificationOTP = null;
     user.emailVerificationExpires = null;
 
     await user.save();

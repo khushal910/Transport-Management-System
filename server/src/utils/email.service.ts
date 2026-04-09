@@ -402,14 +402,14 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
 /**
  * Send email verification OTP for email change
  */
-export const sendEmailVerificationOTP = async (newEmail: string, verificationToken: string, userName: string): Promise<EmailResult> => {
+export const sendEmailVerificationOTP = async (newEmail: string, otp: string, verificationToken: string, userName: string): Promise<EmailResult> => {
   try {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
       throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
     }
 
-    // Extract OTP (first 6 characters of the token for display)
-    const displayOTP = verificationToken.substring(0, 6).toUpperCase();
+    // Use the 6-character OTP directly
+    const displayOTP = otp.toUpperCase();
 
     const mailOptions: SendMailOptions = {
       from: process.env.EMAIL_USER,
@@ -441,8 +441,8 @@ export const sendEmailVerificationOTP = async (newEmail: string, verificationTok
             <p style="color: #374151; font-size: 14px; margin-bottom: 10px;">
               Or use the full verification code:
             </p>
-            <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
-              ${verificationToken}
+            <p style="color: #6b7280; font-size: 12px; word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
+              <strong>Reference ID:</strong> ${verificationToken}
             </p>
 
             <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 20px;">

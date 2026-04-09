@@ -11,6 +11,7 @@ interface IUser extends Document {
   passwordResetExpires: Date | null;
   pendingNewEmail?: string | null;
   emailVerificationToken: string | null;
+  emailVerificationOTP: string | null;
   emailVerificationExpires: Date | null;
   role: UserRole;
   company?: mongoose.Types.ObjectId;
@@ -56,6 +57,10 @@ const userSchema = new Schema<IUser>(
       trim: true,
     },
     emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    emailVerificationOTP: {
       type: String,
       default: null,
     },
