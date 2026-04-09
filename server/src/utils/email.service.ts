@@ -438,13 +438,6 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
               </p>
             </div>
 
-            <p style="color: #374151; font-size: 14px; margin-bottom: 10px;">
-              Or use the full verification code:
-            </p>
-            <p style="color: #6b7280; font-size: 12px; word-break: break-all; background-color: #f0f9ff; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
-              <strong>Reference ID:</strong> ${verificationToken}
-            </p>
-
             <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
               <p style="color: #92400e; font-size: 13px; margin: 0;">
                 <strong>Security Note:</strong> This code will expire in 30 minutes. If you didn't request this change, please ignore this email.
