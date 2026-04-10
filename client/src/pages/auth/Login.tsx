@@ -131,15 +131,15 @@ export default function Login() {
     <div>
       {/* Error Banner */}
       {loginError && (
-        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-3">
-          <FaExclamationCircle className="text-red-600 text-lg mt-0.5 shrink-0" />
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4">
+          <FaExclamationCircle className="mt-0.5 shrink-0 text-lg text-rose-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-800">{loginError}</p>
-            <p className="text-xs text-red-600 mt-1">Please check your email and password and try again.</p>
+            <p className="text-sm font-semibold text-rose-800">{loginError}</p>
+            <p className="mt-1 text-xs text-rose-600">Please check your email and password and try again.</p>
           </div>
           <button
             onClick={() => setLoginError('')}
-            className="text-red-400 hover:text-red-600 shrink-0 text-lg"
+            className="shrink-0 text-lg text-rose-400 hover:text-rose-600"
           >
             ✕
           </button>
@@ -149,12 +149,12 @@ export default function Login() {
       {/* Page Title */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-950">Welcome Back</h2>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${passwordConfig.getEnvironmentBadge().color}`}>
             {passwordConfig.getEnvironmentBadge().label}
           </span>
         </div>
-        <p className="text-gray-600">Sign in to access your fleet dashboard</p>
+        <p className="text-slate-600">Sign in to access your fleet dashboard</p>
       </div>
 
       <form className="space-y-5" onSubmit={handleLogin}>
@@ -166,10 +166,10 @@ export default function Login() {
           <input
             type="email"
             placeholder="you@example.com"
-            className={`w-full px-4 py-3 border-2 rounded-lg transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed ${
+            className={`w-full rounded-xl border px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 ${
               errors.email 
-                ? 'border-red-500 bg-red-50 focus:outline-none focus:ring-red-500' 
-                : 'border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                ? 'border-rose-500 bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-500/35' 
+                : 'border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/35 focus:border-blue-500'
             }`}
             value={loginData.email}
             ref={(el) => (inputRefs.current[0] = el)}
@@ -181,7 +181,7 @@ export default function Login() {
             disabled={isLoading}
           />
           {errors.email && (
-            <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+            <p className="mt-2 flex items-center gap-1 text-sm text-rose-600">
               <span>●</span> {errors.email}
             </p>
           )}
@@ -196,10 +196,10 @@ export default function Login() {
             <input
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              className={`w-full px-4 py-3 border-2 rounded-lg transition-colors pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+              className={`w-full rounded-xl border px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 ${
                 errors.password 
-                  ? 'border-red-500 bg-red-50 focus:outline-none focus:ring-red-500' 
-                  : 'border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  ? 'border-rose-500 bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-500/35' 
+                  : 'border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/35 focus:border-blue-500'
               }`}
               value={loginData.password}
               ref={(el) => (inputRefs.current[1] = el)}
@@ -213,14 +213,14 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700 disabled:opacity-50"
+              className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 hover:text-slate-700 disabled:opacity-50"
               disabled={isLoading}
             >
               {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+            <p className="mt-2 flex items-center gap-1 text-sm text-rose-600">
               <span>●</span> {errors.password}
             </p>
           )}
@@ -241,10 +241,10 @@ export default function Login() {
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 ${
+          className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition-all duration-300 ${
             isLoading
-              ? 'bg-gray-400 cursor-not-allowed opacity-70'
-              : 'bg-linear-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-105'
+              ? 'cursor-not-allowed bg-slate-400 opacity-70'
+              : 'bg-linear-to-r from-blue-600 to-indigo-600 shadow-sm hover:-translate-y-0.5 hover:shadow-md'
           }`}
         >
           {isLoading ? (
@@ -259,12 +259,12 @@ export default function Login() {
       </form>
 
       {/* Register Link */}
-      <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-        <p className="text-gray-600 text-sm">
+      <div className="mt-6 border-t border-slate-200 pt-6 text-center">
+        <p className="text-sm text-slate-600">
           Don't have an account?{' '}
           <Link 
             to="/auth/register" 
-            className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            className="font-semibold text-blue-700 transition-colors hover:text-indigo-700"
           >
             Create one here
           </Link>

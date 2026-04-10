@@ -1,102 +1,73 @@
-// Design System - Professional SaaS Theme
-// Follows: 8px spacing, minimal shadows, clear hierarchy
+// Design System - Modern SaaS Theme
 
 export const designSystem = {
-  // Spacing System (8px base)
   spacing: {
+    '2xs': 'p-1',
     xs: 'p-2',
     sm: 'p-3',
     md: 'p-4',
     lg: 'p-6',
     xl: 'p-8',
     '2xl': 'p-10',
+    '3xl': 'p-12',
   },
 
-  // Gap System for children
   gap: {
     xs: 'gap-2',
     sm: 'gap-3',
     md: 'gap-4',
     lg: 'gap-6',
     xl: 'gap-8',
+    '2xl': 'gap-10',
   },
 
-  // Typography Variants
   typography: {
-    // Page Title
-    pageTitle: 'text-3xl font-semibold text-gray-900',
-    
-    // Section Heading
-    heading: 'text-xl font-semibold text-gray-900',
-    
-    // Subheading
-    subheading: 'text-lg font-medium text-gray-900',
-    
-    // Body
-    body: 'text-sm text-gray-600',
-    
-    // Body Emphasized
-    bodyMedium: 'text-sm font-medium text-gray-900',
-    
-    // Caption
-    caption: 'text-xs text-gray-500',
-    
-    // Label
-    label: 'text-xs font-semibold text-gray-700 uppercase tracking-wider',
+    display: 'text-4xl md:text-5xl font-bold tracking-tight text-slate-950',
+    pageTitle: 'text-3xl md:text-4xl font-bold tracking-tight text-slate-950',
+    heading: 'text-2xl font-semibold text-slate-900',
+    subheading: 'text-lg font-semibold text-slate-900',
+    body: 'text-sm md:text-base text-slate-600',
+    bodyMedium: 'text-sm md:text-base font-medium text-slate-800',
+    caption: 'text-xs text-slate-500',
+    label: 'text-xs font-semibold text-slate-700 uppercase tracking-[0.08em]',
   },
 
-  // Colors - Semantic
   colors: {
-    // Primary
-    primary: 'blue',
-    primaryLight: 'bg-blue-50',
-    primaryText: 'text-blue-600',
-    
-    // Success
-    success: 'bg-green-50',
-    successText: 'text-green-600',
-    successBorder: 'border-green-200',
-    
-    // Error
-    error: 'bg-red-50',
-    errorText: 'text-red-600',
-    errorBorder: 'border-red-200',
-    
-    // Warning
-    warning: 'bg-yellow-50',
-    warningText: 'text-yellow-600',
-    warningBorder: 'border-yellow-200',
-    
-    // Info
-    info: 'bg-blue-50',
-    infoText: 'text-blue-600',
-    infoBorder: 'border-blue-200',
-    
-    // Neutral
-    neutral: 'bg-gray-50',
-    neutralText: 'text-gray-600',
+    primary: 'bg-blue-600',
+    primaryHover: 'hover:bg-blue-700',
+    primaryText: 'text-blue-700',
+    primarySurface: 'bg-blue-50',
+    accent: 'bg-teal-600',
+    accentText: 'text-teal-700',
+    surface: 'bg-white',
+    surfaceMuted: 'bg-slate-50',
+    border: 'border-slate-200',
+    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+    error: 'bg-rose-50 text-rose-700 border-rose-200',
+    info: 'bg-sky-50 text-sky-700 border-sky-200',
   },
 
-  // Border Radius
   radius: {
+    sm: 'rounded-lg',
     default: 'rounded-xl',
     lg: 'rounded-2xl',
-    sm: 'rounded-lg',
+    pill: 'rounded-full',
   },
 
-  // Shadows - Minimal and soft
   shadow: {
-    sm: 'shadow-sm',
-    md: 'shadow',
-    lg: 'shadow-lg',
+    xs: 'shadow-sm',
+    sm: 'shadow-md shadow-slate-900/5',
+    md: 'shadow-lg shadow-slate-900/10',
+    lg: 'shadow-2xl shadow-slate-900/15',
     none: 'shadow-none',
   },
 
-  // Transitions
-  transition: 'transition-all duration-200 ease-in-out',
+  transition: 'transition-all duration-200 ease-out',
 
-  // Component-specific utilities
-  card: 'bg-white border border-gray-200 rounded-xl shadow-sm',
-  input: 'border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-  button: 'rounded-lg font-medium transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2',
+  card: 'bg-white border border-slate-200 rounded-2xl shadow-sm',
+  input:
+    'border border-slate-300 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200',
+  button:
+    'rounded-xl font-semibold transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2',
 };

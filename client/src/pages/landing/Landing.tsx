@@ -18,15 +18,15 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="relative min-h-screen overflow-hidden bg-transparent">
       {/* 3D Scroll Animation Background */}
       <ScrollAnimation3D />
       
       {/* Navigation */}
       <Navbar />
       {authMessage && (
-        <div className="fixed top-20 left-1/2 z-50 w-full max-w-5xl -translate-x-1/2 px-4">
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-sm">
+        <div className="fixed left-1/2 top-24 z-50 w-full max-w-5xl -translate-x-1/2 px-4">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50/95 p-4 text-sm text-rose-900 shadow-md backdrop-blur-sm">
             <p className="font-semibold">Account access revoked</p>
             <p>{authMessage}</p>
           </div>

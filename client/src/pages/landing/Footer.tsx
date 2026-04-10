@@ -38,19 +38,19 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-300 pt-20 pb-8">
+    <footer className="mt-10 border-t border-slate-200 bg-slate-950 pt-20 pb-8 text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           {/* Brand Section */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/25">
                 <FaBoxes className="text-white" />
               </div>
-              <span className="text-xl font-bold text-white">FleetFlow</span>
+              <span className="text-xl font-bold tracking-tight text-white">FleetFlow</span>
             </div>
-            <p className="text-sm text-gray-400 mb-6">
+            <p className="mb-6 text-sm text-slate-400">
               Simplify fleet operations and maximize efficiency with real-time tracking and analytics.
             </p>
             {/* Social Links */}
@@ -63,7 +63,7 @@ export default function Footer() {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 bg-gray-800 hover:bg-blue-600 text-gray-400 hover:text-white rounded-lg flex items-center justify-center transition-all duration-300 group"
+                    className="group flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-slate-400 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-600 hover:text-white"
                     aria-label={social.label}
                   >
                     <Icon className="text-lg group-hover:scale-110 transition-transform" />
@@ -75,13 +75,13 @@ export default function Footer() {
 
           {/* Product Links */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-6">Product</h3>
+            <h3 className="mb-6 text-sm font-semibold uppercase tracking-[0.08em] text-white">Product</h3>
             <ul className="space-y-4">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200"
+                    className="text-sm text-slate-400 transition-colors duration-200 hover:text-blue-300"
                   >
                     {link.label}
                   </a>
@@ -92,13 +92,13 @@ export default function Footer() {
 
           {/* Company Links */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-6">Company</h3>
+            <h3 className="mb-6 text-sm font-semibold uppercase tracking-[0.08em] text-white">Company</h3>
             <ul className="space-y-4">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200"
+                    className="text-sm text-slate-400 transition-colors duration-200 hover:text-blue-300"
                   >
                     {link.label}
                   </a>
@@ -109,13 +109,13 @@ export default function Footer() {
 
           {/* Resources Links */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-6">Resources</h3>
+            <h3 className="mb-6 text-sm font-semibold uppercase tracking-[0.08em] text-white">Resources</h3>
             <ul className="space-y-4">
               {footerLinks.resources.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200"
+                    className="text-sm text-slate-400 transition-colors duration-200 hover:text-blue-300"
                   >
                     {link.label}
                   </a>
@@ -126,17 +126,17 @@ export default function Footer() {
 
           {/* Newsletter */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-6">Newsletter</h3>
-            <p className="text-sm text-gray-400 mb-4">
+            <h3 className="mb-6 text-sm font-semibold uppercase tracking-[0.08em] text-white">Newsletter</h3>
+            <p className="mb-4 text-sm text-slate-400">
               Subscribe to our newsletter for updates and fleet management tips.
             </p>
             <div className="flex">
               <input
                 type="email"
                 placeholder="Your email"
-                className="flex-1 px-4 py-2 bg-gray-800 text-white text-sm border border-gray-700 rounded-l-lg focus:outline-none focus:border-blue-500 transition-colors"
+                className="flex-1 rounded-l-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white transition-colors focus:border-blue-500 focus:outline-none"
               />
-              <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-r-lg hover:bg-blue-700 transition-colors duration-200">
+              <button className="rounded-r-xl bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:from-blue-500 hover:to-indigo-500">
                 Subscribe
               </button>
             </div>
@@ -144,12 +144,12 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-800 my-8"></div>
+        <div className="my-8 border-t border-slate-800"></div>
 
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Copyright */}
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-slate-400">
             &copy; {currentYear} FleetFlow. All rights reserved.
           </p>
 
@@ -159,7 +159,7 @@ export default function Footer() {
               <a
                 key={link.label}
                 href={link.href}
-                className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200"
+                className="text-sm text-slate-400 transition-colors duration-200 hover:text-blue-300"
               >
                 {link.label}
               </a>
@@ -168,8 +168,8 @@ export default function Footer() {
         </div>
 
         {/* Status Banner */}
-        <div className="mt-8 p-4 bg-gray-800 rounded-lg border border-gray-700 text-center">
-          <p className="text-sm text-gray-400">
+        <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4 text-center">
+          <p className="text-sm text-slate-400">
             All systems operational{' '}
             <span className="inline-block w-2 h-2 bg-green-500 rounded-full ml-2"></span>
           </p>

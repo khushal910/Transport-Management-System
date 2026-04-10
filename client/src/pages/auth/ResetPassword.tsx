@@ -133,22 +133,20 @@ export default function ResetPassword() {
 
   if (isReset) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <FaCheckCircle className="text-green-600 text-2xl" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Password Reset Successful</h2>
-          <p className="text-gray-600 mb-6">
-            Your password has been reset successfully. Click the button below to login with your new password.
-          </p>
-          <button
-            onClick={() => navigate('/auth/login')}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300"
-          >
-            Go to Login
-          </button>
+      <div className="space-y-5 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-emerald-100 text-emerald-600">
+          <FaCheckCircle className="text-2xl" />
         </div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-950">Password Reset Successful</h2>
+        <p className="text-sm text-slate-600">
+          Your password has been reset successfully. Log in with your new password.
+        </p>
+        <button
+          onClick={() => navigate('/auth/login')}
+          className="w-full rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-3 font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+        >
+          Go to Login
+        </button>
       </div>
     );
   }
@@ -156,8 +154,8 @@ export default function ResetPassword() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Your Password</h2>
-        <p className="text-gray-600">
+        <h2 className="mb-2 text-2xl font-bold tracking-tight text-slate-950">Reset Your Password</h2>
+        <p className="text-slate-600">
           Enter a new password to regain access to your account.
         </p>
       </div>
@@ -178,8 +176,8 @@ export default function ResetPassword() {
               placeholder="Enter new password"
               value={formData.password}
               onChange={handleChange}
-              className={`w-full border pl-10 pr-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+              className={`w-full rounded-xl border py-3 pl-10 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 ${
+                errors.password ? 'border-rose-500 focus:ring-rose-500/35' : 'border-slate-300 focus:ring-blue-500/35 focus:border-blue-500'
               }`}
             />
             <button
@@ -191,15 +189,15 @@ export default function ResetPassword() {
             </button>
           </div>
           {errors.password && (
-            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <p className="mt-1 flex items-center gap-1 text-sm text-rose-600">
               <FaTimesCircle className="text-xs" /> {errors.password}
             </p>
           )}
 
           {/* Password Requirements */}
           {formData.password && (
-            <div className="mt-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <p className="text-xs font-medium text-gray-700 mb-2">Password Requirements:</p>
+            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">Password Requirements:</p>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs">
                   {passwordRequirements.minLength ? (
@@ -271,8 +269,8 @@ export default function ResetPassword() {
               placeholder="Confirm your password"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className={`w-full border pl-10 pr-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+              className={`w-full rounded-xl border py-3 pl-10 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 ${
+                errors.confirmPassword ? 'border-rose-500 focus:ring-rose-500/35' : 'border-slate-300 focus:ring-blue-500/35 focus:border-blue-500'
               }`}
             />
             <button
@@ -284,7 +282,7 @@ export default function ResetPassword() {
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <p className="mt-1 flex items-center gap-1 text-sm text-rose-600">
               <FaTimesCircle className="text-xs" /> {errors.confirmPassword}
             </p>
           )}
@@ -300,15 +298,15 @@ export default function ResetPassword() {
         <button
           type="submit"
           disabled={loading || !formData.password || !formData.confirmPassword}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition duration-200"
+          className="w-full rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 py-3 font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {loading ? 'Resetting Password...' : 'Reset Password'}
         </button>
       </form>
 
-      <p className="mt-6 text-sm text-gray-600 text-center">
+      <p className="mt-6 text-center text-sm text-slate-600">
         Remember your password?{' '}
-        <Link to="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
+        <Link to="/auth/login" className="font-semibold text-blue-700 hover:text-indigo-700">
           Login
         </Link>
       </p>

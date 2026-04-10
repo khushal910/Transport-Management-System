@@ -1,9 +1,17 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import authBaseURL from '../api/authBaseURL'
 import { useNotification } from '../hooks/useNotification'
 import NotificationBanner from '../components/NotificationPanel'
-import { Menu, X, LogOut, ChevronDown, User } from 'lucide-react'
+import {
+  Bell,
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  LogOut,
+  Search,
+  User,
+} from 'lucide-react'
 import { navItems, UserRole } from '../config/rolePermissions'
 import { useSidebar } from '../context/SidebarContext'
 
@@ -59,70 +67,89 @@ const MainLayout = () => {
     item.requiredRoles.includes(userRole)
   )
 
+  const currentPageLabel = useMemo(() => {
+    return filteredNavItems.find((item) => isActive(item.path))?.label || 'Workspace'
+  }, [filteredNavItems, location.pathname])
+
+  const breadcrumbLabel = currentPageLabel === 'Dashboard' ? 'Overview' : currentPageLabel
+
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="app-shell min-h-screen text-slate-900">
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out z-40 ${
-          sidebarOpen ? 'w-64' : 'w-20'
+        className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200/80 bg-white/85 backdrop-blur-xl transition-all duration-300 ease-in-out ${
+          sidebarOpen ? 'w-72' : 'w-24'
         }`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-          {sidebarOpen && (
-            <h1 className="text-xl font-bold text-blue-600">Fleet Flow</h1>
-          )}
+        <div className="flex h-20 items-center justify-between border-b border-slate-200/80 px-5">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-linear-to-br from-blue-600 to-indigo-600 text-lg text-white shadow-md shadow-blue-600/35">
+              ⚡
+            </div>
+            {sidebarOpen ? (
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-bold tracking-tight text-slate-900">FleetFlow</h1>
+                <p className="truncate text-xs text-slate-500">Transport Management Cloud</p>
+              </div>
+            ) : null}
+          </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-colors duration-200"
             title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {sidebarOpen ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-6 px-3">
-          <div className="space-y-1">
+        <nav className="app-scroll flex-1 overflow-y-auto px-3 py-5">
+          <div className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+            {sidebarOpen ? 'Navigation' : 'Menu'}
+          </div>
+          <div className="space-y-1.5">
             {filteredNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                   isActive(item.path)
-                    ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'border border-blue-200 bg-linear-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm'
+                    : 'text-slate-600 hover:border hover:border-slate-200 hover:bg-white hover:text-slate-900'
                 }`}
                 title={!sidebarOpen ? item.label : ''}
               >
-                <span className="text-lg shrink-0">{item.icon}</span>
-                {sidebarOpen && <span>{item.label}</span>}
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/70 text-base shadow-sm ring-1 ring-slate-200/80">
+                  {item.icon}
+                </span>
+                {sidebarOpen ? <span className="truncate">{item.label}</span> : null}
               </Link>
             ))}
           </div>
         </nav>
 
         {/* User Profile at Bottom */}
-        <div className="border-t border-gray-200 px-3 py-4">
+        <div className="border-t border-slate-200/80 px-3 py-4">
           <div className="relative">
             <button
               onClick={() => setShowProfilePanel(!showProfilePanel)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 ${
-                showProfilePanel ? 'bg-gray-100' : ''
+              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-colors duration-200 ${
+                showProfilePanel ? 'bg-slate-100' : 'hover:bg-slate-100'
               }`}
             >
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-linear-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white shadow-md shadow-blue-600/30">
                 {user()?.name?.charAt(0)?.toUpperCase()}
               </div>
-              {sidebarOpen && (
+              {sidebarOpen ? (
                 <>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user()?.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{company()?.name}</p>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="truncate text-sm font-semibold text-slate-900">{user()?.name}</p>
+                    <p className="truncate text-xs text-slate-500">{company()?.name}</p>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
                 </>
-              )}
+              ) : null}
             </button>
 
             {/* Profile Dropdown */}
@@ -132,13 +159,13 @@ const MainLayout = () => {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowProfilePanel(false)}
                 />
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                  <div className="p-4 border-b border-gray-200">
-                    <p className="text-sm font-semibold text-gray-900">{user()?.name}</p>
-                    <p className="text-xs text-gray-500">{user()?.email}</p>
-                    <p className="text-xs text-gray-500 mt-1">{company()?.name}</p>
+                <div className="absolute bottom-full left-0 right-0 z-50 mb-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10">
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-sm font-semibold text-slate-900">{user()?.name}</p>
+                    <p className="text-xs text-slate-500">{user()?.email}</p>
+                    <p className="mt-1 text-xs text-slate-500">{company()?.name}</p>
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">
+                      <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">
                         {userRole === 'safety_officer' ? '🛡️ Safety Officer' :
                          userRole === 'financial_analyst' ? '📊 Financial Analyst' :
                          userRole === 'dispatcher' ? '🚚 Dispatcher' :
@@ -149,7 +176,7 @@ const MainLayout = () => {
                   <Link
                     to="/main/profile"
                     onClick={() => setShowProfilePanel(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100"
+                    className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
                   >
                     <User className="w-4 h-4" />
                     View Profile
@@ -159,7 +186,7 @@ const MainLayout = () => {
                       handleLogout()
                       setShowProfilePanel(false)
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-rose-50 hover:text-rose-700"
                   >
                     <LogOut className="w-4 h-4" />
                     Logout
@@ -172,16 +199,42 @@ const MainLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-        sidebarOpen ? 'ml-64' : 'ml-20'
+      <div className={`min-h-screen flex-1 transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'ml-72' : 'ml-24'
       }`}>
-        {/* Notification Area */}
-        <div className="relative">
+        <header className="sticky top-0 z-30 px-4 pt-4 md:px-6">
+          <div className="app-glass flex flex-wrap items-center justify-between gap-4 border px-4 py-3 shadow-sm md:px-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.09em] text-slate-500">Workspace</p>
+              <h2 className="text-lg font-semibold text-slate-900 md:text-xl">{breadcrumbLabel}</h2>
+            </div>
+            <div className="flex flex-1 items-center justify-end gap-3 md:max-w-xl">
+              <label className="relative hidden w-full md:block">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  readOnly
+                  value="Search modules"
+                  className="w-full rounded-xl border border-slate-300 bg-white/90 py-2 pl-10 pr-4 text-sm text-slate-500 outline-none"
+                />
+              </label>
+              <button
+                type="button"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-300 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50"
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="px-4 pt-4 md:px-6">
           <NotificationBanner />
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto px-0 pb-8 pt-2">
           <Outlet />
         </main>
       </div>

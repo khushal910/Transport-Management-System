@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import html2pdf from "html2pdf.js";
 import ExcelJS from "exceljs";
+import { PageContainer, PageHeader } from "../../components/ui";
 
 interface FleetKPI {
   totalTrips: number;
@@ -274,25 +275,29 @@ const Analytics = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow flex justify-center items-center py-12">
-        <div className="text-gray-500 flex items-center gap-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          Loading analytics...
+      <PageContainer>
+        <div className="app-panel flex items-center justify-center py-14">
+          <div className="flex items-center gap-2 text-slate-500">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+            Loading analytics...
+          </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   if (!analyticsData) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow">
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No analytics data available</p>
-          <p className="text-gray-400 text-sm mt-1">
-            Create some trips and expenses to see analytics
-          </p>
+      <PageContainer>
+        <div className="app-panel">
+          <div className="py-12 text-center">
+            <p className="text-lg text-slate-500">No analytics data available</p>
+            <p className="mt-1 text-sm text-slate-400">
+              Create some trips and expenses to see analytics
+            </p>
+          </div>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -317,40 +322,45 @@ const Analytics = () => {
   }));
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
+    <PageContainer>
+      <PageHeader
+        title="Analytics Dashboard"
+        description="Fleet-wide insights and performance metrics"
+        eyebrow="Performance"
+      />
+
+      <div className="app-panel p-6">
+
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-        <p className="text-gray-600">
-          Fleet-wide insights and performance metrics
-        </p>
+        <p className="text-sm font-semibold uppercase tracking-[0.08em] text-slate-500">Export & Reporting</p>
       </div>
 
       {/* Date Range Filter - Not included in PDF */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Select Date Range</h3>
+        <h3 className="mb-3 text-lg font-semibold text-slate-900">Select Date Range</h3>
         <div className="flex gap-4 items-end flex-wrap">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Start Date</label>
             <input
               type="date"
               value={dateRange.startDate}
               onChange={(e) => handleDateRangeChange({ startDate: e.target.value, endDate: dateRange.endDate })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="rounded-xl border border-slate-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/35"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">End Date</label>
             <input
               type="date"
               value={dateRange.endDate}
               onChange={(e) => handleDateRangeChange({ startDate: dateRange.startDate, endDate: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="rounded-xl border border-slate-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/35"
             />
           </div>
           <button
             onClick={fetchAnalytics}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+            className="rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-6 py-2 font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             Apply Filter
           </button>
@@ -361,13 +371,13 @@ const Analytics = () => {
       <div className="flex gap-3 mb-8">
         <button
           onClick={exportToExcel}
-          className="bg-green-600 cursor-pointer text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+          className="flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors duration-200 hover:bg-emerald-700"
         >
           📊 Export to Excel
         </button>
         <button
           onClick={exportToPDF}
-          className="bg-red-600 cursor-pointer text-white px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+          className="flex cursor-pointer items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 font-semibold text-white transition-colors duration-200 hover:bg-rose-700"
         >
           📄 Export to PDF
         </button>
@@ -581,7 +591,8 @@ const Analytics = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </PageContainer>
   );
 };
 

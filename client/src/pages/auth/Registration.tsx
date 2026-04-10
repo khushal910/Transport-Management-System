@@ -115,18 +115,18 @@ export default function Register() {
       {/* Page Title */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-950">Create Account</h2>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${passwordConfig.getEnvironmentBadge().color}`}>
             {passwordConfig.getEnvironmentBadge().label}
           </span>
         </div>
-        <p className="text-gray-600">Get started with FleetFlow management system</p>
+        <p className="text-slate-600">Get started with FleetFlow management system</p>
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
         {/* Personal Information Section */}
-        <div className="bg-blue-50 rounded-lg p-5 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+        <div className="mb-6 rounded-2xl border border-blue-200/70 bg-blue-50/55 p-5">
+          <h3 className="mb-4 text-lg font-semibold text-slate-900">Personal Information</h3>
 
           {/* Full Name */}
           <div className="mb-4">
@@ -229,13 +229,13 @@ export default function Register() {
         </div>
 
         {/* Company Information Section */}
-        <div className="border-2 border-blue-200 rounded-lg overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <button
             type="button"
             onClick={() => setExpandCompanySection(!expandCompanySection)}
-            className="w-full bg-blue-50 px-5 py-4 flex items-center justify-between hover:bg-blue-100 transition-colors"
+            className="flex w-full items-center justify-between bg-slate-50 px-5 py-4 transition-colors hover:bg-slate-100"
           >
-            <h3 className="text-lg font-semibold text-gray-900">Company Information</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Company Information</h3>
             <FaChevronDown 
               className={`transition-transform ${expandCompanySection ? 'rotate-180' : ''}`}
               size={18}
@@ -399,9 +399,9 @@ export default function Register() {
         </div>
 
         {/* Info Banner */}
-        <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
-          <p className="text-sm text-gray-700">
-            <strong className="text-gray-900">Manager Role:</strong> You're registering as a manager. After registration, you can invite other employees to your team.
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm text-slate-700">
+            <strong className="text-slate-900">Manager Role:</strong> You're registering as a manager. After registration, you can invite other employees to your team.
           </p>
         </div>
 
@@ -409,10 +409,10 @@ export default function Register() {
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 ${
+          className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition-all duration-300 ${
             isLoading
-              ? 'bg-gray-400 cursor-not-allowed opacity-70'
-              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-105'
+              ? 'cursor-not-allowed bg-slate-400 opacity-70'
+              : 'bg-linear-to-r from-blue-600 to-indigo-600 shadow-sm hover:-translate-y-0.5 hover:shadow-md'
           }`}
         >
           {isLoading ? (
@@ -427,12 +427,12 @@ export default function Register() {
       </form>
 
       {/* Login Link */}
-      <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-        <p className="text-gray-600 text-sm">
+      <div className="mt-6 border-t border-slate-200 pt-6 text-center">
+        <p className="text-sm text-slate-600">
           Already have an account?{' '}
           <Link 
             to="/auth/login" 
-            className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+            className="font-semibold text-blue-700 transition-colors hover:text-indigo-700"
           >
             Sign in here
           </Link>

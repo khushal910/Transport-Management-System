@@ -4,6 +4,7 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   padding?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'default' | 'muted' | 'elevated';
   onClick?: () => void;
 }
 
@@ -15,16 +16,23 @@ const paddingMap = {
   xl: 'p-10',
 };
 
+const variantMap = {
+  default: 'bg-white border border-slate-200 shadow-sm',
+  muted: 'bg-slate-50/90 border border-slate-200 shadow-sm',
+  elevated: 'bg-white border border-slate-100 shadow-lg shadow-slate-900/10',
+};
+
 export const Card: React.FC<CardProps> = ({
   children,
   className = '',
   padding = 'lg',
+  variant = 'default',
   onClick,
 }) => {
   return (
     <div
-      className={`bg-white border border-gray-200 rounded-xl shadow-sm ${paddingMap[padding]} ${
-        onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200' : ''
+      className={`${variantMap[variant]} rounded-2xl ${paddingMap[padding]} ${
+        onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 transition-all duration-200' : ''
       } ${className}`}
       onClick={onClick}
     >

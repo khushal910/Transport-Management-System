@@ -361,7 +361,7 @@ export const UserProfilePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
+      <div className="app-shell min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <div className="h-8 w-48 bg-gray-300 rounded animate-pulse mb-2" />
@@ -394,7 +394,7 @@ export const UserProfilePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
+      <div className="app-shell min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
           <p className="text-gray-600 mb-8">View your personal, company, and account details</p>
@@ -421,7 +421,7 @@ export const UserProfilePage: React.FC = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
+      <div className="app-shell min-h-screen p-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -457,7 +457,7 @@ export const UserProfilePage: React.FC = () => {
   const currentRole = roleConfig[personal.role];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
+    <div className="app-shell min-h-screen p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900">My Profile</h1>

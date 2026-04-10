@@ -3,20 +3,18 @@ import { FaArrowLeft } from 'react-icons/fa6';
 
 export default function AuthLayout() {
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Animated Gradient Blobs - matching landing page */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-1/4 left-1/2 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+    <div className="relative min-h-screen overflow-hidden bg-[#f3f6fb]">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 -left-30 h-110 w-110 rounded-full bg-blue-200/60 blur-3xl" />
+        <div className="absolute -right-35 -top-15 h-100 w-100 rounded-full bg-indigo-200/65 blur-3xl" />
+        <div className="absolute -bottom-30 left-1/3 h-90 w-90 rounded-full bg-teal-200/45 blur-3xl" />
       </div>
 
-      {/* Simple Header */}
-      <header className="relative z-20 border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="relative z-20 border-b border-slate-200/70 bg-white/70 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <Link 
             to="/" 
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition-colors hover:text-blue-700"
           >
             <FaArrowLeft size={14} />
             Back Home
@@ -24,44 +22,37 @@ export default function AuthLayout() {
         </div>
       </header>
 
-      {/* Main Content - Centered Form */}
-      <main className="relative z-10 min-h-[calc(100vh-65px)] flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-8">
+      <main className="relative z-10 flex min-h-[calc(100vh-65px)] items-center justify-center px-4 py-10 sm:px-6">
+        <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-2">
+          <section className="hidden rounded-3xl border border-slate-200/70 bg-white/65 p-8 shadow-sm backdrop-blur-sm lg:flex lg:flex-col lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-700">FleetFlow Platform</p>
+              <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950">
+                Modern fleet operations, built for teams that move fast.
+              </h1>
+              <p className="mt-4 max-w-md text-base text-slate-600">
+                Dispatch smarter, track every asset in real time, and collaborate from a clean SaaS workspace inspired by the latest product experiences.
+              </p>
+            </div>
+
+            <div className="grid gap-3 text-sm text-slate-700">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                Live trip visibility with actionable alerts
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                Role-aware workflows for operations and safety
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                Secure account and profile management end-to-end
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-900/10 sm:p-8">
             <Outlet />
-          </div>
+          </section>
         </div>
       </main>
-
-
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          25% {
-            transform: translate(20px, -50px) scale(1.1);
-          }
-          50% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          75% {
-            transform: translate(50px, 50px) scale(1.05);
-          }
-        }
-
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 }

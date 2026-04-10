@@ -4,6 +4,7 @@ interface PageHeaderProps {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  eyebrow?: string;
 }
 
 /**
@@ -13,14 +14,18 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   description,
   action,
+  eyebrow,
 }) => {
   return (
-    <div className="mb-8 flex items-start justify-between">
+    <div className="mb-8 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm md:flex md:items-start md:justify-between md:gap-6">
       <div className="flex-1">
-        <h1 className="text-3xl font-semibold text-gray-900 mb-2">{title}</h1>
-        {description && <p className="text-base text-gray-600">{description}</p>}
+        {eyebrow ? (
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-blue-700">{eyebrow}</p>
+        ) : null}
+        <h1 className="mb-2 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">{title}</h1>
+        {description ? <p className="max-w-3xl text-sm text-slate-600 md:text-base">{description}</p> : null}
       </div>
-      {action && <div className="ml-6 shrink-0">{action}</div>}
+      {action ? <div className="mt-4 shrink-0 md:mt-0">{action}</div> : null}
     </div>
   );
 };
@@ -47,7 +52,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({
   maxWidth = 'xl',
 }) => {
   return (
-    <div className={`mx-auto ${maxWidthMap[maxWidth]} px-6 py-8 pb-24`}>
+    <div className={`mx-auto ${maxWidthMap[maxWidth]} px-4 py-6 pb-24 md:px-6 lg:px-8`}>
       {children}
     </div>
   );
@@ -64,14 +69,14 @@ interface SectionProps {
  */
 export const Section: React.FC<SectionProps> = ({ children, title, description }) => {
   return (
-    <div className="mb-8">
-      {title && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-          {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+    <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      {title ? (
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+          {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
         </div>
-      )}
-      {children}
+      ) : null}
+      <div>{children}</div>
     </div>
   );
 };

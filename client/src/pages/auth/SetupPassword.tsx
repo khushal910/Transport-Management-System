@@ -144,15 +144,9 @@ export default function SetupPassword() {
   // Show loading state while waiting for token to load from URL
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        </div>
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading setup page...</p>
-        </div>
+      <div className="py-8 text-center">
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+        <p className="mt-3 text-sm font-medium text-slate-600">Loading setup page...</p>
       </div>
     );
   }
@@ -160,146 +154,49 @@ export default function SetupPassword() {
   // Show error if token is missing after component has mounted
   if (mounted && !token) {
     return (
-      <div className="min-h-screen bg-white relative overflow-hidden flex items-center justify-center px-4">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="space-y-4 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-100 text-rose-600">
+          <FaTimesCircle className="text-2xl" />
         </div>
-        <div className="text-center space-y-4 max-w-md">
-          <div className="w-16 h-16 mx-auto bg-linear-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-lg">
-            <FaTimesCircle className="text-white text-3xl" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Setup Link</h2>
-            <p className="text-gray-600 mb-4">The setup link is invalid or has expired.</p>
-            <p className="text-sm text-gray-600 mb-6">Please request a new setup email from your administrator.</p>
-          </div>
-          <button
-            onClick={() => navigate('/auth/login')}
-            className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
-          >
-            Back to Login
-          </button>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">Invalid Setup Link</h2>
+          <p className="mt-2 text-sm text-slate-600">The setup link is invalid or has expired.</p>
         </div>
+        <button
+          onClick={() => navigate('/auth/login')}
+          className="w-full rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-3 font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+        >
+          Back to Login
+        </button>
       </div>
     );
   }
 
   if (isSetup) {
     return (
-      <div className="min-h-screen bg-white relative overflow-hidden">
-        {/* Animated Gradient Blobs Background */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute top-1/3 left-1/2 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      <div className="space-y-6 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-emerald-100 text-emerald-600">
+          <FaCheckCircle className="text-3xl" />
         </div>
 
-        <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md w-full text-center space-y-8">
-            {/* Success Icon with animation */}
-            <div className="flex justify-center">
-              <div className="relative w-24 h-24">
-                <div className="absolute inset-0 bg-linear-to-br from-green-400 to-emerald-500 rounded-full blur-xl opacity-40 animate-pulse"></div>
-                <div className="relative w-24 h-24 bg-linear-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
-                  <FaCheckCircle className="text-white text-4xl" />
-                </div>
-              </div>
-            </div>
-
-            {/* Status Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-200 mx-auto">
-              <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-              <span className="text-sm font-medium text-green-700">Account Setup Complete</span>
-            </div>
-
-            {/* Main heading */}
-            <div className="space-y-2">
-              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-                <span className="block text-gray-900">Welcome to</span>
-                <span className="block bg-linear-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Transport Management System
-                </span>
-              </h1>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-4">
-              <p className="text-lg text-gray-600 leading-relaxed font-medium">
-                Your password has been set successfully!
-              </p>
-              <p className="text-gray-600 leading-relaxed">
-                Your account is now fully active and ready to use. Log in with your credentials to access your dashboard and start managing your fleet.
-              </p>
-            </div>
-
-            {/* Security Info Card */}
-            <div className="bg-linear-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs mt-0.5 shrink-0 flex-none">
-                    ✓
-                  </div>
-                  <span className="text-sm text-gray-700 text-left">Email verified and account confirmed</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs mt-0.5 shrink-0 flex-none">
-                    ✓
-                  </div>
-                  <span className="text-sm text-gray-700 text-left">Password secured with strong encryption</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs mt-0.5 shrink-0 flex-none">
-                    ✓
-                  </div>
-                  <span className="text-sm text-gray-700 text-left">Two-factor authentication available</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <button
-              onClick={() => navigate('/auth/login')}
-              className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 transform hover:scale-105 group"
-            >
-              Proceed to Login
-              <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            {/* Additional Trust Signal */}
-            <div className="pt-4 space-y-2">
-              <div className="flex justify-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-green-400">★</span>
-                ))}
-              </div>
-              <p className="text-xs text-gray-600">
-                Trusted by <span className="font-semibold text-gray-900">1000+ fleet managers</span>
-              </p>
-            </div>
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-emerald-700">
+            <span className="h-2 w-2 rounded-full bg-emerald-600" />
+            Account Setup Complete
           </div>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950">Welcome to FleetFlow</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Your password has been set successfully. Your account is now active and ready to use.
+          </p>
         </div>
 
-        <style jsx>{`
-          @keyframes blob {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(20px, -50px) scale(1.1); }
-            50% { transform: translate(-20px, 20px) scale(0.9); }
-            75% { transform: translate(50px, 50px) scale(1.05); }
-          }
-
-          .animate-blob {
-            animation: blob 7s infinite;
-          }
-
-          .animation-delay-2000 {
-            animation-delay: 2s;
-          }
-
-          .animation-delay-4000 {
-            animation-delay: 4s;
-          }
-        `}</style>
+        <button
+          onClick={() => navigate('/auth/login')}
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-8 py-3 font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+        >
+          Proceed to Login
+          <FaArrowRight className="transition-transform group-hover:translate-x-1" />
+        </button>
       </div>
     );
   }

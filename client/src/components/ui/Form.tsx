@@ -82,7 +82,7 @@ export const FormActions: React.FC<FormActionsProps> = ({
   };
 
   return (
-    <div className={`flex ${alignMap[align]} gap-3 pt-6 border-t border-gray-200`}>
+    <div className={`flex ${alignMap[align]} gap-3 border-t border-slate-200 pt-6`}>
       {children}
     </div>
   );
@@ -109,14 +109,14 @@ export const Select: React.FC<SelectProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
           {label}
         </label>
       )}
       <select
         disabled={disabled}
-        className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed ${
-          error ? 'border-red-500 focus:ring-red-500' : ''
+        className={`w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/35 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+          error ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/35' : ''
         } ${className}`}
         {...props}
       >
@@ -127,7 +127,7 @@ export const Select: React.FC<SelectProps> = ({
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-sm text-rose-600">{error}</p>}
     </div>
   );
 };
@@ -151,19 +151,19 @@ export const Textarea: React.FC<TextareaProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
           {label}
         </label>
       )}
       <textarea
         disabled={disabled}
-        className={`w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-sm placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed resize-none ${
-          error ? 'border-red-500 focus:ring-red-500' : ''
+        className={`w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm placeholder-slate-400 transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/35 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
+          error ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/35' : ''
         } ${className}`}
         rows={4}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-sm text-rose-600">{error}</p>}
     </div>
   );
 };
