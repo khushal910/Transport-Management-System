@@ -61,11 +61,12 @@ const getDeletedEmployees = async (req, res) => {
       page: requestedPage,
       limit: requestedLimit,
     });
-    });
   } catch (err) {
     console.error('Get deleted employees error:', err);
     return response(res, 500, false, 'Failed to retrieve deleted employees');
   }
 };
+
+export default getDeletedEmployees;
 
 export default getDeletedEmployees;
