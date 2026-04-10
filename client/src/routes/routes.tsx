@@ -31,6 +31,8 @@ import DocsIndex from '../pages/docs/index';
 import GettingStarted from '../pages/docs/getting-started';
 import FleetManagement from '../pages/docs/fleet-management';
 import DriverManagement from '../pages/docs/driver-management';
+import EmployeeManagement from '../pages/docs/employee-management';
+import SecurityDocs from '../pages/docs/security';
 import TripManagement from '../pages/docs/trip-management';
 import Maintenance from '../pages/docs/maintenance';
 import Expenses from '../pages/docs/expenses';
@@ -241,6 +243,14 @@ export const router = createBrowserRouter([
       {
         path: 'driver-management',
         element: <DriverManagement />,
+      },
+      {
+        path: 'employee-management',
+        element: <EmployeeManagement />,
+      },
+      {
+        path: 'security',
+        element: <SecurityDocs />,
       },
       {
         path: 'trip-management',

@@ -30,6 +30,12 @@ export default function DocsIndex() {
       path: '/docs/driver-management',
     },
     {
+      title: 'Employee Management',
+      icon: '👥',
+      description: 'Add, update, delete, and recover team members with auto-recovery',
+      path: '/docs/employee-management',
+    },
+    {
       title: 'Trip Management',
       icon: '📍',
       description: 'Plan routes, dispatch trips, and track deliveries',
@@ -46,6 +52,12 @@ export default function DocsIndex() {
       icon: '💰',
       description: 'Track and manage fleet expenses and budgets',
       path: '/docs/expenses',
+    },
+    {
+      title: 'System Security & Privacy',
+      icon: '🔒',
+      description: 'Understand security features, data protection, and access control',
+      path: '/docs/security',
     },
     {
       title: 'Role-Based Access',
