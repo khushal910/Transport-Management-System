@@ -1,15 +1,13 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import authBaseURL from '../api/authBaseURL'
 import { useNotification } from '../hooks/useNotification'
 import NotificationBanner from '../components/NotificationPanel'
 import {
-  Bell,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   LogOut,
-  Search,
   User,
 } from 'lucide-react'
 import { navItems, UserRole } from '../config/rolePermissions'
@@ -66,12 +64,6 @@ const MainLayout = () => {
   const filteredNavItems = navItems.filter(item => 
     item.requiredRoles.includes(userRole)
   )
-
-  const currentPageLabel = useMemo(() => {
-    return filteredNavItems.find((item) => isActive(item.path))?.label || 'Workspace'
-  }, [filteredNavItems, location.pathname])
-
-  const breadcrumbLabel = currentPageLabel === 'Dashboard' ? 'Overview' : currentPageLabel
 
   return (
     <div className="app-shell min-h-screen text-slate-900">
@@ -202,33 +194,6 @@ const MainLayout = () => {
       <div className={`min-h-screen flex-1 transition-all duration-300 ease-in-out ${
         sidebarOpen ? 'ml-72' : 'ml-24'
       }`}>
-        <header className="sticky top-0 z-30 px-4 pt-4 md:px-6">
-          <div className="app-glass flex flex-wrap items-center justify-between gap-4 border px-4 py-3 shadow-sm md:px-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.09em] text-slate-500">Workspace</p>
-              <h2 className="text-lg font-semibold text-slate-900 md:text-xl">{breadcrumbLabel}</h2>
-            </div>
-            <div className="flex flex-1 items-center justify-end gap-3 md:max-w-xl">
-              <label className="relative hidden w-full md:block">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  readOnly
-                  value="Search modules"
-                  className="w-full rounded-xl border border-slate-300 bg-white/90 py-2 pl-10 pr-4 text-sm text-slate-500 outline-none"
-                />
-              </label>
-              <button
-                type="button"
-                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-300 bg-white text-slate-600 transition-colors duration-200 hover:bg-slate-50"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </header>
-
         <div className="px-4 pt-4 md:px-6">
           <NotificationBanner />
         </div>
