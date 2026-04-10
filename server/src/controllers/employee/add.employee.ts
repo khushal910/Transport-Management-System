@@ -19,9 +19,105 @@ const addEmployee = async (req, res) => {
     const { name, email, role, licenseNumber, licenseExpiry, licenseCategory } = value;
     const managerCompanyId = req.user.companyId;
 
-    // Check if user already exists
-    const isUserExist = await User.findOne({ email });
-    if (isUserExist) {
+    // Check if user with this email already exists
+    const existingUser = await User.findOne({ email });
+    
+    if (existingUser) {
+      // If user is active: reject (duplicate email)
+      if (!existingUser.isDeleted) {
+        return response(res, 400, false, 'Email already exists');
+      }
+
+      // If user is deleted AND belongs to the same company: RECOVER them
+      if (existingUser.isDeleted && String(existingUser.company) === String(managerCompanyId)) {
+        console.log('[AddEmployee] Recovering deleted employee:', email);
+        
+        // Update user data (recovery)
+        let recoveryData;
+        if (environmentConfig.isDevelopment) {
+          const defaultPassword = environmentConfig.getDefaultPassword();
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
+          recoveryData = {
+            name,
+            role,
+            password: hashedPassword,
+            isPasswordSet: true,
+            isActive: true,
+            isDeleted: false,
+          };
+        } else {
+          const setupToken = crypto.randomBytes(32).toString('hex');
+          const hashedSetupToken = await bcrypt.hash(setupToken, 10);
+          const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+          recoveryData = {
+            name,
+            role,
+            password: null,
+            isPasswordSet: false,
+            isActive: false,
+            isDeleted: false,
+            passwordResetToken: hashedSetupToken,
+            passwordResetExpires: tokenExpiry,
+          };
+        }
+
+        const recoveredEmployee = await User.findByIdAndUpdate(
+          existingUser._id,
+          recoveryData,
+          { new: true }
+        );
+
+        // If role changed to driver or was driver before, ensure driver record exists
+        if (role === 'driver' && licenseNumber) {
+          // Check if driver record exists
+          let driverRecord = await Driver.findOne({ user: recoveredEmployee._id });
+          
+          if (!driverRecord) {
+            // Create driver record if it doesn't exist
+            driverRecord = await Driver.create({
+              user: recoveredEmployee._id,
+              licenseNumber,
+              licenseExpiry: new Date(licenseExpiry),
+              licenseCategory,
+              status: 'off_duty',
+            });
+          } else {
+            // Update existing driver record
+            await Driver.findByIdAndUpdate(driverRecord._id, {
+              licenseNumber,
+              licenseExpiry: new Date(licenseExpiry),
+              licenseCategory,
+            });
+          }
+        }
+
+        // Send email based on environment
+        let emailResult = { success: true };
+        if (environmentConfig.isDevelopment) {
+          console.info(`✅ [DEV MODE] Employee recovered with default password: ${environmentConfig.getDefaultPassword()}`);
+        } else {
+          const setupToken = crypto.randomBytes(32).toString('hex');
+          emailResult = await sendEmployeeSetupEmail(email, name, setupToken);
+          if (!emailResult.success) {
+            console.warn('Failed to send employee recovery email:', emailResult.error);
+          }
+        }
+
+        return response(res, 200, true, 'Employee recovered successfully', {
+          id: recoveredEmployee._id,
+          name: recoveredEmployee.name,
+          email: recoveredEmployee.email,
+          role: recoveredEmployee.role,
+          isActive: recoveredEmployee.isActive,
+          companyId: recoveredEmployee.company,
+          message: 'Employee account recovered from deletion',
+        });
+      }
+
+      // If user is deleted but belongs to different company: reject
       return response(res, 400, false, 'Email already exists');
     }
 
