@@ -68,5 +68,3 @@ const getDeletedEmployees = async (req, res) => {
 };
 
 export default getDeletedEmployees;
-
-export default getDeletedEmployees;

@@ -129,8 +129,6 @@ const addEmployee = async (req, res) => {
     console.error('Add employee error:', err.message);
     console.error('Add employee error details:', err);
     return response(res, 500, false, 'Failed to add employee');
-    
-    return response(res, 500, false, 'Failed to add employee');
   }
 };
 
