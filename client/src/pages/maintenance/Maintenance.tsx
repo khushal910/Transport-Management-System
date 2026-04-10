@@ -241,19 +241,25 @@ export default function MaintenancePage() {
 
     // Handle vehicle search
     if (name === "vehicleName") {
+      // Filter vehicles: exclude those with restricted statuses (in_shop, assigned, on_trip)
+      const availableVehicles = vehicles.filter((v) =>
+        v.status !== "in_shop" && 
+        v.status !== "assigned" && 
+        v.status !== "on_trip"
+      );
+
       if (value.trim()) {
-        // Filter vehicles: exclude those with restricted statuses (in_shop, assigned, on_trip)
-        const filtered = vehicles.filter((v) =>
-          (v.name || "").toLowerCase().includes(value.toLowerCase()) && 
-          v.status !== "in_shop" && 
-          v.status !== "assigned" && 
-          v.status !== "on_trip"
+        // Filter based on user input
+        const filtered = availableVehicles.filter((v) =>
+          (v.name || "").toLowerCase().includes(value.toLowerCase()) || 
+          (v.licensePlate || "").toLowerCase().includes(value.toLowerCase())
         );
         setVehicleSuggestions(filtered);
         setShowVehicleSuggestions(true);
       } else {
-        setVehicleSuggestions([]);
-        setShowVehicleSuggestions(false);
+        // Show all available vehicles when input is empty
+        setVehicleSuggestions(availableVehicles);
+        setShowVehicleSuggestions(true);
       }
     }
 
@@ -368,6 +374,8 @@ export default function MaintenancePage() {
       setIsCreateModalOpen(false);
       setMaintenanceForm(INITIAL_FORM);
       setFormErrors({});
+      setShowVehicleSuggestions(false);
+      setVehicleSuggestions([]);
       fetchMaintenanceLogs(1);
     } catch (error) {
       notifyError("Error creating maintenance service");
@@ -425,6 +433,10 @@ export default function MaintenancePage() {
   const handleModalOverlayClick = (event) => {
     if (event.target === event.currentTarget) {
       setIsCreateModalOpen(false);
+      setMaintenanceForm(INITIAL_FORM);
+      setFormErrors({});
+      setShowVehicleSuggestions(false);
+      setVehicleSuggestions([]);
     }
   };
 
@@ -879,10 +891,18 @@ export default function MaintenancePage() {
                   id="vehicleName"
                   value={maintenanceForm.vehicleName}
                   onChange={handleFormChange}
-                  onFocus={() => setShowVehicleSuggestions(maintenanceForm.vehicleName.trim().length > 0)}
+                  onFocus={() => {
+                    const availableVehicles = vehicles.filter((v) =>
+                      v.status !== "in_shop" && 
+                      v.status !== "assigned" && 
+                      v.status !== "on_trip"
+                    );
+                    setVehicleSuggestions(availableVehicles);
+                    setShowVehicleSuggestions(true);
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, 0)}
                   ref={(el) => (inputRefs.current[0] = el)}
-                  placeholder="Search vehicle (only available vehicles shown)..."
+                  placeholder="Search vehicle (all available vehicles shown)..."
                   className={`w-full border p-2 rounded ${
                     formErrors.vehicleName ? "border-red-500 bg-red-50" : "border-gray-300"
                   }`}
