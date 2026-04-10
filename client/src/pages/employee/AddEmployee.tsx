@@ -520,6 +520,10 @@ export default function EmployeeManagement() {
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
+  const formattedDate = (date) => {
+    return date ? new Date(date).toLocaleDateString() : 'N/A';
+  };
+
   const getDriverStatusBadgeColor = (status) => {
     const colors: { [key: string]: string } = {
       available: 'bg-green-100 text-green-800',
