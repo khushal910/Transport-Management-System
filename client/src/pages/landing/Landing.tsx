@@ -18,8 +18,9 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-transparent">
-      {/* 3D Scroll Animation Background */}
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50">
+      <div className="pointer-events-none absolute inset-0 landing-radial-hero" />
+      <div className="pointer-events-none absolute inset-x-0 top-24 h-80 landing-radial-bottom blur-3xl" />
       <ScrollAnimation3D />
       
       {/* Navigation */}

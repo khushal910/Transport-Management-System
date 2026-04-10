@@ -157,3 +157,89 @@ a {
 		padding: 1rem;
 	}
 }
+
+.landing-radial-hero {
+  background: radial-gradient(circle at top right, rgba(96,165,250,0.22), transparent 28%), radial-gradient(circle at bottom left, rgba(168,85,247,0.16), transparent 30%);
+}
+
+.landing-radial-bottom {
+  background: radial-gradient(circle, rgba(59,130,246,0.18), transparent 60%);
+}
+
+.hero-radial-top {
+  background: radial-gradient(circle at top left, rgba(56,189,248,0.18), transparent 22%), radial-gradient(circle at bottom right, rgba(168,85,247,0.16), transparent 26%);
+}
+
+.hero-radial-glow {
+  background: radial-gradient(circle, rgba(59,130,246,0.2), transparent 60%);
+}
+
+.hero-radial-overlay {
+  background: radial-gradient(circle at top left, rgba(56,189,248,0.18), transparent 35%);
+}
+
+.hero-linear-overlay {
+  background: linear-gradient(135deg, rgba(56,189,248,0.12), transparent 30%), linear-gradient(225deg, rgba(168,85,247,0.12), transparent 35%);
+}
+
+.testimonial-overlay {
+  background: radial-gradient(circle, rgba(59,130,246,0.14), transparent 60%);
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.9s ease-out both;
+  }
+
+  .animate-fade-up {
+    animation: fadeInUp 0.9s ease-out both;
+  }
+
+  .animate-bounce-slow {
+    animation: bounceSlow 4s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 3.5s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceSlow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(96, 165, 250, 0.24);
+  }
+}
