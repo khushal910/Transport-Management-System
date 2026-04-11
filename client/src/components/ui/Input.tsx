@@ -15,25 +15,21 @@ export const Input: React.FC<InputProps> = ({
 }) => {
   return (
     <div className="w-full">
-      {label && (
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
-          {label}
-        </label>
-      )}
+      {label ? <label className="mb-2 block text-sm font-medium text-slate-700">{label}</label> : null}
       <div className="relative">
-        {icon && (
+        {icon ? (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
             {icon}
           </div>
-        )}
+        ) : null}
         <input
-          className={`w-full ${icon ? 'pl-10' : 'px-4'} pr-4 py-3 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/35 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed ${
-            error ? 'border-rose-500 focus:ring-rose-500/35 focus:border-rose-500' : ''
+          className={`h-10 w-full rounded-md border bg-white ${icon ? 'pl-9' : 'px-3'} py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:cursor-not-allowed disabled:opacity-60 ${
+            error ? 'border-rose-500' : 'border-slate-300'
           } ${className}`}
           {...props}
         />
       </div>
-      {error && <p className="mt-1 text-sm text-rose-600">{error}</p>}
+      {error ? <p className="mt-1 text-sm text-rose-600">{error}</p> : null}
     </div>
   );
 };

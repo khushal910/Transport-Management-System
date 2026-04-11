@@ -17,9 +17,9 @@ const paddingMap = {
 };
 
 const variantMap = {
-  default: 'bg-white border border-slate-200 shadow-sm',
-  muted: 'bg-slate-50/90 border border-slate-200 shadow-sm',
-  elevated: 'bg-white border border-slate-100 shadow-lg shadow-slate-900/10',
+  default: 'border border-slate-200 bg-white shadow-sm',
+  muted: 'border border-slate-200 bg-slate-50',
+  elevated: 'border border-slate-200 bg-white shadow-md shadow-slate-900/10',
 };
 
 export const Card: React.FC<CardProps> = ({
@@ -32,7 +32,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={`${variantMap[variant]} rounded-2xl ${paddingMap[padding]} ${
-        onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 transition-all duration-200' : ''
+        onClick ? 'card-hover cursor-pointer' : ''
       } ${className}`}
       onClick={onClick}
     >

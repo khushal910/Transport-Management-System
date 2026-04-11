@@ -12,11 +12,11 @@ interface KPICardProps {
 }
 
 const colorMap = {
-  blue: 'bg-blue-50 text-blue-600 border-blue-200',
-  green: 'bg-green-50 text-green-600 border-green-200',
-  red: 'bg-red-50 text-red-600 border-red-200',
-  yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
-  purple: 'bg-purple-50 text-purple-600 border-purple-200',
+  blue: 'bg-sky-100 text-sky-700',
+  green: 'bg-emerald-100 text-emerald-700',
+  red: 'bg-rose-100 text-rose-700',
+  yellow: 'bg-amber-100 text-amber-700',
+  purple: 'bg-violet-100 text-violet-700',
 };
 
 const trendColorMap = {
@@ -35,22 +35,22 @@ export const KPICard: React.FC<KPICardProps> = ({
   color = 'blue',
 }) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className="kpi-card p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-gray-600 font-medium mb-2">{label}</p>
-          <p className="text-3xl font-semibold text-gray-900">{value}</p>
-          {trend && (
-            <p className={`text-sm mt-2 font-medium ${trendColorMap[trend.direction]}`}>
+          <p className="mb-2 text-sm font-medium text-slate-500">{label}</p>
+          <p className="text-3xl font-semibold text-slate-900">{value}</p>
+          {trend ? (
+            <p className={`mt-2 text-sm font-medium ${trendColorMap[trend.direction]}`}>
               {trend.direction === 'up' ? '↑' : '↓'} {trend.value}% vs last month
             </p>
-          )}
+          ) : null}
         </div>
-        {icon && (
-          <div className={`${colorMap[color]} w-12 h-12 rounded-lg flex items-center justify-center`}>
+        {icon ? (
+          <div className={`${colorMap[color]} flex h-12 w-12 items-center justify-center rounded-lg`}>
             {icon}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -70,9 +70,9 @@ export const StatList: React.FC<StatListProps> = ({ items }) => {
   return (
     <div className="space-y-4">
       {items.map((item, idx) => (
-        <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-          <span className="text-sm text-gray-600">{item.label}</span>
-          <span className="text-sm font-semibold text-gray-900">{item.value}</span>
+        <div key={idx} className="flex items-center justify-between border-b border-slate-100 py-3 last:border-b-0">
+          <span className="text-sm text-slate-600">{item.label}</span>
+          <span className="text-sm font-semibold text-slate-900">{item.value}</span>
         </div>
       ))}
     </div>

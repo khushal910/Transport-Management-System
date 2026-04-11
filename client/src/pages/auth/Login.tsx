@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import authBaseURL from '../../api/authBaseURL';
-import { FaEye, FaEyeSlash, FaExclamationCircle } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaExclamationCircle, FaTruck } from 'react-icons/fa';
 import { useNotification } from '../../hooks/useNotification';
 import { useFormNavigation } from '../../hooks/useFormNavigation';
 import passwordConfig from '../../config/environment';
@@ -18,18 +18,11 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [loginAttempted, setLoginAttempted] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loginError, setLoginError] = useState('');
 
-  // Note: Removed automatic redirect to dashboard on mount
-  // PrivateRoute will now verify the JWT token is valid before allowing access
-  // If user tries to access protected routes without a valid token, they'll be redirected to login
-
-
-  // Validate form inputs
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: { email?: string; password?: string } = {};
 
     // Email validation
     if (!loginData.email.trim()) {
@@ -49,20 +42,16 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (e?: FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
 
-    // Prevent multiple submissions
     if (isLoading) return;
 
-    // Validate form
     if (!validateForm()) {
-      setLoginAttempted(true);
       return;
     }
 
     setIsLoading(true);
-    setLoginAttempted(true);
 
     const data = {
       email: loginData.email,
@@ -71,11 +60,9 @@ export default function Login() {
 
     try {
       const response = await authBaseURL.post('/login', data);
-      
-      // Clear any previous errors
+
       setLoginError('');
-      
-      // Extract and validate user data
+
       const userData = response.data.data || response.data.user;
       if (!userData) {
         setIsLoading(false);
@@ -83,11 +70,9 @@ export default function Login() {
         notifyError('Invalid response from server');
         localStorage.removeItem('user');
         localStorage.removeItem('company');
-        setLoginAttempted(false);
         return;
       }
 
-      // Store user information (token is in httpOnly cookie, sent automatically)
       localStorage.setItem('user', JSON.stringify({
         id: userData.id,
         name: userData.name,
@@ -95,84 +80,82 @@ export default function Login() {
         role: userData.role,
         companyId: userData.companyId,
       }));
-      
-      // Store company information in localStorage
+
       if (userData.company) {
         localStorage.setItem('company', JSON.stringify(userData.company));
       }
 
       notifySuccess(response.data.message || 'Login successful!');
-      
-      // Navigate to dashboard
+
       setTimeout(() => {
         navigate('/main/dashboard');
       }, 100);
       setIsLoading(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      
-      // Clear localStorage on failed login
+
       localStorage.removeItem('user');
       localStorage.removeItem('company');
       setIsLoading(false);
-      setLoginAttempted(false); // Reset to allow retry
-      
-      // Show specific error message
-      const errorMessage = error.response?.data?.message || error.message || 'An error occurred. Please try again.';
+
+      const typedError = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = typedError.response?.data?.message || typedError.message || 'An error occurred. Please try again.';
       setLoginError(errorMessage);
       notifyError(errorMessage);
     }
   };
 
-  // Use the form navigation hook (must be after handleLogin is defined)
   const { inputRefs, handleKeyDown } = useFormNavigation(2, handleLogin);
 
   return (
-    <div>
-      {/* Error Banner */}
+    <div className="space-y-8">
+      <div className="mb-2 flex items-center justify-center gap-2 lg:hidden">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500">
+          <FaTruck className="h-4 w-4 text-white" />
+        </div>
+        <span className="text-xl font-bold text-slate-900">FleetFlow</span>
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
+        <p className="mt-1 text-sm text-slate-500">Sign in to your account to continue</p>
+      </div>
+
       {loginError && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4">
-          <FaExclamationCircle className="mt-0.5 shrink-0 text-lg text-rose-600" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-rose-800">{loginError}</p>
-            <p className="mt-1 text-xs text-rose-600">Please check your email and password and try again.</p>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+          <div className="flex items-start gap-3">
+            <FaExclamationCircle className="mt-0.5 shrink-0 text-base text-rose-600" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-rose-800">{loginError}</p>
+              <p className="mt-1 text-xs text-rose-600">Please check your email and password and try again.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLoginError('')}
+              className="shrink-0 text-sm text-rose-400 transition-colors hover:text-rose-600"
+            >
+              ✕
+            </button>
           </div>
-          <button
-            onClick={() => setLoginError('')}
-            className="shrink-0 text-lg text-rose-400 hover:text-rose-600"
-          >
-            ✕
-          </button>
         </div>
       )}
 
-      {/* Page Title */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-950">Welcome Back</h2>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${passwordConfig.getEnvironmentBadge().color}`}>
-            {passwordConfig.getEnvironmentBadge().label}
-          </span>
-        </div>
-        <p className="text-slate-600">Sign in to access your fleet dashboard</p>
-      </div>
-
       <form className="space-y-5" onSubmit={handleLogin}>
-        {/* Email Field */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email Address
+        <div className="space-y-2">
+          <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
+            Email
           </label>
           <input
+            id="login-email"
             type="email"
-            placeholder="you@example.com"
-            className={`w-full rounded-xl border px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 ${
-              errors.email 
-                ? 'border-rose-500 bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-500/35' 
-                : 'border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/35 focus:border-blue-500'
+            placeholder="you@company.com"
+            className={`h-10 w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:cursor-not-allowed disabled:opacity-60 ${
+              errors.email ? 'border-rose-500' : 'border-slate-300'
             }`}
             value={loginData.email}
-            ref={(el) => (inputRefs.current[0] = el)}
+            ref={(el) => {
+              inputRefs.current[0] = el;
+            }}
             onKeyDown={(e) => handleKeyDown(e, 0)}
             onChange={(e) => {
               setLoginData({ ...loginData, email: e.target.value });
@@ -181,28 +164,36 @@ export default function Login() {
             disabled={isLoading}
           />
           {errors.email && (
-            <p className="mt-2 flex items-center gap-1 text-sm text-rose-600">
-              <span>●</span> {errors.email}
-            </p>
+            <p className="text-sm text-rose-600">{errors.email}</p>
           )}
         </div>
 
-        {/* Password Field */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Password {passwordConfig.isDevelopment && <span className="text-xs text-orange-600">(Dev Mode: 3+ chars)</span>}
-          </label>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
+              Password
+            </label>
+            <Link
+              to="/auth/forgot-password"
+              className="text-xs font-medium text-slate-500 transition-colors hover:text-slate-800"
+              onClick={(e) => isLoading && e.preventDefault()}
+            >
+              Forgot password?
+            </Link>
+          </div>
+
           <div className="relative">
             <input
+              id="login-password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              className={`w-full rounded-xl border px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 transition-all duration-200 disabled:cursor-not-allowed disabled:bg-slate-100 ${
-                errors.password 
-                  ? 'border-rose-500 bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-500/35' 
-                  : 'border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/35 focus:border-blue-500'
+              className={`h-10 w-full rounded-md border bg-white px-3 py-2 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:cursor-not-allowed disabled:opacity-60 ${
+                errors.password ? 'border-rose-500' : 'border-slate-300'
               }`}
               value={loginData.password}
-              ref={(el) => (inputRefs.current[1] = el)}
+              ref={(el) => {
+                inputRefs.current[1] = el;
+              }}
               onKeyDown={(e) => handleKeyDown(e, 1)}
               onChange={(e) => {
                 setLoginData({ ...loginData, password: e.target.value });
@@ -213,63 +204,39 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 hover:text-slate-700 disabled:opacity-50"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 transition-colors hover:text-slate-700 disabled:opacity-50"
               disabled={isLoading}
             >
-              {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-2 flex items-center gap-1 text-sm text-rose-600">
-              <span>●</span> {errors.password}
-            </p>
+            <p className="text-sm text-rose-600">{errors.password}</p>
           )}
         </div>
 
-        {/* Forgot Password Link */}
-        <div className="flex justify-end pt-2">
-          <Link 
-            to="/auth/forgot-password" 
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-            onClick={(e) => isLoading && e.preventDefault()}
-          >
-            Forgot password?
-          </Link>
-        </div>
-
-        {/* Login Button */}
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition-all duration-300 ${
+          className={`inline-flex h-10 w-full items-center justify-center rounded-md px-4 text-sm font-medium text-white transition-colors ${
             isLoading
-              ? 'cursor-not-allowed bg-slate-400 opacity-70'
-              : 'bg-linear-to-r from-blue-600 to-indigo-600 shadow-sm hover:-translate-y-0.5 hover:shadow-md'
+              ? 'cursor-not-allowed bg-slate-400'
+              : 'bg-sky-500 hover:bg-sky-600'
           }`}
         >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Signing in...
-            </span>
-          ) : (
-            'Sign In'
-          )}
+          {isLoading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 
-      {/* Register Link */}
-      <div className="mt-6 border-t border-slate-200 pt-6 text-center">
-        <p className="text-sm text-slate-600">
-          Don't have an account?{' '}
-          <Link 
-            to="/auth/register" 
-            className="font-semibold text-blue-700 transition-colors hover:text-indigo-700"
-          >
-            Create one here
-          </Link>
-        </p>
-      </div>
+      <p className="text-center text-sm text-slate-500">
+        Don&apos;t have an account?{' '}
+        <Link
+          to="/auth/register"
+          className="font-medium text-sky-600 hover:underline"
+        >
+          Register your company
+        </Link>
+      </p>
     </div>
   );
 }
