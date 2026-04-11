@@ -1,169 +1,129 @@
-import React from 'react';
+import * as React from "react";
+import * as LabelPrimitive from "@radix-ui/react-label";
+import { Slot } from "@radix-ui/react-slot";
+import { Controller, ControllerProps, FieldPath, FieldValues, FormProvider, useFormContext } from "react-hook-form";
 
-interface FormProps {
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-  children: React.ReactNode;
-  className?: string;
-}
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
-/**
- * Professional form wrapper with consistent styling
- */
-export const Form: React.FC<FormProps> = ({
-  onSubmit,
-  children,
-  className = '',
-}) => {
-  return (
-    <form onSubmit={onSubmit} className={`space-y-6 ${className}`}>
-      {children}
-    </form>
-  );
+const Form = FormProvider;
+
+type FormFieldContextValue<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> = {
+  name: TName;
 };
 
-interface FormGroupProps {
-  children: React.ReactNode;
-  className?: string;
-}
+const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
-/**
- * Form group for organizing multiple form fields
- */
-export const FormGroup: React.FC<FormGroupProps> = ({
-  children,
-  className = '',
-}) => {
-  return (
-    <div className={`space-y-4 ${className}`}>
-      {children}
-    </div>
-  );
-};
-
-interface FormColumnProps {
-  children: React.ReactNode;
-  cols?: 1 | 2 | 3 | 4;
-}
-
-/**
- * Responsive form column layout
- */
-export const FormColumns: React.FC<FormColumnProps> = ({ children, cols = 2 }) => {
-  const colMap = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
-  };
-
-  return (
-    <div className={`grid ${colMap[cols]} gap-6`}>
-      {children}
-    </div>
-  );
-};
-
-interface FormActionsProps {
-  children: React.ReactNode;
-  align?: 'left' | 'center' | 'right';
-}
-
-/**
- * Form action buttons with proper spacing
- */
-export const FormActions: React.FC<FormActionsProps> = ({
-  children,
-  align = 'right',
-}) => {
-  const alignMap = {
-    left: 'justify-start',
-    center: 'justify-center',
-    right: 'justify-end',
-  };
-
-  return (
-    <div className={`flex ${alignMap[align]} gap-3 border-t border-slate-200 pt-6`}>
-      {children}
-    </div>
-  );
-};
-
-interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string;
-  error?: string;
-  options: Array<{ value: string | number; label: string }>;
-}
-
-/**
- * Professional select dropdown
- */
-export const Select: React.FC<SelectProps> = ({
-  label,
-  error,
-  options,
-  className = '',
-  disabled = false,
+const FormField = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>({
   ...props
-}) => {
+}: ControllerProps<TFieldValues, TName>) => {
   return (
-    <div className="w-full">
-      {label && (
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
-          {label}
-        </label>
-      )}
-      <select
-        disabled={disabled}
-        className={`w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/35 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
-          error ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/35' : ''
-        } ${className}`}
-        {...props}
-      >
-        <option value="">Select an option</option>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      {error && <p className="mt-1 text-sm text-rose-600">{error}</p>}
-    </div>
+    <FormFieldContext.Provider value={{ name: props.name }}>
+      <Controller {...props} />
+    </FormFieldContext.Provider>
   );
 };
 
-interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label?: string;
-  error?: string;
-}
+const useFormField = () => {
+  const fieldContext = React.useContext(FormFieldContext);
+  const itemContext = React.useContext(FormItemContext);
+  const { getFieldState, formState } = useFormContext();
 
-/**
- * Professional textarea
- */
-export const Textarea: React.FC<TextareaProps> = ({
-  label,
-  error,
-  className = '',
-  disabled = false,
-  ...props
-}) => {
-  return (
-    <div className="w-full">
-      {label && (
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-slate-700">
-          {label}
-        </label>
-      )}
-      <textarea
-        disabled={disabled}
-        className={`w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm placeholder-slate-400 transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/35 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 ${
-          error ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/35' : ''
-        } ${className}`}
-        rows={4}
+  const fieldState = getFieldState(fieldContext.name, formState);
+
+  if (!fieldContext) {
+    throw new Error("useFormField should be used within <FormField>");
+  }
+
+  const { id } = itemContext;
+
+  return {
+    id,
+    name: fieldContext.name,
+    formItemId: `${id}-form-item`,
+    formDescriptionId: `${id}-form-item-description`,
+    formMessageId: `${id}-form-item-message`,
+    ...fieldState,
+  };
+};
+
+type FormItemContextValue = {
+  id: string;
+};
+
+const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
+
+const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => {
+    const id = React.useId();
+
+    return (
+      <FormItemContext.Provider value={{ id }}>
+        <div ref={ref} className={cn("space-y-2", className)} {...props} />
+      </FormItemContext.Provider>
+    );
+  },
+);
+FormItem.displayName = "FormItem";
+
+const FormLabel = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+>(({ className, ...props }, ref) => {
+  const { error, formItemId } = useFormField();
+
+  return <Label ref={ref} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />;
+});
+FormLabel.displayName = "FormLabel";
+
+const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.ComponentPropsWithoutRef<typeof Slot>>(
+  ({ ...props }, ref) => {
+    const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+
+    return (
+      <Slot
+        ref={ref}
+        id={formItemId}
+        aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
+        aria-invalid={!!error}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-rose-600">{error}</p>}
-    </div>
-  );
-};
+    );
+  },
+);
+FormControl.displayName = "FormControl";
+
+const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => {
+    const { formDescriptionId } = useFormField();
+
+    return <p ref={ref} id={formDescriptionId} className={cn("text-sm text-muted-foreground", className)} {...props} />;
+  },
+);
+FormDescription.displayName = "FormDescription";
+
+const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, children, ...props }, ref) => {
+    const { error, formMessageId } = useFormField();
+    const body = error ? String(error?.message) : children;
+
+    if (!body) {
+      return null;
+    }
+
+    return (
+      <p ref={ref} id={formMessageId} className={cn("text-sm font-medium text-destructive", className)} {...props}>
+        {body}
+      </p>
+    );
+  },
+);
+FormMessage.displayName = "FormMessage";
+
+export { useFormField, Form, FormItem, FormLabel, FormControl, FormDescription, FormMessage, FormField };

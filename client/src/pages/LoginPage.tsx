@@ -1,0 +1,122 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Truck, Eye, EyeOff } from 'lucide-react';
+import { login } from '@/api/auth';
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await login(form);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Left - Branding */}
+      <div className="hidden flex-1 flex-col justify-between bg-sidebar p-12 lg:flex">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+            <Truck className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="text-2xl font-bold text-sidebar-accent-foreground">FleetFlow</span>
+        </div>
+        <div>
+          <h1 className="text-4xl font-bold leading-tight text-sidebar-accent-foreground">
+            Manage your fleet<br />with confidence.
+          </h1>
+          <p className="mt-4 max-w-md text-sidebar-foreground">
+            Track vehicles, manage trips, monitor expenses, and optimize your fleet operations — all in one place.
+          </p>
+        </div>
+        <p className="text-sm text-sidebar-muted">© 2026 FleetFlow. All rights reserved.</p>
+      </div>
+
+      {/* Right - Form */}
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="lg:hidden flex items-center gap-2 justify-center mb-8">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <Truck className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold">FleetFlow</span>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold">Welcome back</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to your account to continue</p>
+          </div>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@company.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link to="/register" className="font-medium text-primary hover:underline">
+              Register your company
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

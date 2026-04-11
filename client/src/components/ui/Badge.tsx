@@ -1,40 +1,29 @@
-import React from 'react';
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
-interface BadgeProps {
-  variant?: 'default' | 'success' | 'error' | 'warning' | 'info';
-  children: React.ReactNode;
-  className?: string;
-  showDot?: boolean;
+import { cn } from "@/lib/utils";
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  },
+);
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-const variantStyles = {
-  default: 'bg-slate-100 text-slate-700',
-  success: 'bg-emerald-100 text-emerald-700',
-  error: 'bg-rose-100 text-rose-700',
-  warning: 'bg-amber-100 text-amber-700',
-  info: 'bg-sky-100 text-sky-700',
-};
-
-const dotStyles = {
-  default: 'bg-slate-500',
-  success: 'bg-emerald-500',
-  error: 'bg-rose-500',
-  warning: 'bg-amber-500',
-  info: 'bg-sky-500',
-};
-
-export const Badge: React.FC<BadgeProps> = ({
-  variant = 'default',
-  children,
-  className = '',
-  showDot = false,
-}) => {
-  return (
-    <span
-      className={`status-badge ${variantStyles[variant]} ${className}`}
-    >
-      {showDot ? <span className={`h-1.5 w-1.5 rounded-full ${dotStyles[variant]}`} /> : null}
-      {children}
-    </span>
-  );
-};
+export { Badge, badgeVariants };

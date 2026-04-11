@@ -1,67 +1,72 @@
-import React from 'react';
+import * as React from "react";
 
-interface TableProps {
-  columns: { key: string; label: string; width?: string }[];
-  data: any[];
-  actions?: (row: any) => React.ReactNode;
-  loading?: boolean;
-  emptyMessage?: string;
-}
+import { cn } from "@/lib/utils";
 
-export const Table: React.FC<TableProps> = ({
-  columns,
-  data,
-  actions,
-  loading = false,
-  emptyMessage = 'No data available',
-}) => {
-  return (
-    <div className="w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full min-w-180 text-sm">
-        <thead>
-          <tr className="border-b text-left text-slate-500">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                style={{ width: col.width }}
-                className="px-6 py-3 text-left text-sm font-medium"
-              >
-                {col.label}
-              </th>
-            ))}
-            {actions ? <th className="px-6 py-3 text-left text-sm font-medium">Actions</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr>
-              <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-12 text-center text-slate-500">
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
-                  Loading data...
-                </span>
-              </td>
-            </tr>
-          ) : data.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-12 text-center text-slate-500">
-                {emptyMessage}
-              </td>
-            </tr>
-          ) : (
-            data.map((row, idx) => (
-              <tr key={idx} className="data-table-row">
-                {columns.map((col) => (
-                  <td key={col.key} className="px-6 py-4 text-sm text-slate-900">
-                    {row[col.key]}
-                  </td>
-                ))}
-                {actions ? <td className="px-6 py-4 text-sm">{actions(row)}</td> : null}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
+  ({ className, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+      <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
-  );
-};
+  ),
+);
+Table.displayName = "Table";
+
+const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />,
+);
+TableHeader.displayName = "TableHeader";
+
+const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => (
+    <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+  ),
+);
+TableBody.displayName = "TableBody";
+
+const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
+  ({ className, ...props }, ref) => (
+    <tfoot ref={ref} className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)} {...props} />
+  ),
+);
+TableFooter.displayName = "TableFooter";
+
+const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+  ({ className, ...props }, ref) => (
+    <tr
+      ref={ref}
+      className={cn("border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50", className)}
+      {...props}
+    />
+  ),
+);
+TableRow.displayName = "TableRow";
+
+const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
+  ({ className, ...props }, ref) => (
+    <th
+      ref={ref}
+      className={cn(
+        "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
+TableHead.displayName = "TableHead";
+
+const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
+  ({ className, ...props }, ref) => (
+    <td ref={ref} className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
+  ),
+);
+TableCell.displayName = "TableCell";
+
+const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttributes<HTMLTableCaptionElement>>(
+  ({ className, ...props }, ref) => (
+    <caption ref={ref} className={cn("mt-4 text-sm text-muted-foreground", className)} {...props} />
+  ),
+);
+TableCaption.displayName = "TableCaption";
+
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption };
