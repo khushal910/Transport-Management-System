@@ -35,7 +35,7 @@ export interface Vehicle {
   createdAt: string;
 }
 
-export type DriverStatus = 'on_duty' | 'off_duty' | 'on_trip' | 'suspended';
+export type DriverStatus = 'available' | 'on_duty' | 'off_duty' | 'on_trip' | 'suspended';
 
 export interface Driver {
   _id: string;

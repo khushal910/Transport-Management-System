@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BookText, FileCode2, Search, Tag } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookText, FileCode2, Search, Tag } from "lucide-react";
 import { githubDocsCatalog } from "@/data/githubDocsCatalog";
+import { documentationById } from "@/data/documentationContent";
 
 export default function DocumentationPage() {
   const [query, setQuery] = useState("");
@@ -11,10 +12,12 @@ export default function DocumentationPage() {
     if (!normalizedQuery) return githubDocsCatalog;
 
     return githubDocsCatalog.filter((doc) => {
+      const details = documentationById[doc.id];
       return (
         doc.title.toLowerCase().includes(normalizedQuery) ||
         doc.description.toLowerCase().includes(normalizedQuery) ||
         doc.routePath.toLowerCase().includes(normalizedQuery) ||
+        details?.overview.toLowerCase().includes(normalizedQuery) ||
         doc.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery))
       );
     });
@@ -25,6 +28,8 @@ export default function DocumentationPage() {
     githubDocsCatalog.forEach((doc) => doc.tags.forEach((tag) => tags.add(tag)));
     return tags.size;
   }, []);
+
+  const featuredDocs = useMemo(() => githubDocsCatalog.slice(0, 3), []);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -42,10 +47,9 @@ export default function DocumentationPage() {
                 <BookText className="h-3.5 w-3.5" />
                 Documentation Hub
               </p>
-              <h1 className="font-display text-4xl font-extrabold tracking-tight">Reference Docs From .github/client</h1>
+              <h1 className="font-display text-4xl font-extrabold tracking-tight">FleetFlow Product Documentation</h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-                This page surfaces module data from the documentation set located at
-                .github/client/src/pages/docs.
+                Explore production-ready guides for core modules, security controls, and employee lifecycle workflows.
               </p>
             </div>
 
@@ -73,6 +77,21 @@ export default function DocumentationPage() {
               placeholder="Search docs by title, topic, route, or tag..."
               className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm outline-none transition focus:border-slate-900"
             />
+          </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            {featuredDocs.map((doc) => (
+              <Link
+                key={doc.id}
+                to={doc.routePath}
+                className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <p className="text-sm font-bold text-slate-900">
+                  {doc.icon} {doc.title}
+                </p>
+                <p className="mt-1 text-xs text-slate-600">{doc.description}</p>
+              </Link>
+            ))}
           </div>
         </div>
       </header>
@@ -105,6 +124,10 @@ export default function DocumentationPage() {
 
                 <p className="text-sm leading-6 text-slate-600">{doc.description}</p>
 
+                <p className="mt-2 text-sm text-slate-500">
+                  {documentationById[doc.id]?.sections[0]?.body}
+                </p>
+
                 <div className="mt-4 flex flex-wrap gap-2">
                   {doc.tags.map((tag) => (
                     <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">
@@ -120,6 +143,17 @@ export default function DocumentationPage() {
                     Source File
                   </p>
                   <p className="font-mono text-xs text-slate-700">{doc.sourceFile}</p>
+                </div>
+
+                <div className="mt-5 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Detailed module guide</span>
+                  <Link
+                    to={doc.routePath}
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-900/15 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-900 hover:text-white"
+                  >
+                    Read details
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </article>
             ))}
