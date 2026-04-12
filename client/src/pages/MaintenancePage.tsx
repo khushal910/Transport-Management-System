@@ -1,24 +1,51 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { mockMaintenance } from '@/data/mockData';
+import { getMaintenanceList } from '@/api/maintenance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Wrench } from 'lucide-react';
+import type { MaintenanceLog } from '@/types/fleet';
 
 export default function MaintenancePage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const filtered = mockMaintenance.filter((m) => {
-    const matchSearch = !search || [m.vehicle.name, m.description].some((f) => f.toLowerCase().includes(search.toLowerCase()));
-    const matchStatus = statusFilter === 'all' || m.status === statusFilter;
-    return matchSearch && matchStatus;
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['maintenance', statusFilter],
+    queryFn: async () => {
+      const result = await getMaintenanceList();
+      return result.data;
+    },
+    refetchOnWindowFocus: false,
+    retry: false,
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Server returns { logs: [...] }; keep backward compatibility with older payloads.
+  const maintenance = useMemo<MaintenanceLog[]>(() => {
+    const apiLogs = Array.isArray((data as { logs?: MaintenanceLog[] } | undefined)?.logs)
+      ? ((data as { logs?: MaintenanceLog[] }).logs ?? [])
+      : Array.isArray((data as { maintenances?: MaintenanceLog[] } | undefined)?.maintenances)
+        ? ((data as { maintenances?: MaintenanceLog[] }).maintenances ?? [])
+        : [];
+
+    return apiLogs.length ? apiLogs : mockMaintenance;
+  }, [data]);
+
+  const filtered = useMemo(() => {
+    return maintenance.filter((m) => {
+      const matchSearch = !search || [m.vehicle.name, m.description].some((f) => f.toLowerCase().includes(search.toLowerCase()));
+      const matchStatus = statusFilter === 'all' || m.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [maintenance, search, statusFilter]);
 
   return (
     <DashboardLayout>
@@ -56,33 +83,52 @@ export default function MaintenancePage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((m) => (
-            <div key={m._id} className="rounded-xl border bg-card p-5 card-hover">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-warning/10 p-2"><Wrench className="h-4 w-4 text-warning" /></div>
-                  <div>
-                    <p className="font-semibold">{m.vehicle.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{m.vehicle.licensePlate}</p>
-                  </div>
-                </div>
-                <StatusBadge status={m.status} />
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">{m.description}</p>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Cost</p>
-                  <p className="font-semibold font-mono">₹{m.cost.toLocaleString('en-IN')}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Service Date</p>
-                  <p className="font-medium">{new Date(m.serviceDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                </div>
+          {isLoading && maintenance.length === 0 ? (
+            <div className="col-span-full p-8 text-center text-muted-foreground">
+              <div className="inline-flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                Loading...
               </div>
             </div>
-          ))}
-          {filtered.length === 0 && (
+          ) : maintenance.length === 0 ? (
             <div className="col-span-full py-12 text-center text-muted-foreground">No maintenance logs found</div>
+          ) : (
+            <>
+              {isError && !data && (
+                <div className="col-span-full p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
+                </div>
+              )}
+              {filtered.map((m) => (
+                <div key={m._id} className="rounded-xl border bg-card p-5 card-hover">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="rounded-lg bg-warning/10 p-2"><Wrench className="h-4 w-4 text-warning" /></div>
+                      <div>
+                        <p className="font-semibold">{m.vehicle.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{m.vehicle.licensePlate}</p>
+                      </div>
+                    </div>
+                    <StatusBadge status={m.status} />
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">{m.description}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Cost</p>
+                      <p className="font-semibold font-mono">₹{m.cost.toLocaleString('en-IN')}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Service Date</p>
+                      <p className="font-medium">{new Date(m.serviceDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filtered.length === 0 && maintenance.length > 0 && (
+                <div className="col-span-full py-12 text-center text-muted-foreground">No maintenance logs match your filters</div>
+              )}
+            </>
           )}
         </div>
       </div>

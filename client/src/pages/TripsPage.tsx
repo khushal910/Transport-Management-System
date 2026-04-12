@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, ArrowRight } from 'lucide-react';
 import { getTripList } from '@/api/trip';
+import { mockTrips } from '@/data/mockData';
 import type { Trip } from '@/types/fleet';
 
 export default function TripsPage() {
@@ -16,21 +17,28 @@ export default function TripsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuery(['trips', statusFilter], async () => {
-    const result = await getTripList(statusFilter === 'all' ? undefined : statusFilter);
-    return result.data;
-  }, {
-    keepPreviousData: true,
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['trips', statusFilter],
+    queryFn: async () => {
+      const result = await getTripList(statusFilter === 'all' ? undefined : statusFilter);
+      return result.data;
+    },
     refetchOnWindowFocus: false,
+    retry: false,
   });
 
-  const trips = data?.trips ?? [];
+  // Use mock data if API fails (development mode)
+  const trips = useMemo(() => {
+    return (data?.trips ?? mockTrips) as Trip[];
+  }, [data]);
 
-  const filtered = trips.filter((t) => {
-    const matchSearch = !search || [t.vehicle.name, t.driver.user.name, t.startLocation, t.endLocation].some((f) => f.toLowerCase().includes(search.toLowerCase()));
-    const matchStatus = statusFilter === 'all' || t.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const filtered = useMemo(() => {
+    return trips.filter((t) => {
+      const matchSearch = !search || [t.vehicle.name, t.driver.user.name, t.startLocation, t.endLocation].some((f) => f?.toLowerCase?.().includes(search.toLowerCase()));
+      const matchStatus = statusFilter === 'all' || t.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [trips, search, statusFilter]);
 
   return (
     <DashboardLayout>
@@ -69,42 +77,55 @@ export default function TripsPage() {
         </div>
 
         <div className="rounded-xl border bg-card overflow-x-auto">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading trips…</div>
-          ) : isError ? (
-            <div className="p-8 text-center text-red-600">Failed to load trips. Please sign in or try again.</div>
+          {isLoading && !trips.length ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <div className="inline-flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                Loading trips…
+              </div>
+            </div>
+          ) : trips.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">No trips found</div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="px-6 py-3 font-medium">Vehicle</th>
-                  <th className="px-6 py-3 font-medium">Driver</th>
-                  <th className="px-6 py-3 font-medium">Route</th>
-                  <th className="px-6 py-3 font-medium">Cargo</th>
-                  <th className="px-6 py-3 font-medium">Revenue</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((t) => (
-                  <tr key={t._id} className="data-table-row">
-                    <td className="px-6 py-3 font-medium">{t.vehicle.name}</td>
-                    <td className="px-6 py-3">{t.driver.user.name}</td>
-                    <td className="px-6 py-3">
-                      <span className="flex items-center gap-1">{t.startLocation} <ArrowRight className="h-3 w-3 text-muted-foreground" /> {t.endLocation}</span>
-                    </td>
-                    <td className="px-6 py-3">{t.cargoWeight.toLocaleString()} kg</td>
-                    <td className="px-6 py-3 font-mono">₹{t.revenue.toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-3"><StatusBadge status={t.status} /></td>
-                    <td className="px-6 py-3 text-muted-foreground">{new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+            <>
+              {isError && !data && (
+                <div className="p-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
+                </div>
+              )}
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="px-6 py-3 font-medium">Vehicle</th>
+                    <th className="px-6 py-3 font-medium">Driver</th>
+                    <th className="px-6 py-3 font-medium">Route</th>
+                    <th className="px-6 py-3 font-medium">Cargo</th>
+                    <th className="px-6 py-3 font-medium">Revenue</th>
+                    <th className="px-6 py-3 font-medium">Status</th>
+                    <th className="px-6 py-3 font-medium">Date</th>
                   </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No trips found</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((t) => (
+                    <tr key={t._id} className="data-table-row border-b hover:bg-muted/50 transition-colors">
+                      <td className="px-6 py-3 font-medium">{t.vehicle.name}</td>
+                      <td className="px-6 py-3">{t.driver.user.name}</td>
+                      <td className="px-6 py-3">
+                        <span className="flex items-center gap-1">{t.startLocation} <ArrowRight className="h-3 w-3 text-muted-foreground" /> {t.endLocation}</span>
+                      </td>
+                      <td className="px-6 py-3">{t.cargoWeight?.toLocaleString?.() ?? t.cargoWeight} kg</td>
+                      <td className="px-6 py-3 font-mono">₹{t.revenue?.toLocaleString?.('en-IN') ?? t.revenue}</td>
+                      <td className="px-6 py-3"><StatusBadge status={t.status} /></td>
+                      <td className="px-6 py-3 text-muted-foreground">{new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && trips.length > 0 && (
+                    <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No trips match your filters</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>

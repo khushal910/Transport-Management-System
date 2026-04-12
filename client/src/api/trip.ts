@@ -14,5 +14,32 @@ export interface TripListPayload {
 export async function getTripList(status?: string, page = 1, limit = 50) {
   const query = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) query.set('status', status);
-  return fetchBackend<TripListPayload>(`/api/trip/list?${query.toString()}`);
+  return fetchBackend<TripListPayload>(`/api/trip/get?${query.toString()}`);
+}
+
+export async function createTrip(data: any) {
+  return fetchBackend(`/api/trip/create`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateTrip(tripId: string, data: any) {
+  return fetchBackend(`/api/trip/update/${tripId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateTripStatus(tripId: string, status: string) {
+  return fetchBackend(`/api/trip/status/${tripId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteTrip(tripId: string) {
+  return fetchBackend(`/api/trip/delete/${tripId}`, {
+    method: 'DELETE',
+  });
 }
