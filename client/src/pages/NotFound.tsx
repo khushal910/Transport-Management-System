@@ -29,11 +29,11 @@ const NotFound = () => {
           {/* Action Buttons */}
           <div className="space-y-3">
             <Link
-              to="/dashboard"
+              to="/"
               className="flex items-center justify-center gap-2 w-full rounded-lg bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              Back to Home
             </Link>
 
             <a
