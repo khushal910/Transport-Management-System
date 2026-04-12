@@ -51,9 +51,18 @@ const port = process.env.PORT || 3000;
 const startServer = async () => {
   try {
     await dbConnect();
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       console.log(`Server running on http://localhost:${port}`);
       console.log('[GPS Simulator] Not started yet - waiting for user login to begin mock GPS updates');
+    });
+
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Please stop the process using this port or set PORT to a different value.`);
+        process.exit(1);
+      }
+      console.error('Server error:', error);
+      process.exit(1);
     });
   } catch (error) {
     console.error('Failed to connect to database:', error);
