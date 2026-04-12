@@ -95,6 +95,19 @@ export async function register(payload: RegisterPayload) {
   });
 }
 
+export interface SetupPasswordPayload {
+  token: string;
+  password: string;
+  passwordConfirm: string;
+}
+
+export async function setupPassword(payload: SetupPasswordPayload) {
+  return fetchBackend<{ message: string }>('/api/auth/setup-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function getEmployees() {
   return fetchBackend<{ employees: EmployeeRecord[] }>('/api/auth/employees');
 }

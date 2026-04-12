@@ -85,15 +85,16 @@ const setupPassword = async (req, res) => {
     // Hash new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Update user password and clear setup token fields
+    // Update user password, activate account, and clear setup token fields
     user.password = hashedPassword;
     user.isPasswordSet = true; // Mark password as set
+    user.isActive = true; // Activate the employee account
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
 
     await user.save();
 
-    console.log('✅ Password set successfully for user:', user.email);
+    console.log('✅ Password set and account activated for user:', user.email);
     return response(res, 200, true, 'Password set successfully. You can now login with your credentials.');
   } catch (err) {
     console.error('❌ Setup Password Error:', err.message);

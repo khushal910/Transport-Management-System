@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import SetupPasswordPage from "./pages/SetupPasswordPage";
 import LandingPage from "./pages/LandingPage";
 import DocumentationPage from "./pages/DocumentationPage";
 import DocumentationTopicPage from "./pages/DocumentationTopicPage";
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/documentation/:slug" element={<DocumentationTopicPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth/setup-password" element={<SetupPasswordPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="/trips" element={<TripsPage />} />

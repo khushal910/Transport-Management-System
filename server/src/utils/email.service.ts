@@ -8,11 +8,16 @@ interface EmailResult {
 }
 
 // Initialize email transporter
+const normalizeEnv = (value?: string) => {
+  if (!value) return undefined;
+  return value.trim().replace(/^['"]|['"]$/g, '');
+};
+
 const transporter: Transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
+  service: normalizeEnv(process.env.EMAIL_SERVICE) || 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    user: normalizeEnv(process.env.EMAIL_USER),
+    pass: normalizeEnv(process.env.EMAIL_PASSWORD),
   },
 });
 
@@ -182,11 +187,26 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
  */
 export const sendEmployeeSetupEmail = async (email: string, name: string, setupToken: string): Promise<EmailResult> => {
   try {
+    console.log('📧 [EmailService] Starting sendEmployeeSetupEmail');
+    console.log('📧 [EmailService] Email recipient:', email);
+    console.log('📧 [EmailService] Email config - USER:', process.env.EMAIL_USER ? '✓' : '✗');
+    console.log('📧 [EmailService] Email config - PASSWORD:', process.env.EMAIL_PASSWORD ? '✓' : '✗');
+    console.log('📧 [EmailService] Email config - CLIENT_URL:', process.env.CLIENT_URL || 'NOT SET');
+    
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+      const error = 'Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env';
+      console.error('❌ [EmailService]', error);
+      throw new Error(error);
+    }
+
+    if (!process.env.CLIENT_URL) {
+      const error = 'CLIENT_URL not configured. Set CLIENT_URL in .env';
+      console.error('❌ [EmailService]', error);
+      throw new Error(error);
     }
 
     const setupLink = `${process.env.CLIENT_URL}/auth/setup-password?token=${setupToken}`;
+    console.log('📧 [EmailService] Setup link:', setupLink);
     
     const mailOptions: SendMailOptions = {
       from: process.env.EMAIL_USER,
@@ -239,12 +259,14 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
       `,
     };
 
+    console.log('📧 [EmailService] Attempting to send email via transporter...');
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Employee setup email sent successfully to:', email);
+    console.log('✅ [EmailService] Employee setup email sent successfully to:', email);
+    console.log('📧 [EmailService] Message ID:', result.messageId);
     return { success: true, message: 'Setup email sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Employee setup email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    console.error('❌ [EmailService] Employee setup email sending error:', error.message);
+    console.error('❌ [EmailService] Error details:', error.code || error);
     return { success: false, error: error.message };
   }
 };

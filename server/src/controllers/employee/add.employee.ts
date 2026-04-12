@@ -32,9 +32,17 @@ const addEmployee = async (req, res) => {
       if (existingUser.isDeleted && String(existingUser.company) === String(managerCompanyId)) {
         console.log('[AddEmployee] Recovering deleted employee:', email);
         
-        // Update user data (recovery)
+        const hasEmailCredentials = !!(
+          process.env.EMAIL_USER &&
+          process.env.EMAIL_PASSWORD &&
+          process.env.CLIENT_URL
+        );
+
+        // Generate setup token once for recovery if email should be sent
+        let plainRecoveryToken = '';
         let recoveryData;
-        if (environmentConfig.isDevelopment) {
+
+        if (environmentConfig.isDevelopment && !hasEmailCredentials) {
           const defaultPassword = environmentConfig.getDefaultPassword();
           const salt = await bcrypt.genSalt(10);
           const hashedPassword = await bcrypt.hash(defaultPassword, salt);
@@ -48,8 +56,9 @@ const addEmployee = async (req, res) => {
             isDeleted: false,
           };
         } else {
-          const setupToken = crypto.randomBytes(32).toString('hex');
-          const hashedSetupToken = await bcrypt.hash(setupToken, 10);
+          // Send password setup email when email is configured or in production
+          plainRecoveryToken = crypto.randomBytes(32).toString('hex');
+          const hashedSetupToken = await bcrypt.hash(plainRecoveryToken, 10);
           const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
           recoveryData = {
@@ -94,16 +103,22 @@ const addEmployee = async (req, res) => {
           }
         }
 
-        // Send email based on environment
         let emailResult = { success: true };
-        if (environmentConfig.isDevelopment) {
+        if (hasEmailCredentials) {
+          console.log('📧 [AddEmployee Recovery] Sending recovery setup email to:', email);
+          console.log('📧 [AddEmployee Recovery] Token available:', !!plainRecoveryToken, 'Token length:', plainRecoveryToken.length);
+          emailResult = await sendEmployeeSetupEmail(email, name, plainRecoveryToken);
+          console.log('📧 [AddEmployee Recovery] Email result:', emailResult);
+          if (!emailResult.success) {
+            console.warn('❌ Failed to send employee recovery email:', emailResult.error);
+            return response(res, 500, false, 'Employee recovered but failed to send setup email. Check email configuration.');
+          }
+          console.info('✅ Recovery email sent successfully');
+        } else if (environmentConfig.isDevelopment) {
           console.info(`✅ [DEV MODE] Employee recovered with default password: ${environmentConfig.getDefaultPassword()}`);
         } else {
-          const setupToken = crypto.randomBytes(32).toString('hex');
-          emailResult = await sendEmployeeSetupEmail(email, name, setupToken);
-          if (!emailResult.success) {
-            console.warn('Failed to send employee recovery email:', emailResult.error);
-          }
+          console.warn('❌ Email credentials are missing in production mode. Recovery setup email cannot be sent.');
+          return response(res, 500, false, 'Email configuration is missing. Cannot send recovery setup email.');
         }
 
         return response(res, 200, true, 'Employee recovered successfully', {
@@ -129,9 +144,16 @@ const addEmployee = async (req, res) => {
       }
     }
 
-    // In development mode: set default password and mark as active
+    const hasEmailCredentials = !!(
+      process.env.EMAIL_USER &&
+      process.env.EMAIL_PASSWORD &&
+      process.env.CLIENT_URL
+    );
+
+    let plainSetupToken = '';
     let userData;
-    if (environmentConfig.isDevelopment) {
+
+    if (environmentConfig.isDevelopment && !hasEmailCredentials) {
       const defaultPassword = environmentConfig.getDefaultPassword();
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(defaultPassword, salt);
@@ -139,29 +161,29 @@ const addEmployee = async (req, res) => {
       userData = {
         name,
         email,
-        password: hashedPassword, // Set default password
-        isPasswordSet: true, // Mark password as set
-        isActive: true, // Automatically activate in dev mode
+        password: hashedPassword,
+        isPasswordSet: true,
+        isActive: true,
         role,
         company: managerCompanyId,
         isDeleted: false,
       };
     } else {
-      // Production mode: require email setup
-      const setupToken = crypto.randomBytes(32).toString('hex');
-      const hashedSetupToken = await bcrypt.hash(setupToken, 10);
+      // When email is configured or in production, use the password setup flow
+      plainSetupToken = crypto.randomBytes(32).toString('hex');
+      const hashedSetupToken = await bcrypt.hash(plainSetupToken, 10);
       const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       userData = {
         name,
         email,
-        password: null, // No password until employee sets it
-        isPasswordSet: false, // Employee hasn't set password yet
-        isActive: false, // Requires email activation
+        password: null,
+        isPasswordSet: false,
+        isActive: false,
         role,
         company: managerCompanyId,
         isDeleted: false,
-        passwordResetToken: hashedSetupToken, // Reuse field for setup token
+        passwordResetToken: hashedSetupToken,
         passwordResetExpires: tokenExpiry,
       };
     }
@@ -181,18 +203,31 @@ const addEmployee = async (req, res) => {
       });
     }
 
-    // Send email based on environment
+    // Send email when SMTP configuration is available
     let emailResult = { success: true };
-    if (environmentConfig.isDevelopment) {
-      // In dev mode: just log it, don't require email
+    console.log('📧 [AddEmployee] Environment:', environmentConfig.environment);
+    console.log('📧 [AddEmployee] hasEmailCredentials:', hasEmailCredentials);
+    console.log('📧 [AddEmployee] CLIENT_URL:', process.env.CLIENT_URL);
+
+    if (hasEmailCredentials) {
+      console.log('📧 [AddEmployee] Sending setup email to:', email);
+      console.log('📧 [AddEmployee] Employee name:', name);
+      console.log('📧 [AddEmployee] Token available:', !!plainSetupToken, 'Token length:', plainSetupToken.length);
+
+      emailResult = await sendEmployeeSetupEmail(email, name, plainSetupToken);
+      console.log('📧 [AddEmployee] Email result:', emailResult);
+
+      if (!emailResult.success) {
+        console.warn('❌ Failed to send employee setup email:', emailResult.error);
+        return response(res, 500, false, 'Employee created but failed to send setup email. Please check email configuration.');
+      }
+
+      console.info('✅ Setup email sent successfully');
+    } else if (environmentConfig.isDevelopment) {
       console.info(`✅ [DEV MODE] Employee created with default password: ${environmentConfig.getDefaultPassword()}`);
     } else {
-      // In production: send password setup email
-      const setupToken = crypto.randomBytes(32).toString('hex');
-      emailResult = await sendEmployeeSetupEmail(email, name, setupToken);
-      if (!emailResult.success) {
-        console.warn('Failed to send employee setup email:', emailResult.error);
-      }
+      console.warn('❌ Email credentials are missing in production mode. Password setup email cannot be sent.');
+      return response(res, 500, false, 'Email configuration is missing. Cannot send setup email.');
     }
 
     return response(res, 201, true, 'Employee added successfully.', {
@@ -202,9 +237,9 @@ const addEmployee = async (req, res) => {
       role: newEmployee.role,
       isActive: newEmployee.isActive,
       companyId: newEmployee.company,
-      message: environmentConfig.isDevelopment 
-        ? `✅ Dev Mode: Employee is active with default password "${environmentConfig.getDefaultPassword()}"`
-        : 'Setup link sent to email.',
+      message: hasEmailCredentials
+        ? 'Setup link sent to email.'
+        : `✅ Dev Mode: Employee is active with default password "${environmentConfig.getDefaultPassword()}"`,
       ...(role === 'driver' && {
         driver: {
           driverId: driverRecord._id,
