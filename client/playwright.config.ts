@@ -1,10 +1,11 @@
-import { createLovableConfig } from "lovable-agent-playwright-config/config";
+import type { PlaywrightTestConfig } from "@playwright/test";
 
-export default createLovableConfig({
-  // Add your custom playwright configuration overrides here
-  // Example:
-  // timeout: 60000,
-  // use: {
-  //   baseURL: 'http://localhost:3000',
-  // },
-});
+const config: PlaywrightTestConfig = {
+  timeout: 30000,
+  use: {
+    baseURL: "http://localhost:5173",
+    headless: true,
+  },
+};
+
+export default config;
