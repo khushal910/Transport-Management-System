@@ -67,8 +67,6 @@ export default function DocumentationTopicPage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Route</p>
                 <p className="mt-1 font-mono text-xs text-slate-700">{catalogEntry.routePath}</p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Source</p>
-                <p className="mt-1 font-mono text-xs text-slate-700">{catalogEntry.sourceFile}</p>
               </div>
             ) : null}
           </div>

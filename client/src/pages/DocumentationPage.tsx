@@ -137,14 +137,6 @@ export default function DocumentationPage() {
                   ))}
                 </div>
 
-                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="mb-1 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-                    <FileCode2 className="h-3.5 w-3.5" />
-                    Source File
-                  </p>
-                  <p className="font-mono text-xs text-slate-700">{doc.sourceFile}</p>
-                </div>
-
                 <div className="mt-5 flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Detailed module guide</span>
                   <Link
