@@ -56,7 +56,7 @@ export const getExpenseList = async (req, res) => {
 
     const companyId = req.user?.companyId;
     const userRole = req.user?.role;
-    const userId = req.user?.userId || req.user?.id;
+    const userId = req.user?.userId;
     const {
       page = 1,
       limit = DEFAULT_LIMIT,

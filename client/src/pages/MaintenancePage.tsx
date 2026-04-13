@@ -17,7 +17,7 @@ export default function MaintenancePage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const { user } = useAuth();
-  const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
+  const canCreate = user?.role === 'manager';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['maintenance', statusFilter],
