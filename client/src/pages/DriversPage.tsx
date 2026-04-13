@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Shield, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/context/AuthContext';
 import type { Driver } from '@/types/fleet';
 
 type DriverRow = Partial<Driver> & {
@@ -18,6 +19,8 @@ type DriverRow = Partial<Driver> & {
 export default function DriversPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { user } = useAuth();
+  const showContactInfo = user?.role !== 'safety_officer';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['drivers', statusFilter],
@@ -104,14 +107,16 @@ export default function DriversPage() {
 
                 return (
                 <div key={driver._id} className="rounded-xl border bg-card p-5 card-hover">
-                  <div className="flex items-start justify-between">
+                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                         {driverName.split(' ').map((n) => n[0]).join('')}
                       </div>
                       <div>
                         <p className="font-semibold">{driverName}</p>
-                        <p className="text-xs text-muted-foreground">{driverEmail}</p>
+                        {showContactInfo && (
+                          <p className="text-xs text-muted-foreground">{driverEmail}</p>
+                        )}
                       </div>
                     </div>
                     <StatusBadge status={(driver.status ?? 'off_duty') as Driver['status']} />

@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import SetupPasswordPage from "./pages/SetupPasswordPage";
@@ -27,25 +29,57 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/docs" element={<DocumentationPage />} />
-          <Route path="/docs/:slug" element={<DocumentationTopicPage />} />
-          <Route path="/documentation" element={<Navigate to="/docs" replace />} />
-          <Route path="/documentation/:slug" element={<DocumentationTopicPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/auth/setup-password" element={<SetupPasswordPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/vehicles" element={<VehiclesPage />} />
-          <Route path="/trips" element={<TripsPage />} />
-          <Route path="/drivers" element={<DriversPage />} />
-          <Route path="/maintenance" element={<MaintenancePage />} />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/employees" element={<EmployeesPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/docs" element={<DocumentationPage />} />
+            <Route path="/docs/:slug" element={<DocumentationTopicPage />} />
+            <Route path="/documentation" element={<Navigate to="/docs" replace />} />
+            <Route path="/documentation/:slug" element={<DocumentationTopicPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/auth/setup-password" element={<SetupPasswordPage />} />
+
+            {/* Dashboard: manager, dispatcher, safety_officer, financial_analyst */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'safety_officer', 'financial_analyst']} />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+            </Route>
+
+            {/* Manager-only routes */}
+            <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+              <Route path="/vehicles" element={<VehiclesPage />} />
+              <Route path="/employees" element={<EmployeesPage />} />
+            </Route>
+
+            {/* Trips: manager, dispatcher, driver */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'driver']} />}>
+              <Route path="/trips" element={<TripsPage />} />
+            </Route>
+
+            {/* Expenses: manager, dispatcher, driver, financial_analyst (view-only for analyst) */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'driver', 'financial_analyst']} />}>
+              <Route path="/expenses" element={<ExpensesPage />} />
+            </Route>
+
+            {/* Drivers: manager, dispatcher, safety_officer */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'safety_officer']} />}>
+              <Route path="/drivers" element={<DriversPage />} />
+            </Route>
+
+            {/* Maintenance: manager, safety_officer */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'safety_officer']} />}>
+              <Route path="/maintenance" element={<MaintenancePage />} />
+            </Route>
+
+            {/* Analytics: manager, financial_analyst */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'financial_analyst']} />}>
+              <Route path="/analytics" element={<AnalyticsPage />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

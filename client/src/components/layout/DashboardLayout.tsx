@@ -15,15 +15,15 @@ import {
   X,
   ChevronLeft,
 } from 'lucide-react';
-import { mockUser } from '@/data/mockData';
+import { useAuth } from '@/context/AuthContext';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['manager', 'dispatcher'] },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['manager', 'dispatcher', 'safety_officer', 'financial_analyst'] },
   { name: 'Vehicles', href: '/vehicles', icon: Truck, roles: ['manager'] },
   { name: 'Trips', href: '/trips', icon: Route, roles: ['manager', 'dispatcher', 'driver'] },
-  { name: 'Drivers', href: '/drivers', icon: Users, roles: ['manager'] },
-  { name: 'Maintenance', href: '/maintenance', icon: Wrench, roles: ['manager', 'dispatcher', 'safety_officer'] },
-  { name: 'Expenses', href: '/expenses', icon: Receipt, roles: ['manager', 'dispatcher', 'driver'] },
+  { name: 'Drivers', href: '/drivers', icon: Users, roles: ['manager', 'dispatcher', 'safety_officer'] },
+  { name: 'Maintenance', href: '/maintenance', icon: Wrench, roles: ['manager', 'safety_officer'] },
+  { name: 'Expenses', href: '/expenses', icon: Receipt, roles: ['manager', 'dispatcher', 'driver', 'financial_analyst'] },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['manager', 'financial_analyst'] },
   { name: 'Employees', href: '/employees', icon: UserPlus, roles: ['manager'] },
 ];
@@ -33,9 +33,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const user = mockUser;
+  const { user, logout } = useAuth();
 
-  const filteredNav = navigation.filter((item) => item.roles.includes(user.role));
+  const filteredNav = navigation.filter((item) => user && item.roles.includes(user.role));
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -107,16 +112,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className={cn('border-t border-sidebar-border p-3', collapsed && 'flex flex-col items-center')}>
           <div className={cn('flex items-center gap-3', collapsed && 'flex-col')}>
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-              {user.name.charAt(0)}
+              {user?.name?.charAt(0) ?? '?'}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user.name}</p>
-                <p className="truncate text-xs text-sidebar-muted capitalize">{user.role}</p>
+                <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user?.name ?? ''}</p>
+                <p className="truncate text-xs text-sidebar-muted capitalize">{user?.role?.replace('_', ' ') ?? ''}</p>
               </div>
             )}
             <button
-              onClick={() => navigate('/login')}
+              onClick={handleLogout}
               className={cn('text-sidebar-muted hover:text-destructive', collapsed && 'mt-2')}
               title="Logout"
             >

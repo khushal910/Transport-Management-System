@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import type { Expense } from '@/types/fleet';
 
 type ExpenseRow = Partial<Expense> & {
@@ -24,6 +25,8 @@ export default function ExpensesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const canCreate = user?.role === 'manager' || user?.role === 'dispatcher' || user?.role === 'driver';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['expenses', statusFilter],
@@ -65,15 +68,17 @@ export default function ExpensesPage() {
             <h1 className="page-title">Expenses</h1>
             <p className="page-description">Track fuel and miscellaneous trip expenses</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" />Add Expense</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader><DialogTitle>Create Expense</DialogTitle></DialogHeader>
-              <ExpenseForm onClose={() => setDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          {canCreate && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="mr-2 h-4 w-4" />Add Expense</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader><DialogTitle>Create Expense</DialogTitle></DialogHeader>
+                <ExpenseForm onClose={() => setDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="filter-bar">

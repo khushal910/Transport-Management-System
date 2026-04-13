@@ -5,9 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Truck, Eye, EyeOff } from 'lucide-react';
 import { login } from '@/api/auth';
+import { useAuth } from '@/context/AuthContext';
+import type { UserRole } from '@/types/fleet';
+
+const ROLE_DEFAULT_ROUTE: Record<UserRole, string> = {
+  manager: '/dashboard',
+  dispatcher: '/dashboard',
+  driver: '/trips',
+  safety_officer: '/dashboard',
+  financial_analyst: '/analytics',
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { refetch } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -19,8 +30,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(form);
-      navigate('/dashboard');
+      const result = await login(form);
+      // Refresh auth context with real user data
+      await refetch();
+      const role = result.data?.role as UserRole | undefined;
+      navigate(role && ROLE_DEFAULT_ROUTE[role] ? ROLE_DEFAULT_ROUTE[role] : '/dashboard');
     } catch (err: any) {
       setError(err?.message || 'Login failed. Please check your credentials.');
     } finally {

@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import FuelLog from '../../models/fuel.schema';
+import Driver from '../../models/driver.schema';
 import response from '../../response/response';
 import { expenseListSchema } from '../../validations/expense.list.validator';
 import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig';
@@ -54,6 +55,8 @@ export const getExpenseList = async (req, res) => {
     }
 
     const companyId = req.user?.companyId;
+    const userRole = req.user?.role;
+    const userId = req.user?.userId || req.user?.id;
     const {
       page = 1,
       limit = DEFAULT_LIMIT,
@@ -85,6 +88,20 @@ export const getExpenseList = async (req, res) => {
       driverId,
     });
     filterObj.company = companyId;
+
+    // If user is a driver, only show expenses for their own trips
+    if (userRole === 'driver') {
+      const driverRecord = await Driver.findOne({ user: userId });
+      if (driverRecord) {
+        filterObj.driver = driverRecord._id;
+      } else {
+        return response(res, 200, true, 'Expenses retrieved successfully', {
+          expenses: [],
+          pagination: { page: pageNum, limit: pageLimit, total: 0, totalPages: 0 },
+          isGrouped: false,
+        });
+      }
+    }
 
     // Fetch data
     const expenses = await FuelLog.find(filterObj)

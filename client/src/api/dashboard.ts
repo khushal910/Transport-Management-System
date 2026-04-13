@@ -32,6 +32,14 @@ export interface DashboardData {
   trips: TripData[];
 }
 
+export interface SafetyMetrics {
+  expiredLicenses: number;
+  lowSafetyScores: number;
+  highRiskDrivers: number;
+  recentAccidents: number;
+  maintenanceAlerts: number;
+}
+
 export async function getDashboardData(filters?: { status?: string; vehicleType?: string }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set('status', filters.status);
@@ -39,4 +47,8 @@ export async function getDashboardData(filters?: { status?: string; vehicleType?
   
   const query = params.toString() ? `?${params.toString()}` : '';
   return fetchBackend<DashboardData>(`/api/dashboard/kpis${query}`);
+}
+
+export async function getSafetyMetrics() {
+  return fetchBackend<SafetyMetrics>('/api/dashboard/safety-metrics');
 }

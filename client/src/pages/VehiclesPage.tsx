@@ -9,12 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Truck, AlertCircle } from 'lucide-react';
 import { getVehicleList } from '@/api/vehicle';
+import { useAuth } from '@/context/AuthContext';
 import type { Vehicle, VehicleType } from '@/types/fleet';
 
 export default function VehiclesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const canManage = user?.role === 'manager';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['vehicles'],
@@ -56,15 +59,17 @@ export default function VehiclesPage() {
             <h1 className="page-title">Vehicles</h1>
             <p className="page-description">Manage your fleet vehicles</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" />Add Vehicle</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader><DialogTitle>Register Vehicle</DialogTitle></DialogHeader>
-              <VehicleForm onClose={() => setDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          {canManage && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="mr-2 h-4 w-4" />Add Vehicle</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader><DialogTitle>Register Vehicle</DialogTitle></DialogHeader>
+                <VehicleForm onClose={() => setDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="filter-bar">

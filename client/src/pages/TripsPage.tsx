@@ -9,12 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, ArrowRight, AlertCircle } from 'lucide-react';
 import { getTripList } from '@/api/trip';
+import { useAuth } from '@/context/AuthContext';
 import type { Trip } from '@/types/fleet';
 
 export default function TripsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['trips', statusFilter],
@@ -47,15 +50,17 @@ export default function TripsPage() {
             <h1 className="page-title">Trips</h1>
             <p className="page-description">Manage trip assignments and tracking</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" />Create Trip</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader><DialogTitle>Create Trip</DialogTitle></DialogHeader>
-              <TripForm onClose={() => setDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          {canCreate && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="mr-2 h-4 w-4" />Create Trip</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader><DialogTitle>Create Trip</DialogTitle></DialogHeader>
+                <TripForm onClose={() => setDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="filter-bar">

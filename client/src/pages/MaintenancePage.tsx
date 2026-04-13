@@ -9,12 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Search, Wrench, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import type { MaintenanceLog } from '@/types/fleet';
 
 export default function MaintenancePage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { user } = useAuth();
+  const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['maintenance', statusFilter],
@@ -54,15 +57,17 @@ export default function MaintenancePage() {
             <h1 className="page-title">Maintenance</h1>
             <p className="page-description">Track vehicle maintenance logs</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="mr-2 h-4 w-4" />Log Maintenance</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader><DialogTitle>Create Maintenance Log</DialogTitle></DialogHeader>
-              <MaintenanceForm onClose={() => setDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          {canCreate && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="mr-2 h-4 w-4" />Log Maintenance</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader><DialogTitle>Create Maintenance Log</DialogTitle></DialogHeader>
+                <MaintenanceForm onClose={() => setDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="filter-bar">
