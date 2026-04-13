@@ -19,11 +19,20 @@ export const fetchBackend = async <T>(path: string, options: RequestInit = {}) =
     ...options,
   });
 
-  const payload = (await response.json()) as ApiResponse<T>;
+  const responseText = await response.text();
+  let payload: ApiResponse<T> | null = null;
 
-  if (!response.ok) {
-    throw new Error(payload?.message || response.statusText || 'Request failed');
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText) as ApiResponse<T>;
+    } catch {
+      payload = null;
+    }
   }
 
-  return payload;
+  if (!response.ok) {
+    throw new Error(payload?.message || response.statusText || responseText || 'Request failed');
+  }
+
+  return payload ?? { success: true, message: 'No content', data: null };
 };
