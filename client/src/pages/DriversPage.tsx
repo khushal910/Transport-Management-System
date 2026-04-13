@@ -2,11 +2,10 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { mockDrivers } from '@/data/mockData';
 import { getDriverList } from '@/api/driver';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Shield } from 'lucide-react';
+import { Search, Shield, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import type { Driver } from '@/types/fleet';
 
@@ -20,24 +19,24 @@ export default function DriversPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['drivers', statusFilter],
     queryFn: async () => {
       const result = await getDriverList();
       return result.data;
     },
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 1,
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Normalize API rows (flat driver shape) and keep mock fallback.
+  // Get drivers from API - no fallback to mock data
   const drivers = useMemo<DriverRow[]>(() => {
     const apiDrivers = Array.isArray((data as { drivers?: DriverRow[] } | undefined)?.drivers)
       ? ((data as { drivers?: DriverRow[] }).drivers ?? [])
       : [];
 
-    return apiDrivers.length ? apiDrivers : (mockDrivers as DriverRow[]);
+    return apiDrivers;
   }, [data]);
 
   const filtered = useMemo(() => {
@@ -80,19 +79,21 @@ export default function DriversPage() {
             <div className="col-span-full p-8 text-center text-muted-foreground">
               <div className="inline-flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading...
+                Loading drivers...
+              </div>
+            </div>
+          ) : isError ? (
+            <div className="col-span-full p-4 bg-destructive/10 border border-destructive/50 rounded-lg text-sm text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <div>
+                <p className="font-medium">Failed to load drivers</p>
+                <p className="text-xs">{error instanceof Error ? error.message : 'Please try again later'}</p>
               </div>
             </div>
           ) : drivers.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-muted-foreground">No drivers found</div>
+            <div className="col-span-full py-12 text-center text-muted-foreground">No drivers available</div>
           ) : (
             <>
-              {isError && !data && (
-                <div className="col-span-full p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
-                </div>
-              )}
               {filtered.map((driver) => {
                 const driverName = driver.user?.name ?? driver.name ?? 'Unknown Driver';
                 const driverEmail = driver.user?.email ?? driver.email ?? 'unknown@fleetflow.com';

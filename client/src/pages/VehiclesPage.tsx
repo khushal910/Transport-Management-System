@@ -7,9 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Truck } from 'lucide-react';
+import { Plus, Search, Truck, AlertCircle } from 'lucide-react';
 import { getVehicleList } from '@/api/vehicle';
-import { mockVehicles } from '@/data/mockData';
 import type { Vehicle, VehicleType } from '@/types/fleet';
 
 export default function VehiclesPage() {
@@ -17,7 +16,7 @@ export default function VehiclesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['vehicles'],
     queryFn: async () => {
       const result = await getVehicleList();
@@ -26,10 +25,10 @@ export default function VehiclesPage() {
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: false,
+    retry: 1,
   });
 
-  // Use API data when available; fall back to mock data for local/demo mode.
+  // Use API data only - no mock fallback
   const vehicles = useMemo<Vehicle[]>(() => {
     const apiVehicles = Array.isArray(data)
       ? data
@@ -37,7 +36,7 @@ export default function VehiclesPage() {
         ? ((data as { vehicles?: Vehicle[] }).vehicles ?? [])
         : [];
 
-    return apiVehicles.length ? (apiVehicles as Vehicle[]) : mockVehicles;
+    return apiVehicles as Vehicle[];
   }, [data]);
 
   const filtered = useMemo(() => {
@@ -94,46 +93,46 @@ export default function VehiclesPage() {
                 Loading vehicles…
               </div>
             </div>
+          ) : isError ? (
+            <div className="p-4 bg-destructive/10 border-b border-destructive/50 text-sm text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <div>
+                <p className="font-medium">Failed to load vehicles</p>
+                <p className="text-xs">{error instanceof Error ? error.message : 'Please try again later'}</p>
+              </div>
+            </div>
           ) : vehicles.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">No vehicles found</div>
           ) : (
-            <>
-              {isError && !data && (
-                <div className="p-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
-                </div>
-              )}
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="px-6 py-3 font-medium">Name</th>
-                    <th className="px-6 py-3 font-medium">License Plate</th>
-                    <th className="px-6 py-3 font-medium">Model</th>
-                    <th className="px-6 py-3 font-medium">Type</th>
-                    <th className="px-6 py-3 font-medium">Capacity</th>
-                    <th className="px-6 py-3 font-medium">Odometer</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="px-6 py-3 font-medium">Name</th>
+                  <th className="px-6 py-3 font-medium">License Plate</th>
+                  <th className="px-6 py-3 font-medium">Model</th>
+                  <th className="px-6 py-3 font-medium">Type</th>
+                  <th className="px-6 py-3 font-medium">Capacity</th>
+                  <th className="px-6 py-3 font-medium">Odometer</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((v) => (
+                  <tr key={v._id} className="data-table-row border-b hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-3 font-medium flex items-center gap-2"><Truck className="h-4 w-4 text-muted-foreground" />{v.name}</td>
+                    <td className="px-6 py-3 font-mono text-xs">{v.licensePlate}</td>
+                    <td className="px-6 py-3">{v.model}</td>
+                    <td className="px-6 py-3 capitalize">{v.vehicleType}</td>
+                    <td className="px-6 py-3">{v.maxCapacity?.toLocaleString?.() ?? v.maxCapacity} kg</td>
+                    <td className="px-6 py-3">{v.odometer?.toLocaleString?.() ?? v.odometer} km</td>
+                    <td className="px-6 py-3"><StatusBadge status={v.status} /></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((v) => (
-                    <tr key={v._id} className="data-table-row border-b hover:bg-muted/50 transition-colors">
-                      <td className="px-6 py-3 font-medium flex items-center gap-2"><Truck className="h-4 w-4 text-muted-foreground" />{v.name}</td>
-                      <td className="px-6 py-3 font-mono text-xs">{v.licensePlate}</td>
-                      <td className="px-6 py-3">{v.model}</td>
-                      <td className="px-6 py-3 capitalize">{v.vehicleType}</td>
-                      <td className="px-6 py-3">{v.maxCapacity?.toLocaleString?.() ?? v.maxCapacity} kg</td>
-                      <td className="px-6 py-3">{v.odometer?.toLocaleString?.() ?? v.odometer} km</td>
-                      <td className="px-6 py-3"><StatusBadge status={v.status} /></td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && vehicles.length > 0 && (
-                    <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No vehicles match your filters</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </>
+                ))}
+                {filtered.length === 0 && vehicles.length > 0 && (
+                  <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No vehicles match your filters</td></tr>
+                )}
+              </tbody>
+            </table>
           )}
         </div>
       </div>

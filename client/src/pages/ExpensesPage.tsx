@@ -2,14 +2,13 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { mockExpenses } from '@/data/mockData';
 import { getExpenseList } from '@/api/expense';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, AlertCircle } from 'lucide-react';
 import type { Expense } from '@/types/fleet';
 
 type ExpenseRow = Partial<Expense> & {
@@ -26,24 +25,24 @@ export default function ExpensesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['expenses', statusFilter],
     queryFn: async () => {
       const result = await getExpenseList();
       return result.data;
     },
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 1,
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Normalize API rows and keep mock fallback when unavailable.
+  // Use API data only - no mock fallback
   const expenses = useMemo<ExpenseRow[]>(() => {
     const apiExpenses = Array.isArray((data as { expenses?: ExpenseRow[] } | undefined)?.expenses)
       ? ((data as { expenses?: ExpenseRow[] }).expenses ?? [])
       : [];
 
-    return apiExpenses.length ? apiExpenses : (mockExpenses as ExpenseRow[]);
+    return apiExpenses;
   }, [data]);
 
   const filtered = useMemo(() => {
@@ -98,56 +97,56 @@ export default function ExpensesPage() {
             <div className="p-8 text-center text-muted-foreground">
               <div className="inline-flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading...
+                Loading expenses...
+              </div>
+            </div>
+          ) : isError ? (
+            <div className="p-4 bg-destructive/10 border-b border-destructive/50 text-sm text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <div>
+                <p className="font-medium">Failed to load expenses</p>
+                <p className="text-xs">{error instanceof Error ? error.message : 'Please try again later'}</p>
               </div>
             </div>
           ) : expenses.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">No expenses found</div>
           ) : (
-            <>
-              {isError && !data && (
-                <div className="p-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
-                </div>
-              )}
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="px-6 py-3 font-medium">Trip Route</th>
-                    <th className="px-6 py-3 font-medium">Driver</th>
-                    <th className="px-6 py-3 font-medium">Vehicle</th>
-                    <th className="px-6 py-3 font-medium">Fuel Cost</th>
-                    <th className="px-6 py-3 font-medium">Misc</th>
-                    <th className="px-6 py-3 font-medium">Distance</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((e) => {
-                    const startLocation = e.trip?.startLocation ?? e.startLocation ?? 'N/A';
-                    const endLocation = e.trip?.endLocation ?? e.endLocation ?? 'N/A';
-                    const driverName = e.driver?.user?.name ?? e.driverName ?? 'Unknown Driver';
-                    const vehicleName = e.vehicle?.name ?? e.vehicleName ?? 'Unknown Vehicle';
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="px-6 py-3 font-medium">Trip Route</th>
+                  <th className="px-6 py-3 font-medium">Driver</th>
+                  <th className="px-6 py-3 font-medium">Vehicle</th>
+                  <th className="px-6 py-3 font-medium">Fuel Cost</th>
+                  <th className="px-6 py-3 font-medium">Misc</th>
+                  <th className="px-6 py-3 font-medium">Distance</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((e) => {
+                  const startLocation = e.trip?.startLocation ?? e.startLocation ?? 'N/A';
+                  const endLocation = e.trip?.endLocation ?? e.endLocation ?? 'N/A';
+                  const driverName = e.driver?.user?.name ?? e.driverName ?? 'Unknown Driver';
+                  const vehicleName = e.vehicle?.name ?? e.vehicleName ?? 'Unknown Vehicle';
 
-                    return (
-                    <tr key={e._id} className="data-table-row">
-                      <td className="px-6 py-3 font-medium">{startLocation} → {endLocation}</td>
-                      <td className="px-6 py-3">{driverName}</td>
-                      <td className="px-6 py-3">{vehicleName}</td>
-                      <td className="px-6 py-3 font-mono">₹{(e.fuelCost ?? 0).toLocaleString('en-IN')}</td>
-                      <td className="px-6 py-3 font-mono">₹{(e.miscExpense ?? 0).toLocaleString('en-IN')}</td>
-                      <td className="px-6 py-3">{e.distance ?? 0} km</td>
-                      <td className="px-6 py-3"><StatusBadge status={(e.status ?? 'pending') as Expense['status']} /></td>
-                    </tr>
-                    );
-                  })}
-                  {filtered.length === 0 && expenses.length > 0 && (
-                    <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No expenses match your filters</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </>
+                  return (
+                  <tr key={e._id} className="data-table-row">
+                    <td className="px-6 py-3 font-medium">{startLocation} → {endLocation}</td>
+                    <td className="px-6 py-3">{driverName}</td>
+                    <td className="px-6 py-3">{vehicleName}</td>
+                    <td className="px-6 py-3 font-mono">₹{(e.fuelCost ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-3 font-mono">₹{(e.miscExpense ?? 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-3">{e.distance ?? 0} km</td>
+                    <td className="px-6 py-3"><StatusBadge status={(e.status ?? 'pending') as Expense['status']} /></td>
+                  </tr>
+                  );
+                })}
+                {filtered.length === 0 && expenses.length > 0 && (
+                  <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No expenses match your filters</td></tr>
+                )}
+              </tbody>
+            </table>
           )}
         </div>
       </div>

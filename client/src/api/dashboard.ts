@@ -1,32 +1,42 @@
 import { fetchBackend } from '@/lib/api';
 
-export interface DashboardData {
-  activeTrips: number;
-  activeDrivers: number;
-  activeVehicles: number;
-  totalExpenses: number;
-  recentTrips: Array<{
-    _id: string;
-    driverId: string;
-    vehicleId: string;
-    status: string;
-    startTime: string;
-    endTime?: string;
-  }>;
-  vehicleStatus: Array<{
-    _id: string;
-    registration: string;
-    status: string;
-    lastTrip?: string;
-  }>;
-  driverStatus: Array<{
-    _id: string;
-    name: string;
-    status: string;
-    currentTrip?: string;
-  }>;
+export interface DashboardKPIs {
+  activeFleet: number;
+  maintenanceAlerts: number;
+  pendingCargo: number;
+  completedToday: number;
+  pendingAssignment: number;
 }
 
-export async function getDashboardData() {
-  return fetchBackend<DashboardData>(`/api/dashboard/kpis`);
+export interface TripData {
+  tripId: string;
+  tripNumber: string;
+  vehicle: {
+    licensePlate: string;
+    vehicleType: string;
+    model: string;
+  };
+  driver: {
+    name: string;
+    email: string;
+  };
+  status: string;
+  startOdometer: number;
+  endOdometer: number;
+  cargoWeight: number;
+  revenue: number;
+}
+
+export interface DashboardData {
+  kpis: DashboardKPIs;
+  trips: TripData[];
+}
+
+export async function getDashboardData(filters?: { status?: string; vehicleType?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.vehicleType) params.set('vehicleType', filters.vehicleType);
+  
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchBackend<DashboardData>(`/api/dashboard/kpis${query}`);
 }

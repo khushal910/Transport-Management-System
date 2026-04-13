@@ -7,9 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, ArrowRight } from 'lucide-react';
+import { Plus, Search, ArrowRight, AlertCircle } from 'lucide-react';
 import { getTripList } from '@/api/trip';
-import { mockTrips } from '@/data/mockData';
 import type { Trip } from '@/types/fleet';
 
 export default function TripsPage() {
@@ -17,19 +16,19 @@ export default function TripsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['trips', statusFilter],
     queryFn: async () => {
       const result = await getTripList(statusFilter === 'all' ? undefined : statusFilter);
       return result.data;
     },
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 1,
   });
 
-  // Use mock data if API fails (development mode)
+  // Use API data only - no mock fallback
   const trips = useMemo(() => {
-    return (data?.trips ?? mockTrips) as Trip[];
+    return (data?.trips ?? []) as Trip[];
   }, [data]);
 
   const filtered = useMemo(() => {
@@ -84,16 +83,17 @@ export default function TripsPage() {
                 Loading trips…
               </div>
             </div>
+          ) : isError ? (
+            <div className="p-4 bg-destructive/10 border-b border-destructive/50 text-sm text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <div>
+                <p className="font-medium">Failed to load trips</p>
+                <p className="text-xs">{error instanceof Error ? error.message : 'Please try again later'}</p>
+              </div>
+            </div>
           ) : trips.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">No trips found</div>
           ) : (
-            <>
-              {isError && !data && (
-                <div className="p-4 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
-                </div>
-              )}
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
@@ -125,7 +125,6 @@ export default function TripsPage() {
                   )}
                 </tbody>
               </table>
-            </>
           )}
         </div>
       </div>

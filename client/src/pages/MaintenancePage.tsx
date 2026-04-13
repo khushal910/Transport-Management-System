@@ -2,14 +2,13 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { mockMaintenance } from '@/data/mockData';
 import { getMaintenanceList } from '@/api/maintenance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Wrench } from 'lucide-react';
+import { Plus, Search, Wrench, AlertCircle } from 'lucide-react';
 import type { MaintenanceLog } from '@/types/fleet';
 
 export default function MaintenancePage() {
@@ -17,18 +16,18 @@ export default function MaintenancePage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['maintenance', statusFilter],
     queryFn: async () => {
       const result = await getMaintenanceList();
       return result.data;
     },
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 1,
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Server returns { logs: [...] }; keep backward compatibility with older payloads.
+  // Use API data only - no mock fallback
   const maintenance = useMemo<MaintenanceLog[]>(() => {
     const apiLogs = Array.isArray((data as { logs?: MaintenanceLog[] } | undefined)?.logs)
       ? ((data as { logs?: MaintenanceLog[] }).logs ?? [])
@@ -36,7 +35,7 @@ export default function MaintenancePage() {
         ? ((data as { maintenances?: MaintenanceLog[] }).maintenances ?? [])
         : [];
 
-    return apiLogs.length ? apiLogs : mockMaintenance;
+    return apiLogs;
   }, [data]);
 
   const filtered = useMemo(() => {
@@ -87,19 +86,21 @@ export default function MaintenancePage() {
             <div className="col-span-full p-8 text-center text-muted-foreground">
               <div className="inline-flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading...
+                Loading maintenance logs...
+              </div>
+            </div>
+          ) : isError ? (
+            <div className="col-span-full p-4 bg-destructive/10 border border-destructive/50 rounded-lg text-sm text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <div>
+                <p className="font-medium">Failed to load maintenance logs</p>
+                <p className="text-xs">{error instanceof Error ? error.message : 'Please try again later'}</p>
               </div>
             </div>
           ) : maintenance.length === 0 ? (
             <div className="col-span-full py-12 text-center text-muted-foreground">No maintenance logs found</div>
           ) : (
             <>
-              {isError && !data && (
-                <div className="col-span-full p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>Using demo data (API unavailable. Please sign in to see real data.)</span>
-                </div>
-              )}
               {filtered.map((m) => (
                 <div key={m._id} className="rounded-xl border bg-card p-5 card-hover">
                   <div className="flex items-start justify-between">
