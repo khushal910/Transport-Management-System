@@ -21,6 +21,7 @@ import MaintenancePage from "./pages/MaintenancePage";
 import ExpensesPage from "./pages/ExpensesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import EmployeesPage from "./pages/EmployeesPage";
+import UserProfilePage from "./pages/UserProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,11 @@ const App = () => (
             <Route path="/auth/setup-password" element={<SetupPasswordPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+            {/* Profile: all authenticated users */}
+            <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'safety_officer', 'financial_analyst', 'driver']} />}>
+              <Route path="/profile" element={<UserProfilePage />} />
+            </Route>
 
             {/* Dashboard: manager, dispatcher, safety_officer, financial_analyst */}
             <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'safety_officer', 'financial_analyst']} />}>

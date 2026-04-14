@@ -111,15 +111,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* User section */}
         <div className={cn('border-t border-sidebar-border p-3', collapsed && 'flex flex-col items-center')}>
           <div className={cn('flex items-center gap-3', collapsed && 'flex-col')}>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-              {user?.name?.charAt(0) ?? '?'}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user?.name ?? ''}</p>
-                <p className="truncate text-xs text-sidebar-muted capitalize">{user?.role?.replace('_', ' ') ?? ''}</p>
+            <Link
+              to="/profile"
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors',
+                collapsed && 'flex-col justify-center'
+              )}
+              title="View Profile"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+                {user?.name?.charAt(0) ?? '?'}
               </div>
-            )}
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user?.name ?? ''}</p>
+                  <p className="truncate text-xs text-sidebar-muted capitalize">{user?.role?.replace('_', ' ') ?? ''}</p>
+                </div>
+              )}
+            </Link>
             <button
               onClick={handleLogout}
               className={cn('text-sidebar-muted hover:text-destructive', collapsed && 'mt-2')}

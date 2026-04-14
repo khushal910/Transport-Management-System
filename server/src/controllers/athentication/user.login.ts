@@ -35,10 +35,16 @@ const userLogin = async (req, res) => {
       return response(res, 400, false, 'User company not found');
     }
 
+    const configuredSessionHours = Number(process.env.SESSION_DURATION_HOURS ?? 12);
+    const sessionHours = Number.isFinite(configuredSessionHours) && configuredSessionHours > 0
+      ? configuredSessionHours
+      : 12;
+    const sessionSeconds = Math.floor(sessionHours * 60 * 60);
+
     // create jwt with company ID
     const payload = { id: user._id, role: user.role, companyId: user.company._id };
     const token = jwt.sign(payload, process.env.SECRET_KEY, {
-      expiresIn: '1h',
+      expiresIn: sessionSeconds,
     });
 
     userLoggedIn();
@@ -48,7 +54,7 @@ const userLogin = async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Strict',
-        maxAge: 3600000,
+        maxAge: sessionSeconds * 1000,
       })
       .status(200)
       .json({

@@ -155,6 +155,82 @@ export async function sendEmployeeEmail(payload: SendEmployeeEmailPayload) {
   });
 }
 
+// Profile API functions
+export interface UserProfile {
+  personal: {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    isPasswordSet: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+  company: {
+    id: string;
+    name: string;
+    registrationNumber: string;
+    address: string;
+    phone: string;
+    email: string;
+    status: 'active' | 'inactive';
+  } | null;
+  driver?: {
+    licenseNumber: string;
+    licenseExpiry: string;
+    licenseCategory: 'truck' | 'van' | 'bike';
+    safetyScore: number;
+    status: string;
+    assignedTrips: number;
+    completedTrips: number;
+    completionRate: number;
+  };
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  email?: string;
+}
+
+export interface UpdateCompanyPayload {
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+export async function getProfile() {
+  return fetchBackend<UserProfile>('/api/auth/profile');
+}
+
+export async function updateProfile(payload: UpdateProfilePayload) {
+  return fetchBackend<AuthUser>('/api/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCompany(payload: UpdateCompanyPayload) {
+  return fetchBackend<any>('/api/auth/company', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function requestEmailVerification(newEmail: string) {
+  return fetchBackend<{ message: string }>('/api/auth/request-email-verification', {
+    method: 'POST',
+    body: JSON.stringify({ newEmail }),
+  });
+}
+
+export async function verifyEmailChange(verificationToken: string) {
+  return fetchBackend<UserProfile>('/api/auth/verify-email-change', {
+    method: 'POST',
+    body: JSON.stringify({ verificationToken }),
+  });
+}
+
 export interface ForgotPasswordPayload {
   email: string;
 }

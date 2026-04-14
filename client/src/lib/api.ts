@@ -2,6 +2,38 @@ import type { ApiResponse } from '@/types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/docs',
+  '/documentation',
+]);
+
+const isPublicPath = (path: string) => {
+  if (PUBLIC_PATHS.has(path)) {
+    return true;
+  }
+  return path.startsWith('/docs/') || path.startsWith('/documentation/');
+};
+
+const redirectToLoginOnUnauthorized = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const currentPath = window.location.pathname;
+  if (isPublicPath(currentPath)) {
+    return;
+  }
+
+  const currentLocation = `${window.location.pathname}${window.location.search}`;
+  const next = encodeURIComponent(currentLocation);
+  window.location.replace(`/login?next=${next}`);
+};
+
 const buildUrl = (path: string) => {
   if (!path.startsWith('/')) {
     path = `/${path}`;
@@ -31,6 +63,9 @@ export const fetchBackend = async <T>(path: string, options: RequestInit = {}) =
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      redirectToLoginOnUnauthorized();
+    }
     throw new Error(payload?.message || response.statusText || responseText || 'Request failed');
   }
 

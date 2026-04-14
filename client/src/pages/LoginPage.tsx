@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,11 +18,32 @@ const ROLE_DEFAULT_ROUTE: Record<UserRole, string> = {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { refetch } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const searchParams = new URLSearchParams(location.search);
+  const requestedNextPath = searchParams.get('next');
+
+  const getPostLoginRoute = (role?: UserRole) => {
+    if (
+      requestedNextPath &&
+      requestedNextPath.startsWith('/') &&
+      !requestedNextPath.startsWith('//') &&
+      requestedNextPath !== '/login'
+    ) {
+      return requestedNextPath;
+    }
+
+    if (role && ROLE_DEFAULT_ROUTE[role]) {
+      return ROLE_DEFAULT_ROUTE[role];
+    }
+
+    return '/dashboard';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +55,7 @@ export default function LoginPage() {
       // Refresh auth context with real user data
       await refetch();
       const role = result.data?.role as UserRole | undefined;
-      navigate(role && ROLE_DEFAULT_ROUTE[role] ? ROLE_DEFAULT_ROUTE[role] : '/dashboard');
+      navigate(getPostLoginRoute(role), { replace: true });
     } catch (err: any) {
       setError(err?.message || 'Login failed. Please check your credentials.');
     } finally {
