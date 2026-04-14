@@ -200,35 +200,40 @@ export interface UpdateCompanyPayload {
 }
 
 export async function getProfile() {
-  return fetchBackend<UserProfile>('/api/auth/profile');
+  const response = await fetchBackend<UserProfile>('/api/auth/profile');
+  return response.data;
 }
 
 export async function updateProfile(payload: UpdateProfilePayload) {
-  return fetchBackend<AuthUser>('/api/auth/profile', {
+  const response = await fetchBackend<AuthUser>('/api/auth/profile', {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
+  return response.data;
 }
 
 export async function updateCompany(payload: UpdateCompanyPayload) {
-  return fetchBackend<any>('/api/auth/company', {
+  const response = await fetchBackend<any>('/api/auth/company', {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
+  return response.data;
 }
 
 export async function requestEmailVerification(newEmail: string) {
-  return fetchBackend<{ message: string }>('/api/auth/request-email-verification', {
+  const response = await fetchBackend<{ message: string }>('/api/auth/request-email-verification', {
     method: 'POST',
     body: JSON.stringify({ newEmail }),
   });
+  return response.data;
 }
 
 export async function verifyEmailChange(verificationToken: string) {
-  return fetchBackend<UserProfile>('/api/auth/verify-email-change', {
+  const response = await fetchBackend<UserProfile>('/api/auth/verify-email-change', {
     method: 'POST',
     body: JSON.stringify({ verificationToken }),
   });
+  return response.data;
 }
 
 export interface ForgotPasswordPayload {

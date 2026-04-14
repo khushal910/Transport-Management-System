@@ -110,11 +110,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* User section */}
         <div className={cn('border-t border-sidebar-border p-3', collapsed && 'flex flex-col items-center')}>
-          <div className={cn('flex items-center gap-3', collapsed && 'flex-col')}>
+          <div className={cn('flex items-center justify-between gap-4', collapsed && 'flex-col gap-4')}>
             <Link
               to="/profile"
               className={cn(
-                'flex items-center gap-3 rounded-lg px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors',
+                'flex items-center gap-3 rounded-lg px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors flex-1',
                 collapsed && 'flex-col justify-center'
               )}
               title="View Profile"
@@ -131,7 +131,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
             <button
               onClick={handleLogout}
-              className={cn('text-sidebar-muted hover:text-destructive', collapsed && 'mt-2')}
+              className={cn('text-sidebar-muted hover:text-destructive', collapsed && 'mt-4')}
               title="Logout"
             >
               <LogOut className="h-4 w-4" />
