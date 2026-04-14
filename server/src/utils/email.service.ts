@@ -560,3 +560,82 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Send password reset OTP via email
+ */
+export const sendPasswordResetOTP = async (email: string, otp: string): Promise<EmailResult> => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    const mailOptions: SendMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset Code - Fleet Management System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #1f2937; margin-top: 0;">Password Reset Code</h2>
+            <p style="color: #4b5563; font-size: 14px;">
+              We received a request to reset the password for your Fleet Management System account.
+            </p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; margin-bottom: 20px;">
+              Your password reset code is (expires in <strong>15 minutes</strong>):
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 25px; border-radius: 6px; text-align: center; margin-bottom: 25px; border: 2px solid #e5e7eb;">
+              <p style="font-size: 48px; font-weight: bold; color: #1f2937; margin: 0; letter-spacing: 10px;">
+                ${otp}
+              </p>
+              <p style="color: #6b7280; font-size: 12px; margin-top: 10px;">
+                Copy this code to reset your password
+              </p>
+            </div>
+
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+              <p style="color: #92400e; font-size: 13px; margin: 0;">
+                <strong>Security Notice:</strong> This code will expire in 15 minutes. If you didn't request a password reset, please ignore this email or contact support immediately.
+              </p>
+            </div>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #4b5563; margin-bottom: 10px;">
+              <strong>Next steps:</strong>
+            </p>
+            <ul style="color: #4b5563; margin: 10px 0; padding-left: 20px;">
+              <li style="margin: 8px 0;">Enter this code on the password reset page</li>
+              <li style="margin: 8px 0;">Create a strong new password (min 8 characters with uppercase, lowercase, number, and special character)</li>
+              <li style="margin: 8px 0;">Confirm your password</li>
+              <li style="margin: 8px 0;">You can now sign in with your new password</li>
+            </ul>
+          </div>
+
+          <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+            <p style="color: #065f46; font-size: 13px; margin: 0;">
+              <strong>Account Security:</strong> Never share your password reset code with anyone. Our support team will never ask for this code.
+            </p>
+          </div>
+
+          <div style="color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+            <p style="margin: 5px 0;">This is an automated message. Please do not reply directly to this email.</p>
+            <p style="margin: 5px 0;">© 2026 Fleet Management System. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✓ Password reset code sent successfully to:', email);
+    return { success: true, message: 'Reset code sent successfully', messageId: result.messageId };
+  } catch (error: any) {
+    console.error('❌ Password reset email sending error:', error.message);
+    console.error('Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};

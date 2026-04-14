@@ -154,3 +154,52 @@ export async function sendEmployeeEmail(payload: SendEmployeeEmailPayload) {
     body: JSON.stringify(payload),
   });
 }
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export async function forgotPassword(payload: ForgotPasswordPayload) {
+  return fetchBackend<{ message: string }>('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface RequestPasswordResetOTPPayload {
+  email: string;
+}
+
+export async function requestPasswordResetOTP(payload: RequestPasswordResetOTPPayload) {
+  return fetchBackend<{ message: string }>('/api/auth/request-password-reset-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface VerifyPasswordResetOTPPayload {
+  email: string;
+  otp: string;
+  password: string;
+  passwordConfirm: string;
+}
+
+export async function verifyPasswordResetOTP(payload: VerifyPasswordResetOTPPayload) {
+  return fetchBackend<{ message: string }>('/api/auth/verify-password-reset-otp', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+  passwordConfirm: string;
+}
+
+export async function resetPassword(payload: ResetPasswordPayload) {
+  return fetchBackend<{ message: string }>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
