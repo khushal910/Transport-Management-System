@@ -1,20 +1,16 @@
 import { fetchBackend } from '@/lib/api';
+import type { MaintenanceLog } from '@/types/fleet';
 
-export interface Maintenance {
-  _id: string;
+export interface MaintenanceCreatePayload {
   vehicleId: string;
-  type: string;
   description: string;
-  startDate: string;
-  endDate?: string;
+  serviceDate: string;
   cost: number;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  distance?: number;
 }
 
 export interface MaintenanceListPayload {
-  logs: Maintenance[];
+  logs: MaintenanceLog[];
   pagination: {
     page: number;
     limit: number;
@@ -27,7 +23,7 @@ export async function getMaintenanceList(page = 1, limit = 50) {
   return fetchBackend<MaintenanceListPayload>(`/api/maintenance/list?page=${page}&limit=${limit}`);
 }
 
-export async function createMaintenance(data: Omit<Maintenance, '_id' | 'createdAt' | 'updatedAt'>) {
+export async function createMaintenance(data: MaintenanceCreatePayload) {
   return fetchBackend(`/api/maintenance/create`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -38,12 +34,5 @@ export async function updateMaintenanceStatus(maintenanceId: string, status: str
   return fetchBackend(`/api/maintenance/status/${maintenanceId}`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
-  });
-}
-
-export async function updateMaintenance(maintenanceId: string, data: Partial<Maintenance>) {
-  return fetchBackend(`/api/maintenance/status/${maintenanceId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: data.status ?? 'pending' }),
   });
 }

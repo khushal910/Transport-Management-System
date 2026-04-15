@@ -1,19 +1,25 @@
 import { fetchBackend } from '@/lib/api';
 
-export interface Driver {
+export interface DriverListItem {
   _id: string;
-  name: string;
-  email: string;
-  phone: string;
-  licenseNumber: string;
-  licenseExpiry: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  name?: string;
+  email?: string;
+  status?: string;
+  licenseNumber?: string;
+  licenseExpiry?: string;
+  licenseCategory?: string;
+  safetyScore?: number;
+  completionRate?: number;
+  complaints?: number;
+  createdAt?: string;
+  user?: {
+    name?: string;
+    email?: string;
+  };
 }
 
 export interface DriverListPayload {
-  drivers: Driver[];
+  drivers: DriverListItem[];
   pagination: {
     page: number;
     limit: number;

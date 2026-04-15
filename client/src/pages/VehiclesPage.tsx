@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Truck, AlertCircle } from 'lucide-react';
-import { getVehicleList } from '@/api/vehicle';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Search, Truck, AlertCircle, Check } from 'lucide-react';
+import { getVehicleList, createVehicle } from '@/api/vehicle';
 import { useAuth } from '@/context/AuthContext';
 import type { Vehicle, VehicleType } from '@/types/fleet';
+import { cn } from '@/lib/utils';
 
 export default function VehiclesPage() {
   const [search, setSearch] = useState('');
@@ -65,7 +66,12 @@ export default function VehiclesPage() {
                 <Button><Plus className="mr-2 h-4 w-4" />Add Vehicle</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
-                <DialogHeader><DialogTitle>Register Vehicle</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle>Register Vehicle</DialogTitle>
+                  <DialogDescription className="sr-only">
+                    Enter vehicle details including plate, model, type, and capacity to register a new fleet vehicle.
+                  </DialogDescription>
+                </DialogHeader>
                 <VehicleForm onClose={() => setDialogOpen(false)} />
               </DialogContent>
             </Dialog>
@@ -147,26 +153,107 @@ export default function VehiclesPage() {
 
 function VehicleForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ name: '', licensePlate: '', model: '', vehicleType: 'truck' as VehicleType, maxCapacity: '', odometer: '' });
-  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [field]: e.target.value });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock submit
-    onClose();
+
+    // Validate all fields
+    const newErrors: Record<string, string> = {};
+    if (!form.name.trim()) newErrors.name = 'Vehicle name is required';
+    if (!form.licensePlate.trim()) newErrors.licensePlate = 'License plate is required';
+    if (!form.model.trim()) newErrors.model = 'Model is required';
+    if (!form.maxCapacity) newErrors.maxCapacity = 'Max capacity is required';
+    else if (isNaN(Number(form.maxCapacity)) || Number(form.maxCapacity) <= 0) newErrors.maxCapacity = 'Must be a positive number';
+    if (!form.odometer) newErrors.odometer = 'Odometer is required';
+    else if (isNaN(Number(form.odometer)) || Number(form.odometer) < 0) newErrors.odometer = 'Must be a valid number';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+    try {
+      await createVehicle({
+        name: form.name.trim(),
+        licensePlate: form.licensePlate.trim(),
+        model: form.model.trim(),
+        vehicleType: form.vehicleType,
+        maxCapacity: Number(form.maxCapacity),
+        odometer: Number(form.odometer),
+      });
+
+      setSubmitMessage({ type: 'success', text: 'Vehicle registered successfully' });
+      setTimeout(() => onClose(), 1500);
+    } catch (error) {
+      setSubmitMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to register vehicle' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+    <form onSubmit={handleSubmit} className="space-y-4 mt-4 max-h-[70vh] min-w-0 overflow-y-auto">
+      {submitMessage && (
+        <div className={cn('p-3 rounded-md flex items-center gap-2 text-sm', submitMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-destructive/10 text-destructive')}>
+          {submitMessage.type === 'success' ? <Check className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+          {submitMessage.text}
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2"><Label>Vehicle Name</Label><Input placeholder="Truck-001" value={form.name} onChange={update('name')} required /></div>
-        <div className="space-y-2"><Label>License Plate</Label><Input placeholder="DL-01-AB-1234" value={form.licensePlate} onChange={update('licensePlate')} required /></div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2"><Label>Model</Label><Input placeholder="Tata 1518" value={form.model} onChange={update('model')} required /></div>
         <div className="space-y-2">
-          <Label>Type</Label>
-          <Select value={form.vehicleType} onValueChange={(v) => setForm({ ...form, vehicleType: v as VehicleType })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Label>Vehicle Name</Label>
+          <Input
+            placeholder="e.g., Truck-001"
+            value={form.name}
+            onChange={(e) => {
+              setForm({ ...form, name: e.target.value });
+              if (errors.name) setErrors({ ...errors, name: '' });
+            }}
+            className={errors.name ? 'border-destructive' : ''}
+          />
+          {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label>License Plate</Label>
+          <Input
+            placeholder="e.g., DL-01-AB-1234"
+            value={form.licensePlate}
+            onChange={(e) => {
+              setForm({ ...form, licensePlate: e.target.value });
+              if (errors.licensePlate) setErrors({ ...errors, licensePlate: '' });
+            }}
+            className={errors.licensePlate ? 'border-destructive' : ''}
+          />
+          {errors.licensePlate && <p className="text-xs text-destructive">{errors.licensePlate}</p>}
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Model</Label>
+          <Input
+            placeholder="e.g., Tata 1518"
+            value={form.model}
+            onChange={(e) => {
+              setForm({ ...form, model: e.target.value });
+              if (errors.model) setErrors({ ...errors, model: '' });
+            }}
+            className={errors.model ? 'border-destructive' : ''}
+          />
+          {errors.model && <p className="text-xs text-destructive">{errors.model}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label>Vehicle Type</Label>
+          <Select value={form.vehicleType} onValueChange={(value) => setForm({ ...form, vehicleType: value as VehicleType })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="truck">Truck</SelectItem>
               <SelectItem value="van">Van</SelectItem>
@@ -175,13 +262,45 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
           </Select>
         </div>
       </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2"><Label>Max Capacity (kg)</Label><Input type="number" placeholder="5000" value={form.maxCapacity} onChange={update('maxCapacity')} required /></div>
-        <div className="space-y-2"><Label>Odometer (km)</Label><Input type="number" placeholder="45000" value={form.odometer} onChange={update('odometer')} required /></div>
+        <div className="space-y-2">
+          <Label>Max Capacity (kg)</Label>
+          <Input
+            type="number"
+            placeholder="e.g., 5000"
+            value={form.maxCapacity}
+            onChange={(e) => {
+              setForm({ ...form, maxCapacity: e.target.value });
+              if (errors.maxCapacity) setErrors({ ...errors, maxCapacity: '' });
+            }}
+            className={errors.maxCapacity ? 'border-destructive' : ''}
+          />
+          {errors.maxCapacity && <p className="text-xs text-destructive">{errors.maxCapacity}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label>Odometer (km)</Label>
+          <Input
+            type="number"
+            placeholder="e.g., 0"
+            value={form.odometer}
+            onChange={(e) => {
+              setForm({ ...form, odometer: e.target.value });
+              if (errors.odometer) setErrors({ ...errors, odometer: '' });
+            }}
+            className={errors.odometer ? 'border-destructive' : ''}
+          />
+          {errors.odometer && <p className="text-xs text-destructive">{errors.odometer}</p>}
+        </div>
       </div>
+
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit">Register Vehicle</Button>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Registering...' : 'Register Vehicle'}
+        </Button>
       </div>
     </form>
   );
