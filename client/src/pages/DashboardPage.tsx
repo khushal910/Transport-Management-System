@@ -200,11 +200,11 @@ function OperationsDashboard() {
       <div><h1 className="page-title">Dashboard</h1><p className="page-description">Overview of your fleet operations</p></div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <KPICard title="Active Fleet" value={kpis.activeFleet ?? 0} subtitle="vehicles in use" icon={Truck} trend={{ value: 0, positive: true }} />
-        <KPICard title="Maintenance Alerts" value={kpis.maintenanceAlerts ?? 0} subtitle="vehicles in shop" icon={AlertCircle} trend={{ value: 0, positive: false }} />
-        <KPICard title="Pending Cargo" value={kpis.pendingCargo ?? 0} subtitle="trips waiting" icon={Package} trend={{ value: 0, positive: true }} />
-        <KPICard title="Completed Today" value={kpis.completedToday ?? 0} subtitle="trips completed" icon={Route} trend={{ value: 0, positive: true }} />
-        <KPICard title="Pending Assignment" value={kpis.pendingAssignment ?? 0} subtitle="unassigned trips" icon={Users} trend={{ value: 0, positive: true }} />
+        <KPICard title="Active Fleet" value={kpis.activeFleet ?? 0} subtitle="vehicles in use" icon={Truck} trend={{ value: 0, positive: true }} href="/vehicles" />
+        <KPICard title="Maintenance Alerts" value={kpis.maintenanceAlerts ?? 0} subtitle="vehicles in shop" icon={AlertCircle} trend={{ value: 0, positive: false }} href="/maintenance" />
+        <KPICard title="Pending Cargo" value={kpis.pendingCargo ?? 0} subtitle="trips waiting" icon={Package} trend={{ value: 0, positive: true }} href="/trips" />
+        <KPICard title="Completed Today" value={kpis.completedToday ?? 0} subtitle="trips completed" icon={Route} trend={{ value: 0, positive: true }} href="/trips" />
+        <KPICard title="Pending Assignment" value={kpis.pendingAssignment ?? 0} subtitle="unassigned trips" icon={Users} trend={{ value: 0, positive: true }} href="/trips" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

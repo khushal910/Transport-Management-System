@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 
 interface KPICardProps {
@@ -8,11 +9,12 @@ interface KPICardProps {
   icon: LucideIcon;
   trend?: { value: number; positive: boolean };
   className?: string;
+  href?: string;
 }
 
-export function KPICard({ title, value, subtitle, icon: Icon, trend, className }: KPICardProps) {
-  return (
-    <div className={cn('kpi-card', className)}>
+export function KPICard({ title, value, subtitle, icon: Icon, trend, className, href }: KPICardProps) {
+  const cardContent = (
+    <div className={cn('kpi-card', href && 'cursor-pointer transition-all hover:shadow-lg hover:border-primary/30', className)}>
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
         <div className="rounded-lg bg-primary/10 p-2">
@@ -34,4 +36,10 @@ export function KPICard({ title, value, subtitle, icon: Icon, trend, className }
       </div>
     </div>
   );
+
+  if (href) {
+    return <Link to={href}>{cardContent}</Link>;
+  }
+
+  return cardContent;
 }
