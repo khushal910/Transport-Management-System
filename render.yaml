@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: fleetflow-api
+    env: node
+    rootDir: server
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: PASSWORD_RESET_EXPIRY
+        value: "24"
+      - key: SESSION_DURATION_HOURS
+        value: "12"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "200"
+      - key: PAGINATION_DEFAULT_LIMIT
+        value: "10"
+      - key: PAGINATION_MAX_LIMIT
+        value: "100"
+
+  - type: web
+    name: fleetflow-client
+    env: static
+    rootDir: client
+    plan: free
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,4 +1,5 @@
 import mongoose, { Connection } from 'mongoose';
+import runtimeConfig from './runtime';
 
 /**
  * Database connection utility
@@ -6,7 +7,7 @@ import mongoose, { Connection } from 'mongoose';
  */
 const dbConnect = async (): Promise<void> => {
   try {
-    const mongoUri = process.env.MONGO_URI;
+    const mongoUri = runtimeConfig.mongoUri;
     
     if (!mongoUri) {
       throw new Error('MONGO_URI environment variable is not defined');

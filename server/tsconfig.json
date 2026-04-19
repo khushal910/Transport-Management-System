@@ -5,7 +5,7 @@
     "module": "ES2020",
     "lib": ["ES2020"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -38,6 +38,6 @@
     "allowJs": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "include": ["index.ts", "src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

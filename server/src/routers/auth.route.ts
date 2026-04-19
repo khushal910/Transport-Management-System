@@ -44,14 +44,4 @@ authRouter.delete('/employee/:employeeId', requiredRole('manager'), deleteEmploy
 authRouter.get('/employees/deleted', requiredRole('manager'), getDeletedEmployees);
 authRouter.post('/employee/recover/:employeeId', requiredRole('manager'), recoverEmployee);
 
-// TEST ROUTE: Simple endpoint to verify server is running latest code
-authRouter.get('/test', (req, res) => {
-  res.json({ success: true, message: 'Auth router is responding correctly', timestamp: new Date().toISOString() });
-});
-
-// TEST ROUTE: Test PUT method
-authRouter.put('/test', (req, res) => {
-  res.json({ success: true, message: 'PUT method works on auth router', timestamp: new Date().toISOString() });
-});
-
 export default authRouter;

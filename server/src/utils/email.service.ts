@@ -7,6 +7,13 @@ interface EmailResult {
   error?: string;
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+const debugLog = (...args: unknown[]) => {
+  if (!isProduction) {
+    console.log(...args);
+  }
+};
+
 // Initialize email transporter
 const normalizeEnv = (value?: string) => {
   if (!value) return undefined;
@@ -28,7 +35,7 @@ transporter.verify((error, success) => {
     console.error('Make sure to use Gmail App-Specific Password (not your regular password)');
     console.error('Setup: https://myaccount.google.com/apppasswords');
   } else if (success) {
-    console.log('✓ Email transporter ready to send emails');
+    debugLog('Email transporter ready to send emails');
   }
 });
 
@@ -88,7 +95,7 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Password reset email sent successfully to:', email);
+    debugLog('Password reset email sent successfully to:', email);
     return { success: true, message: 'Reset email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Email sending error:', error.message);
@@ -118,7 +125,7 @@ export const sendDirectEmail = async (
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Direct email sent successfully to:', email);
+    debugLog('Direct email sent successfully to:', email);
     return { success: true, message: 'Email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Direct email sending error:', error.message);
@@ -173,7 +180,7 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Success confirmation email sent to:', email);
+    debugLog('Password reset success email sent to:', email);
     return { success: true, message: 'Confirmation email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Confirmation email sending error:', error.message);
@@ -187,11 +194,11 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
  */
 export const sendEmployeeSetupEmail = async (email: string, name: string, setupToken: string): Promise<EmailResult> => {
   try {
-    console.log('📧 [EmailService] Starting sendEmployeeSetupEmail');
-    console.log('📧 [EmailService] Email recipient:', email);
-    console.log('📧 [EmailService] Email config - USER:', process.env.EMAIL_USER ? '✓' : '✗');
-    console.log('📧 [EmailService] Email config - PASSWORD:', process.env.EMAIL_PASSWORD ? '✓' : '✗');
-    console.log('📧 [EmailService] Email config - CLIENT_URL:', process.env.CLIENT_URL || 'NOT SET');
+    debugLog('[EmailService] Starting sendEmployeeSetupEmail');
+    debugLog('[EmailService] Email recipient:', email);
+    debugLog('[EmailService] Email config - USER set:', !!process.env.EMAIL_USER);
+    debugLog('[EmailService] Email config - PASSWORD set:', !!process.env.EMAIL_PASSWORD);
+    debugLog('[EmailService] Email config - CLIENT_URL set:', !!process.env.CLIENT_URL);
     
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
       const error = 'Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env';
@@ -206,7 +213,7 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
     }
 
     const setupLink = `${process.env.CLIENT_URL}/auth/setup-password?token=${setupToken}`;
-    console.log('📧 [EmailService] Setup link:', setupLink);
+    debugLog('[EmailService] Setup link generated');
     
     const mailOptions: SendMailOptions = {
       from: process.env.EMAIL_USER,
@@ -259,10 +266,10 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
       `,
     };
 
-    console.log('📧 [EmailService] Attempting to send email via transporter...');
+    debugLog('[EmailService] Attempting to send email via transporter...');
     const result = await transporter.sendMail(mailOptions);
-    console.log('✅ [EmailService] Employee setup email sent successfully to:', email);
-    console.log('📧 [EmailService] Message ID:', result.messageId);
+    debugLog('[EmailService] Employee setup email sent successfully to:', email);
+    debugLog('[EmailService] Message ID:', result.messageId);
     return { success: true, message: 'Setup email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ [EmailService] Employee setup email sending error:', error.message);
@@ -344,7 +351,7 @@ export const sendEmployeeDetailsUpdatedEmail = async (
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Employee details updated email sent successfully to:', email);
+    debugLog('Employee details updated email sent successfully to:', email);
     return { success: true, message: 'Update notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Employee update email sending error:', error.message);
@@ -412,7 +419,7 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Employee deletion email sent successfully to:', email);
+    debugLog('Employee deletion email sent successfully to:', email);
     return { success: true, message: 'Deletion notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Employee deletion email sending error:', error.message);
@@ -477,7 +484,7 @@ export const sendEmployeeRecoveredEmail = async (
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Employee recovery email sent successfully to:', email);
+    debugLog('Employee recovery email sent successfully to:', email);
     return { success: true, message: 'Recovery notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Employee recovery email sending error:', error.message);
@@ -552,7 +559,7 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Email verification code sent successfully to:', newEmail);
+    debugLog('Email verification code sent successfully to:', newEmail);
     return { success: true, message: 'Verification code sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Email verification sending error:', error.message);
@@ -631,7 +638,7 @@ export const sendPasswordResetOTP = async (email: string, otp: string): Promise<
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('✓ Password reset code sent successfully to:', email);
+    debugLog('Password reset code sent successfully to:', email);
     return { success: true, message: 'Reset code sent successfully', messageId: result.messageId };
   } catch (error: any) {
     console.error('❌ Password reset email sending error:', error.message);

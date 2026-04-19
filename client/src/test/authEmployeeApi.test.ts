@@ -3,11 +3,14 @@ import { getDeletedEmployees, sendEmployeeEmail } from '@/api/auth';
 
 const buildSuccessResponse = (data: unknown = {}) => ({
   ok: true,
-  json: async () => ({
-    success: true,
-    message: 'ok',
-    data,
-  }),
+  status: 200,
+  statusText: 'OK',
+  text: async () =>
+    JSON.stringify({
+      success: true,
+      message: 'ok',
+      data,
+    }),
 });
 
 describe('employee auth api', () => {

@@ -1,15 +1,11 @@
 ﻿// @ts-nocheck
 import response from '../../response/response';
 import { userLoggedOut } from '../../services/gpsSimulator';
+import { buildAuthCookieOptions } from '../../config/cookieOptions';
 
 const userLogout = (req, res) => {
   try {
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-    });
+    res.clearCookie('token', buildAuthCookieOptions());
   } catch (error) {
     return response(res, 500, false, 'Error during logout');
   }

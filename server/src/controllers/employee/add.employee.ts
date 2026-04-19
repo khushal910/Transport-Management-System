@@ -8,6 +8,13 @@ import bcrypt from 'bcryptjs';
 import { sendEmployeeSetupEmail } from '../../utils/email.service';
 import environmentConfig from '../../config/environment';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const debugLog = (...args: any[]) => {
+  if (!isProduction) {
+    console.log(...args);
+  }
+};
+
 const addEmployee = async (req, res) => {
   try {
     const { error, value } = addEmployeeValidatorSchema.validate(req.body);
@@ -30,7 +37,7 @@ const addEmployee = async (req, res) => {
 
       // If user is deleted AND belongs to the same company: RECOVER them
       if (existingUser.isDeleted && String(existingUser.company) === String(managerCompanyId)) {
-        console.log('[AddEmployee] Recovering deleted employee:', email);
+        debugLog('[AddEmployee] Recovering deleted employee:', email);
         
         const hasEmailCredentials = !!(
           process.env.EMAIL_USER &&
@@ -105,10 +112,10 @@ const addEmployee = async (req, res) => {
 
         let emailResult = { success: true };
         if (hasEmailCredentials) {
-          console.log('📧 [AddEmployee Recovery] Sending recovery setup email to:', email);
-          console.log('📧 [AddEmployee Recovery] Token available:', !!plainRecoveryToken, 'Token length:', plainRecoveryToken.length);
+          debugLog('[AddEmployee Recovery] Sending recovery setup email to:', email);
+          debugLog('[AddEmployee Recovery] Recovery token generated:', !!plainRecoveryToken);
           emailResult = await sendEmployeeSetupEmail(email, name, plainRecoveryToken);
-          console.log('📧 [AddEmployee Recovery] Email result:', emailResult);
+          debugLog('[AddEmployee Recovery] Email result:', emailResult);
           if (!emailResult.success) {
             console.warn('❌ Failed to send employee recovery email:', emailResult.error);
             return response(res, 500, false, 'Employee recovered but failed to send setup email. Check email configuration.');
@@ -205,17 +212,16 @@ const addEmployee = async (req, res) => {
 
     // Send email when SMTP configuration is available
     let emailResult = { success: true };
-    console.log('📧 [AddEmployee] Environment:', environmentConfig.environment);
-    console.log('📧 [AddEmployee] hasEmailCredentials:', hasEmailCredentials);
-    console.log('📧 [AddEmployee] CLIENT_URL:', process.env.CLIENT_URL);
+    debugLog('[AddEmployee] Environment:', environmentConfig.environment);
+    debugLog('[AddEmployee] hasEmailCredentials:', hasEmailCredentials);
 
     if (hasEmailCredentials) {
-      console.log('📧 [AddEmployee] Sending setup email to:', email);
-      console.log('📧 [AddEmployee] Employee name:', name);
-      console.log('📧 [AddEmployee] Token available:', !!plainSetupToken, 'Token length:', plainSetupToken.length);
+      debugLog('[AddEmployee] Sending setup email to:', email);
+      debugLog('[AddEmployee] Employee name:', name);
+      debugLog('[AddEmployee] Setup token generated:', !!plainSetupToken);
 
       emailResult = await sendEmployeeSetupEmail(email, name, plainSetupToken);
-      console.log('📧 [AddEmployee] Email result:', emailResult);
+      debugLog('[AddEmployee] Email result:', emailResult);
 
       if (!emailResult.success) {
         console.warn('❌ Failed to send employee setup email:', emailResult.error);

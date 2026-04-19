@@ -107,12 +107,15 @@ cd ..
 
 # 4. Environment Setup
 # Server/.env
-MONGODB_URI=mongodb://localhost:27017/fleetflow
-JWT_SECRET=your_jwt_secret_here
+MONGO_URI=mongodb://localhost:27017/fleetflow
+SECRET_KEY=your_jwt_secret_here
 PORT=3000
+NODE_ENV=development
+CLIENT_URL=http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
 
 # Client/.env
-REACT_APP_API_URL=http://localhost:3000/api
+VITE_API_BASE_URL=http://localhost:3000
 
 # 5. Start Development Server
 npm run dev
@@ -122,6 +125,27 @@ The app will start at:
 - **Frontend**: http://localhost:5173
 - **Backend**: http://localhost:3000
 - **API Base**: http://localhost:3000/api
+
+### **Production Deployment (Render)**
+
+This repository now includes [render.yaml](render.yaml) with two services:
+- **fleetflow-api** (Node web service from [server](server))
+- **fleetflow-client** (Static site from [client](client))
+
+Render runtime commands:
+- **API Build Command**: `npm ci`
+- **API Start Command**: `npm start`
+- **API Health Check**: `/health`
+
+Required API environment variables on Render:
+- `MONGO_URI`
+- `SECRET_KEY`
+- `CLIENT_URL` (frontend URL)
+- `CORS_ORIGINS` (comma-separated allowed origins)
+- `EMAIL_USER`, `EMAIL_PASSWORD` (if email features are enabled)
+
+Required client environment variable on Render:
+- `VITE_API_BASE_URL` (your API URL, e.g. `https://fleetflow-api.onrender.com`)
 
 ---
 

@@ -6,6 +6,8 @@ import Company from '../../models/company.schema';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { userLoggedIn } from '../../services/gpsSimulator';
+import runtimeConfig from '../../config/runtime';
+import { buildAuthCookieOptions } from '../../config/cookieOptions';
 
 const userLogin = async (req, res) => {
   try {
@@ -35,27 +37,27 @@ const userLogin = async (req, res) => {
       return response(res, 400, false, 'User company not found');
     }
 
-    const configuredSessionHours = Number(process.env.SESSION_DURATION_HOURS ?? 12);
+    const configuredSessionHours = Number(runtimeConfig.sessionDurationHours ?? 12);
     const sessionHours = Number.isFinite(configuredSessionHours) && configuredSessionHours > 0
       ? configuredSessionHours
       : 12;
     const sessionSeconds = Math.floor(sessionHours * 60 * 60);
+    const secretKey = runtimeConfig.secretKey;
+
+    if (!secretKey) {
+      return response(res, 500, false, 'Server configuration error');
+    }
 
     // create jwt with company ID
     const payload = { id: user._id, role: user.role, companyId: user.company._id };
-    const token = jwt.sign(payload, process.env.SECRET_KEY, {
+    const token = jwt.sign(payload, secretKey, {
       expiresIn: sessionSeconds,
     });
 
     userLoggedIn();
 
     return res
-      .cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Strict',
-        maxAge: sessionSeconds * 1000,
-      })
+      .cookie('token', token, buildAuthCookieOptions(sessionSeconds * 1000))
       .status(200)
       .json({
         success: true,

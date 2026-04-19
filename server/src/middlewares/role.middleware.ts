@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import response from '../response/response';
 import User from '../models/user.schema';
+import { buildAuthCookieOptions } from '../config/cookieOptions';
 
 // Extend Express Request to include user property
 declare global {
@@ -51,12 +52,7 @@ const requiredRole = (...allowedRoles: string[]) => {
       // Verify the user still exists and has not been deleted
       const user = await User.findById(decoded.id).select('_id role company');
       if (!user) {
-        res.clearCookie('token', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          path: '/',
-        });
+        res.clearCookie('token', buildAuthCookieOptions());
         return response(res, 401, false, 'Your account no longer exists. Please return to the landing page.');
       }
 
