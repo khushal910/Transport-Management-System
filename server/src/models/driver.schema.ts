@@ -64,7 +64,7 @@ const driverSchema = new Schema<IDriver>(
       type: String,
       enum: Object.values(DriverStatus),
       default: DRIVER_STATUS.OFF_DUTY,
-    },
+    } as any,
     lastStatusChange: {
       type: Date,
       default: Date.now,
@@ -124,6 +124,6 @@ const driverSchema = new Schema<IDriver>(
   { timestamps: true }
 );
 
-const Driver: Model<IDriver> = mongoose.model('Driver', driverSchema);
+const Driver = mongoose.model<IDriver>('Driver', driverSchema);
 export { Driver, IDriver, LicenseCategory, DriverStatusChangeReason, IDriverStatusHistory };
 export default Driver;

@@ -17,7 +17,7 @@ import {
 export const getActiveTrips = async (
   req: any,
   res: any
-): Promise<void> => {
+): Promise<any> => {
   try {
     const { userRole, companyId } = req.user;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
@@ -30,7 +30,7 @@ export const getActiveTrips = async (
     })
       .populate('vehicle driver')
       .sort({ createdAt: -1 })
-      .limit(100);
+      .limit(100) as any;
 
     // Filter by role - drivers can only see their own trips
     if (userRole === 'driver') {
@@ -39,7 +39,7 @@ export const getActiveTrips = async (
       } else {
         const driverData = await Driver.findOne({ user: userId });
         trips = trips.filter(
-          (trip) => trip.driver._id.toString() === driverData?._id.toString()
+          (trip: any) => trip.driver._id.toString() === driverData?._id.toString()
         );
       }
     }
@@ -47,7 +47,7 @@ export const getActiveTrips = async (
     // Apply search filter
     if (search) {
       const lowerSearch = search.toLowerCase();
-      trips = trips.filter((trip) => {
+      trips = trips.filter((trip: any) => {
         const vehicleName =
           trip.vehicle?.name?.toLowerCase() || '';
         const driverName =
@@ -65,7 +65,7 @@ export const getActiveTrips = async (
     }
 
     return response(res, 200, true, 'Active trips retrieved successfully', {
-      trips: trips.map((trip) => ({
+      trips: trips.map((trip: any) => ({
         _id: trip._id,
         vehicleName: trip.vehicle?.name,
         licensePlate: trip.vehicle?.licensePlate,
@@ -91,7 +91,7 @@ export const getActiveTrips = async (
 export const getTripLatestLocation = async (
   req: any,
   res: any
-): Promise<void> => {
+): Promise<any> => {
   try {
     const { tripId } = req.params;
     const { userRole, companyId } = req.user;
@@ -129,6 +129,8 @@ export const getTripLatestLocation = async (
       return response(res, 404, false, 'No GPS data available for this trip yet');
     }
 
+    const tripData = trip as any;
+
     return response(res, 200, true, 'Latest GPS location retrieved', {
       location: {
         latitude: latestLocation.latitude,
@@ -140,11 +142,11 @@ export const getTripLatestLocation = async (
         timestamp: latestLocation.timestamp,
       },
       vehicle: {
-        name: trip.vehicle?.name,
-        licensePlate: trip.vehicle?.licensePlate,
+        name: tripData.vehicle?.name,
+        licensePlate: tripData.vehicle?.licensePlate,
       },
       driver: {
-        email: trip.driver?.user?.email,
+        email: tripData.driver?.user?.email,
       },
       route: {
         startLocation: trip.startLocation,
@@ -164,7 +166,7 @@ export const getTripLatestLocation = async (
 export const getTripLocationHistory = async (
   req: any,
   res: any
-): Promise<void> => {
+): Promise<any> => {
   try {
     const { tripId } = req.params;
     const { limit = 100 } = req.query;
@@ -205,6 +207,8 @@ export const getTripLocationHistory = async (
       return response(res, 404, false, 'No GPS data available for this trip');
     }
 
+    const tripData = trip as any;
+
     return response(res, 200, true, `Retrieved ${history.length} GPS records`, {
       history: history.map((loc) => ({
         latitude: loc.latitude,
@@ -216,9 +220,9 @@ export const getTripLocationHistory = async (
         timestamp: loc.timestamp,
       })),
       tripInfo: {
-        vehicleName: trip.vehicle?.name,
-        licensePlate: trip.vehicle?.licensePlate,
-        driverEmail: trip.driver?.user?.email,
+        vehicleName: tripData.vehicle?.name,
+        licensePlate: tripData.vehicle?.licensePlate,
+        driverEmail: tripData.driver?.user?.email,
         startLocation: trip.startLocation,
         endLocation: trip.endLocation,
       },
@@ -237,7 +241,7 @@ export const getTripLocationHistory = async (
 export const getAllActiveTripsGPS = async (
   req: any,
   res: any
-): Promise<void> => {
+): Promise<any> => {
   try {
     const { userRole, companyId } = req.user;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
@@ -265,7 +269,7 @@ export const getAllActiveTripsGPS = async (
 
     // Get latest GPS for each trip
     const tripsWithGPS = await Promise.all(
-      trips.map(async (trip) => {
+      trips.map(async (trip: any) => {
         const latestLocation = await getLatestTripLocation(trip._id.toString());
         return {
           tripId: trip._id,
@@ -298,7 +302,7 @@ export const getAllActiveTripsGPS = async (
   }
 };
 
-export const shareDriverLocation = async (req: any, res: any): Promise<void> => {
+export const shareDriverLocation = async (req: any, res: any): Promise<any> => {
   try {
     const { latitude, longitude, speed = 0, heading = 0, accuracy = 10, altitude = 0 } = req.body;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;

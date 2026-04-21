@@ -7,7 +7,7 @@ interface IVehicle extends Document {
   company: mongoose.Types.ObjectId;
   name: string;
   licensePlate: string;
-  model: string;
+  vehicleModel: string;
   vehicleType: VehicleType;
   maxCapacity: number;
   odometer: number;
@@ -35,7 +35,7 @@ const vehicleSchema = new Schema<IVehicle>(
       required: true,
       unique: true,
     },
-    model: {
+    vehicleModel: {
       type: String,
       required: true,
     },
