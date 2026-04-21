@@ -11,7 +11,7 @@ import environmentConfig from '../../config/environment';
 const isProduction = process.env.NODE_ENV === 'production';
 const debugLog = (...args: any[]) => {
   if (!isProduction) {
-    console.log(...args);
+    // Debug logging disabled in production
   }
 };
 

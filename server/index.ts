@@ -115,8 +115,6 @@ const port = runtimeConfig.port;
 let httpServer: ReturnType<typeof app.listen> | null = null;
 
 const shutdown = (signal: string) => {
-  console.log(`${signal} received. Shutting down server gracefully.`);
-
   if (!httpServer) {
     process.exit(0);
     return;
@@ -137,7 +135,7 @@ const startServer = async () => {
   try {
     await dbConnect();
     httpServer = app.listen(port, () => {
-      console.log(`Server running on port ${port} in ${runtimeConfig.nodeEnv} mode`);
+      // Server listening
     });
 
     httpServer.on('error', (error: NodeJS.ErrnoException) => {

@@ -63,7 +63,6 @@ const deleteVehicle = async (req, res) => {
 
     return response(res, 200, true, 'Vehicle deleted successfully');
   } catch (error) {
-    console.log('deleteVehicle error:', error);
     return response(res, 500, false, 'Error deleting vehicle');
   }
 };

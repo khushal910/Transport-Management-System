@@ -184,14 +184,12 @@ export function startGPSSimulator(): void {
     try {
       const updates = await simulateActiveTripsGPS();
       if (updates > 0) {
-        console.log(`[GPS Simulator] Generated ${updates} GPS updates`);
+        // GPS updates generated
       }
     } catch (error) {
       console.error('[GPS Simulator] Error:', error);
     }
   }, 10000);
-
-  console.log('[GPS Simulator] Started - will generate mock GPS data every 10 seconds');
 }
 
 export function stopGPSSimulator(): void {
@@ -201,7 +199,6 @@ export function stopGPSSimulator(): void {
 
   clearInterval(simulatorInterval);
   simulatorInterval = null;
-  console.log('[GPS Simulator] Stopped - mock GPS updates are paused until a user logs in');
 }
 
 export function userLoggedIn(): void {

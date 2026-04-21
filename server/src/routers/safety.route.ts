@@ -74,10 +74,6 @@ safetyRouter.get('/drivers', safetyOfficerReadOnly, (req: Request, res: Response
   };
 
   // Safety Officer should only see safety-related fields
-  if (role === 'safety_officer') {
-    console.log('🛡️ Filtering driver data for Safety Officer');
-  }
-
   res.json(drivers);
 });
 

@@ -105,7 +105,6 @@ export const enforceSafetyAnalyticsFilter = (req: Request, res: Response, next: 
   if (userRole === 'safety_officer') {
     // Store flag to filter response data in controller
     (req as any).filterSafetyDataOnly = true;
-    console.log('📊 Applying Safety Officer data filter to analytics');
   }
 
   next();

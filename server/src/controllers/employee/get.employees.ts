@@ -11,8 +11,6 @@ const getEmployees = async (req, res) => {
       return response(res, 400, false, 'Manager company not found');
     }
 
-    console.log('[GetEmployees] Manager Company ID:', managerCompanyId);
-
     // Get all active employees in the manager's company, excluding managers
     const employees = await User.find({
       company: managerCompanyId,
@@ -20,16 +18,8 @@ const getEmployees = async (req, res) => {
       isDeleted: false,
     }).select('-password');
 
-    console.log('[GetEmployees] Found employees:', employees.length);
     if (employees.length === 0) {
-      // Debug: Check what employees exist for debugging
-      const allUsers = await User.find({ role: { $ne: 'manager' }, isDeleted: false });
-      console.log('[GetEmployees] Total non-manager, non-deleted users in DB:', allUsers.length);
-      const withCompany = await User.find({ company: { $exists: true }, role: { $ne: 'manager' }, isDeleted: false });
-      console.log('[GetEmployees] Users with company field:', withCompany.length);
-      if (withCompany.length > 0) {
-        console.log('[GetEmployees] Sample company IDs:', withCompany.slice(0, 3).map(u => ({ id: u._id, company: u.company })));
-      }
+      // No employees found
     }
 
     // For drivers, populate their driver status and ID

@@ -24,21 +24,7 @@ const recoverEmployee = async (req, res) => {
       .select('-password')
       .populate('company', 'name');
 
-    console.log('[RecoverEmployee] Employee ID:', employeeId);
-    console.log('[RecoverEmployee] Manager Company ID:', managerCompanyId);
-    console.log('[RecoverEmployee] Recovered Employee:', recoveredEmployee ? { id: recoveredEmployee._id, name: recoveredEmployee.name, company: recoveredEmployee.company } : 'NOT FOUND');
-    
     if (!recoveredEmployee) {
-      // Debug: Check if employee exists at all
-      const checkEmployee = await User.findById(employeeId);
-      console.log('[RecoverEmployee] Employee exists in DB:', !!checkEmployee);
-      if (checkEmployee) {
-        console.log('[RecoverEmployee] But filters failed. Employee details:', { 
-          isDeleted: checkEmployee.isDeleted, 
-          company: checkEmployee.company, 
-          role: checkEmployee.role 
-        });
-      }
       return response(res, 404, false, 'Deleted employee not found');
     }
 

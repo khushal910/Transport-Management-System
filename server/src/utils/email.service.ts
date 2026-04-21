@@ -10,7 +10,7 @@ interface EmailResult {
 const isProduction = process.env.NODE_ENV === 'production';
 const debugLog = (...args: unknown[]) => {
   if (!isProduction) {
-    console.log(...args);
+    // Debug logging disabled in production
   }
 };
 

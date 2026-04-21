@@ -39,20 +39,8 @@ const getDeletedEmployees = async (req, res) => {
       User.countDocuments(query),
     ]);
 
-    console.log('[GetDeletedEmployees] Manager Company ID:', managerCompanyId);
-    console.log('[GetDeletedEmployees] Found deleted employees:', deletedEmployees.length);
-    
     if (deletedEmployees.length === 0) {
-      // Debug: Check what deleted employees exist
-      const allDeleted = await User.find({ role: { $ne: 'manager' }, isDeleted: true });
-      console.log('[GetDeletedEmployees] Total deleted employees in DB:', allDeleted.length);
-      if (allDeleted.length > 0) {
-        console.log('[GetDeletedEmployees] Sample deleted employees:', allDeleted.slice(0, 3).map(u => ({ 
-          name: u.name, 
-          company: u.company,
-          _id: u._id 
-        })));
-      }
+      // No deleted employees found
     }
 
     return response(res, 200, true, 'Deleted employees retrieved successfully', {

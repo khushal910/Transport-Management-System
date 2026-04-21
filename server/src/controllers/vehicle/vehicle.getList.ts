@@ -53,7 +53,6 @@ const getVehicleList = async (req, res) => {
       return response(res, 200, true, 'Vehicle list fetched successfully', []);
     }
 
-    console.log('getVehicleList error:', error);
     return response(res, 500, false, 'Error fetching vehicle list');
   }
 };
