@@ -4,8 +4,8 @@ services:
     env: node
     rootDir: server
     plan: free
-    buildCommand: npm ci
-    startCommand: npm start
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:compiled
     healthCheckPath: /health
     autoDeploy: true
     envVars:
