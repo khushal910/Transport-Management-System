@@ -37,10 +37,16 @@ const getResetPasswordValidatorSchema = () => {
   }
 
   return joi.object({
-    token: joi.string().trim().required().messages({
-      'string.empty': 'Reset token is required',
-      'any.required': 'Reset token is required',
-    }),
+    token: joi
+      .string()
+      .trim()
+      .pattern(/^[a-f0-9]{64}$/i)
+      .required()
+      .messages({
+        'string.empty': 'Reset token is required',
+        'string.pattern.base': 'Reset token format is invalid',
+        'any.required': 'Reset token is required',
+      }),
     password: passwordRule,
     passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
       'any.only': 'Passwords do not match',
@@ -60,7 +66,7 @@ const userResetPassword = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ''));
     }
 
-    const { token, password, passwordConfirm } = value;
+    const { token, password } = value;
 
     // Find user with valid reset token and non-expired token
     // We need to find user where token hash matches and expiry is in future

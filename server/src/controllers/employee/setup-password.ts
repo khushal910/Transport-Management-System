@@ -3,33 +3,56 @@ import response from '../../response/response';
 import User from '../../models/user.schema';
 import bcrypt from 'bcryptjs';
 import joi from 'joi';
+import environmentConfig from '../../config/environment';
 
 // Setup password validation schema
-const setupPasswordValidatorSchema = joi.object({
-  token: joi.string().trim().required().messages({
-    'string.empty': 'Setup token is required',
-    'any.required': 'Setup token is required',
-  }),
-  password: joi
-    .string()
-    .min(3)
-    .regex(/[A-Z]/)
-    .regex(/[a-z]/)
-    .regex(/[0-9]/)
-    .regex(/[!@#$%^&*]/)
-    .trim()
-    .required()
-    .messages({
-      'string.min': 'Password must be at least 3 characters long',
-      'string.pattern.base':
-        'Password must contain uppercase, lowercase, number, and special character',
+const getSetupPasswordValidatorSchema = () => {
+  const minLength = environmentConfig.getMinPasswordLength();
+  const isDev = environmentConfig.isDevelopment;
+
+  let passwordRule = joi.string().trim();
+
+  if (isDev) {
+    passwordRule = passwordRule.min(1).required().messages({
+      'string.min': 'Password must be at least 1 character',
       'any.required': 'Password is required',
+    });
+  } else {
+    passwordRule = passwordRule
+      .min(minLength)
+      .regex(/[A-Z]/)
+      .regex(/[a-z]/)
+      .regex(/[0-9]/)
+      .regex(/[!@#$%^&*]/)
+      .required()
+      .messages({
+        'string.min': `Password must be at least ${minLength} characters long`,
+        'string.pattern.base':
+          'Password must contain uppercase, lowercase, number, and special character',
+        'any.required': 'Password is required',
+      });
+  }
+
+  return joi.object({
+    token: joi
+      .string()
+      .trim()
+      .pattern(/^[a-f0-9]{64}$/i)
+      .required()
+      .messages({
+        'string.empty': 'Setup token is required',
+        'string.pattern.base': 'Setup token format is invalid',
+        'any.required': 'Setup token is required',
+      }),
+    password: passwordRule,
+    passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
+      'any.only': 'Passwords do not match',
+      'any.required': 'Password confirmation is required',
     }),
-  passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
-    'any.only': 'Passwords do not match',
-    'any.required': 'Password confirmation is required',
-  }),
-});
+  });
+};
+
+const setupPasswordValidatorSchema = getSetupPasswordValidatorSchema();
 
 const setupPassword = async (req, res) => {
   try {
@@ -40,7 +63,7 @@ const setupPassword = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ''));
     }
 
-    const { token, password, passwordConfirm } = value;
+    const { token, password } = value;
 
     // Find user with valid setup token and non-expired token
     const users = await User.find({

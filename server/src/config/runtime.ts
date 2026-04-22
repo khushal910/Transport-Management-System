@@ -29,6 +29,11 @@ const parsePositiveNumber = (value: string | undefined, fallback: number): numbe
 };
 
 const parseNodeEnv = (value: string | undefined): NodeEnv => {
+  const lifecycleEvent = normalizeEnvValue(process.env.npm_lifecycle_event)?.toLowerCase();
+  if (lifecycleEvent === 'dev') {
+    return 'development';
+  }
+
   const normalized = normalizeEnvValue(value)?.toLowerCase();
   if (normalized === 'production') {
     return 'production';

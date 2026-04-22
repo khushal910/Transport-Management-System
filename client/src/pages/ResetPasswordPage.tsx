@@ -1,25 +1,52 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Truck, Eye, EyeOff, CheckCircle, AlertCircle, X, Clock } from 'lucide-react';
-import { verifyPasswordResetOTP } from '@/api/auth';
+import { requestPasswordResetOTP, resetPassword, verifyPasswordResetOTP } from '@/api/auth';
 
-interface PasswordRequirement {
+interface PasswordRequirementRule {
   label: string;
   regex: RegExp;
+}
+
+interface PasswordRequirement extends PasswordRequirementRule {
   met: boolean;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OTP_REGEX = /^\d{6}$/;
+const RESET_TOKEN_REGEX = /^[a-f0-9]{64}$/i;
+
+const PASSWORD_REQUIREMENT_RULES: PasswordRequirementRule[] = [
+  { label: 'At least 6 characters', regex: /.{6,}/ },
+  { label: 'Contains uppercase letter (A-Z)', regex: /[A-Z]/ },
+  { label: 'Contains lowercase letter (a-z)', regex: /[a-z]/ },
+  { label: 'Contains number (0-9)', regex: /[0-9]/ },
+  { label: 'Contains special character (!@#$%^&*)', regex: /[!@#$%^&*]/ },
+];
+
+const getErrorMessage = (err: unknown, fallback: string): string => {
+  if (err instanceof Error && err.message.trim()) {
+    return err.message;
+  }
+  return fallback;
+};
+
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'otp' | 'password' | 'success'>('otp');
+  const [searchParams] = useSearchParams();
+  const resetToken = searchParams.get('token');
+  const hasTokenInUrl = Boolean(resetToken);
+  const isTokenFormatValid = !hasTokenInUrl || RESET_TOKEN_REGEX.test(resetToken ?? '');
+
+  const [step, setStep] = useState<'otp' | 'password' | 'success'>(hasTokenInUrl ? 'password' : 'otp');
   
   // OTP Step
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
@@ -32,13 +59,14 @@ export default function ResetPasswordPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  const [requirements, setRequirements] = useState<PasswordRequirement[]>([
-    { label: 'At least 8 characters', regex: /.{8,}/, met: false },
-    { label: 'Contains uppercase letter (A-Z)', regex: /[A-Z]/, met: false },
-    { label: 'Contains lowercase letter (a-z)', regex: /[a-z]/, met: false },
-    { label: 'Contains number (0-9)', regex: /[0-9]/, met: false },
-    { label: 'Contains special character (!@#$%^&*)', regex: /[!@#$%^&*]/, met: false },
-  ]);
+  const requirements = useMemo<PasswordRequirement[]>(
+    () =>
+      PASSWORD_REQUIREMENT_RULES.map((rule) => ({
+        ...rule,
+        met: rule.regex.test(password),
+      })),
+    [password]
+  );
 
   // Resend timer effect
   useEffect(() => {
@@ -52,57 +80,78 @@ export default function ResetPasswordPage() {
     return () => clearInterval(interval);
   }, [resendTimer]);
 
-  // Update password requirements
   useEffect(() => {
-    const updatedRequirements = requirements.map((req) => ({
-      ...req,
-      met: req.regex.test(password),
-    }));
-    setRequirements(updatedRequirements);
-  }, [password]);
+    if (!hasTokenInUrl) {
+      return;
+    }
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
+    setStep('password');
+    if (!isTokenFormatValid) {
+      setPasswordError('Invalid reset link format. Please request a new password reset link.');
+    }
+  }, [hasTokenInUrl, isTokenFormatValid]);
+
+  useEffect(() => {
+    if (step !== 'success') {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      navigate('/login');
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [step, navigate]);
+
+  const handleVerifyOTP = (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError(null);
-    setOtpLoading(true);
 
-    try {
-      if (!email.trim()) {
-        setOtpError('Email is required');
-        setOtpLoading(false);
-        return;
-      }
+    const trimmedEmail = email.trim();
+    const trimmedOtp = otp.trim();
 
-      if (!otp.trim() || otp.length !== 6) {
-        setOtpError('Please enter a 6-digit code');
-        setOtpLoading(false);
-        return;
-      }
-
-      // Validate it's numeric
-      if (!/^\d{6}$/.test(otp)) {
-        setOtpError('Reset code must be 6 digits');
-        setOtpLoading(false);
-        return;
-      }
-
-      // Move to password step (don't call API yet - we'll do it on final submit)
-      setStep('password');
-    } catch (err: any) {
-      setOtpError(err?.message || 'Invalid reset code');
-    } finally {
-      setOtpLoading(false);
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setOtpError('Please enter a valid email address');
+      return;
     }
+
+    if (!OTP_REGEX.test(trimmedOtp)) {
+      setOtpError('Reset code must be a valid 6-digit number');
+      return;
+    }
+
+    setEmail(trimmedEmail);
+    setOtp(trimmedOtp);
+    setStep('password');
   };
 
   const handleResendOTP = async () => {
-    // Would call requestPasswordResetOTP if backend supports it
-    setResendTimer(60);
-    setCanResend(false);
+    const trimmedEmail = email.trim();
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setOtpError('Enter a valid email address before requesting a new code');
+      return;
+    }
+
+    setResendLoading(true);
+    setOtpError(null);
+
+    try {
+      await requestPasswordResetOTP({ email: trimmedEmail });
+      setResendTimer(60);
+      setCanResend(false);
+    } catch (err: unknown) {
+      setOtpError(getErrorMessage(err, 'Failed to resend reset code. Please try again.'));
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const allRequirementsMet = requirements.every((req) => req.met);
   const passwordsMatch = password === passwordConfirm && password.length > 0;
+  const isOtpStep = step === 'otp' && !hasTokenInUrl;
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,21 +171,41 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      await verifyPasswordResetOTP({
-        email: email.trim(),
-        otp: otp.trim(),
-        password,
-        passwordConfirm,
-      });
+      if (hasTokenInUrl) {
+        if (!resetToken || !RESET_TOKEN_REGEX.test(resetToken)) {
+          setPasswordError('Invalid or malformed reset link. Please request a new password reset email.');
+          setPasswordLoading(false);
+          return;
+        }
+
+        await resetPassword({
+          token: resetToken,
+          password,
+          passwordConfirm,
+        });
+      } else {
+        const trimmedEmail = email.trim();
+        const trimmedOtp = otp.trim();
+
+        if (!EMAIL_REGEX.test(trimmedEmail) || !OTP_REGEX.test(trimmedOtp)) {
+          setPasswordError('Your reset session is invalid. Please verify your email and reset code again.');
+          setPasswordLoading(false);
+          return;
+        }
+
+        await verifyPasswordResetOTP({
+          email: trimmedEmail,
+          otp: trimmedOtp,
+          password,
+          passwordConfirm,
+        });
+      }
 
       setStep('success');
-
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (err: any) {
-      setPasswordError(err?.message || 'Failed to reset password. Please try again.');
+      setPassword('');
+      setPasswordConfirm('');
+    } catch (err: unknown) {
+      setPasswordError(getErrorMessage(err, 'Failed to reset password. Please try again.'));
     } finally {
       setPasswordLoading(false);
     }
@@ -157,8 +226,11 @@ export default function ResetPasswordPage() {
             Reset your password<br />securely.
           </h1>
           <p className="mt-4 max-w-md text-sidebar-foreground">
-            {step === 'otp' && 'Enter the code sent to your email to verify your identity.'}
-            {step === 'password' && 'Create a new strong password for your account.'}
+            {isOtpStep && 'Enter the code sent to your email to verify your identity.'}
+            {step === 'password' &&
+              (hasTokenInUrl
+                ? 'Set a new strong password using your secure reset link.'
+                : 'Create a new strong password for your account.')}
             {step === 'success' && 'Your password has been reset successfully.'}
           </p>
         </div>
@@ -190,14 +262,14 @@ export default function ResetPasswordPage() {
               <div>
                 <h2 className="text-2xl font-bold text-center">Password reset</h2>
                 <p className="mt-2 text-center text-sm text-muted-foreground">
-                  Your password has been successfully reset. You can now sign in with your new password.
+                  Your password has been successfully reset. You can now sign in with your new credentials.
                 </p>
               </div>
               <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
                 <p>Redirecting to login in 3 seconds...</p>
               </div>
             </div>
-          ) : step === 'otp' ? (
+          ) : isOtpStep ? (
             <>
               <div>
                 <h2 className="text-2xl font-bold">Enter reset code</h2>
@@ -222,7 +294,7 @@ export default function ResetPasswordPage() {
                     placeholder="you@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={otpLoading}
+                    disabled={resendLoading}
                     required
                   />
                 </div>
@@ -236,7 +308,7 @@ export default function ResetPasswordPage() {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/[^\d]/g, '').slice(0, 6))}
                     maxLength={6}
-                    disabled={otpLoading}
+                    disabled={resendLoading}
                     required
                     className="text-center text-2xl tracking-widest font-mono"
                   />
@@ -245,8 +317,8 @@ export default function ResetPasswordPage() {
                   </p>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={otpLoading || !email || otp.length !== 6}>
-                  {otpLoading ? 'Verifying...' : 'Verify code'}
+                <Button type="submit" className="w-full" disabled={resendLoading || !email || otp.length !== 6}>
+                  Verify code
                 </Button>
               </form>
 
@@ -260,9 +332,10 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={handleResendOTP}
+                    disabled={resendLoading}
                     className="text-primary hover:underline font-medium"
                   >
-                    Resend code
+                    {resendLoading ? 'Sending...' : 'Resend code'}
                   </button>
                 )}
               </div>
@@ -272,9 +345,21 @@ export default function ResetPasswordPage() {
               <div>
                 <h2 className="text-2xl font-bold">Create new password</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Create a strong password that meets all the requirements.
+                  {hasTokenInUrl
+                    ? 'Set a strong password for your account from this secure reset link.'
+                    : 'Create a strong password that meets all the requirements.'}
                 </p>
               </div>
+
+              {hasTokenInUrl && !isTokenFormatValid && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <p className="font-medium">Invalid reset link</p>
+                  <p className="mt-1">This link format is invalid or corrupted. Request a new reset email to continue.</p>
+                  <Link to="/forgot-password" className="mt-3 inline-block font-medium text-red-800 underline">
+                    Request new reset link
+                  </Link>
+                </div>
+              )}
 
               {passwordError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex gap-2">
@@ -300,6 +385,7 @@ export default function ResetPasswordPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       disabled={passwordLoading}
                     >
@@ -312,9 +398,9 @@ export default function ResetPasswordPage() {
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">Password requirements:</p>
                   <div className="space-y-1">
-                    {requirements.map((req, idx) => (
+                    {requirements.map((req) => (
                       <div
-                        key={idx}
+                        key={req.label}
                         className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border transition-colors ${
                           req.met
                             ? 'border-green-200 bg-green-50 text-green-700'
@@ -348,6 +434,7 @@ export default function ResetPasswordPage() {
                     <button
                       type="button"
                       onClick={() => setShowConfirm(!showConfirm)}
+                      aria-label={showConfirm ? 'Hide password confirmation' : 'Show password confirmation'}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       disabled={passwordLoading}
                     >
@@ -367,25 +454,27 @@ export default function ResetPasswordPage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={passwordLoading || !allRequirementsMet || !passwordsMatch}
+                  disabled={passwordLoading || !allRequirementsMet || !passwordsMatch || (hasTokenInUrl && !isTokenFormatValid)}
                 >
                   {passwordLoading ? 'Resetting password...' : 'Reset password'}
                 </Button>
               </form>
 
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => {
-                  setOtp('');
-                  setPassword('');
-                  setPasswordConfirm('');
-                  setStep('otp');
-                }}
-              >
-                ← Back to verify code
-              </Button>
+              {!hasTokenInUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setOtp('');
+                    setPassword('');
+                    setPasswordConfirm('');
+                    setStep('otp');
+                  }}
+                >
+                  ← Back to verify code
+                </Button>
+              )}
             </>
           )}
         </div>

@@ -6,7 +6,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dbConnect from './src/config/dbConnection';
+import dbConnect, { getDatabaseStatus, isDatabaseConnected } from './src/config/dbConnection';
 import runtimeConfig from './src/config/runtime';
 import analyticsRouter from './src/routers/analytics.route';
 import authRouter from './src/routers/auth.route';
@@ -75,22 +75,42 @@ app.get('/health', (_req, res) => {
     success: true,
     message: 'Server is healthy',
     environment: runtimeConfig.nodeEnv,
+    database: {
+      status: getDatabaseStatus(),
+      connected: isDatabaseConnected(),
+    },
     timestamp: new Date().toISOString(),
   });
 });
 
+const requireDatabaseConnection = (req: Request, res: Response, next: NextFunction) => {
+  if (isDatabaseConnected()) {
+    next();
+    return;
+  }
+
+  res.status(503).json({
+    success: false,
+    message:
+      'Database is unavailable. Ensure your MongoDB Atlas IP whitelist and MONGO_URI are configured, then retry.',
+    database: {
+      status: getDatabaseStatus(),
+    },
+  });
+};
+
 // API
-app.use('/api/auth', authRouter);
-app.use('/api/vehicle', vehicleRoute);
-app.use('/api/trip', tripRouter);
-app.use('/api/maintenance', maintenanceRouter);
-app.use('/api/expense', expenseRouter);
-app.use('/api/driver', driverRouter);
-app.use('/api/driver-status', driverStatusRouter);
-app.use('/api/analytics', analyticsRouter);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/safety', safetyRouter);
-app.use('/api/gps', gpsRouter);
+app.use('/api/auth', requireDatabaseConnection, authRouter);
+app.use('/api/vehicle', requireDatabaseConnection, vehicleRoute);
+app.use('/api/trip', requireDatabaseConnection, tripRouter);
+app.use('/api/maintenance', requireDatabaseConnection, maintenanceRouter);
+app.use('/api/expense', requireDatabaseConnection, expenseRouter);
+app.use('/api/driver', requireDatabaseConnection, driverRouter);
+app.use('/api/driver-status', requireDatabaseConnection, driverStatusRouter);
+app.use('/api/analytics', requireDatabaseConnection, analyticsRouter);
+app.use('/api/dashboard', requireDatabaseConnection, dashboardRouter);
+app.use('/api/safety', requireDatabaseConnection, safetyRouter);
+app.use('/api/gps', requireDatabaseConnection, gpsRouter);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -132,8 +152,21 @@ const shutdown = (signal: string) => {
 };
 
 const startServer = async () => {
+  let isDbReady = false;
+
   try {
-    await dbConnect();
+    isDbReady = await dbConnect();
+
+    if (!isDbReady && !runtimeConfig.isProduction) {
+      console.warn('Starting server in development with database unavailable (degraded mode).');
+    }
+
+    if (!isDbReady && runtimeConfig.isProduction) {
+      console.error('Database is unavailable in production. Aborting startup.');
+      process.exit(1);
+      return;
+    }
+
     httpServer = app.listen(port, () => {
       // Server listening
     });

@@ -45,10 +45,16 @@ const getVerifyPasswordResetSchema = () => {
       'string.email': 'Valid email is required',
       'any.required': 'Email is required',
     }),
-    otp: joi.string().trim().required().messages({
-      'string.empty': 'Password reset code is required',
-      'any.required': 'Password reset code is required',
-    }),
+    otp: joi
+      .string()
+      .trim()
+      .pattern(/^\d{6}$/)
+      .required()
+      .messages({
+        'string.empty': 'Password reset code is required',
+        'string.pattern.base': 'Password reset code must be a 6-digit number',
+        'any.required': 'Password reset code is required',
+      }),
     password: passwordRule,
     passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
       'any.only': 'Passwords do not match',

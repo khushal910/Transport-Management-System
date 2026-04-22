@@ -3,10 +3,21 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
 import { setupPassword } from '@/api/auth';
 
+const RESET_TOKEN_REGEX = /^[a-f0-9]{64}$/i;
+
+const getErrorMessage = (err: unknown, fallback: string): string => {
+  if (err instanceof Error && err.message.trim()) {
+    return err.message;
+  }
+  return fallback;
+};
+
 export default function SetupPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const setupToken = searchParams.get('token');
+  const setupToken = searchParams.get('token')?.trim() ?? '';
+  const hasSetupToken = setupToken.length > 0;
+  const isSetupTokenValid = hasSetupToken && RESET_TOKEN_REGEX.test(setupToken);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,15 +37,23 @@ export default function SetupPasswordPage() {
   const isFormValid = isPasswordValid && passwordsMatch;
 
   useEffect(() => {
-    if (!setupToken) {
+    if (!hasSetupToken) {
       setError('Invalid or missing setup link. Please check your email for the setup link.');
+      return;
     }
-  }, [setupToken]);
+
+    if (!isSetupTokenValid) {
+      setError('Setup link format is invalid. Please request a new setup email.');
+      return;
+    }
+
+    setError(null);
+  }, [hasSetupToken, isSetupTokenValid]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!setupToken) {
+    if (!isSetupTokenValid) {
       setError('Invalid setup link. Please request a new one.');
       return;
     }
@@ -48,7 +67,7 @@ export default function SetupPasswordPage() {
     setError(null);
 
     try {
-      const response = await setupPassword({
+      await setupPassword({
         token: setupToken,
         password,
         passwordConfirm: confirmPassword,
@@ -62,9 +81,8 @@ export default function SetupPasswordPage() {
       setTimeout(() => {
         navigate('/login', { replace: true });
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while setting your password. Please try again.');
-      console.error('Setup password error:', err);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'An error occurred while setting your password. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -104,14 +122,14 @@ export default function SetupPasswordPage() {
           Welcome! Please set a secure password to activate your account.
         </p>
 
-        {!setupToken ? (
+        {!isSetupTokenValid ? (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4">
             <div className="flex gap-3">
               <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
               <div>
                 <p className="font-semibold text-red-900">Invalid Setup Link</p>
                 <p className="mt-1 text-sm text-red-700">
-                  The setup link is missing or invalid. Please check your email for the correct link.
+                  The setup link is missing, malformed, or invalid. Please request a new setup email.
                 </p>
               </div>
             </div>
@@ -136,6 +154,7 @@ export default function SetupPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
                   disabled={loading}
                 >
@@ -193,6 +212,7 @@ export default function SetupPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
                   disabled={loading}
                 >
@@ -220,7 +240,7 @@ export default function SetupPasswordPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!isFormValid || loading}
+              disabled={!isFormValid || loading || !isSetupTokenValid}
               className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
             >
               {loading ? 'Setting up your password...' : 'Set Password & Activate Account'}

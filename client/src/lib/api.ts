@@ -8,6 +8,9 @@ const PUBLIC_PATHS = new Set([
   '/register',
   '/forgot-password',
   '/reset-password',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/setup-password',
   '/docs',
   '/documentation',
 ]);
