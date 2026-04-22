@@ -70,6 +70,8 @@ export const runtimeConfig = {
   corsOrigins: parseOrigins(process.env.CORS_ORIGINS, clientUrl),
   rateLimitWindowMs: parsePositiveNumber(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
   rateLimitMax: parsePositiveNumber(process.env.RATE_LIMIT_MAX, 200),
+  maxFailedLoginAttempts: parsePositiveNumber(process.env.AUTH_MAX_FAILED_LOGIN_ATTEMPTS, 5),
+  loginLockMinutes: parsePositiveNumber(process.env.AUTH_LOCKOUT_MINUTES, 15),
   sessionDurationHours: parsePositiveNumber(process.env.SESSION_DURATION_HOURS, 12),
   passwordResetExpiryHours: parsePositiveNumber(process.env.PASSWORD_RESET_EXPIRY, 24),
 };

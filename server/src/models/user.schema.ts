@@ -7,7 +7,14 @@ interface IUser extends Document {
   email: string;
   password: string | null;
   isPasswordSet: boolean;
+  isActive: boolean;
+  failedLoginAttempts: number;
+  loginLockUntil: Date | null;
+  lastLoginAt: Date | null;
+  passwordChangedAt: Date | null;
+  firstLoginEmailSentAt: Date | null;
   passwordResetToken: string | null;
+  passwordResetReference: string | null;
   passwordResetExpires: Date | null;
   pendingNewEmail?: string | null;
   emailVerificationToken: string | null;
@@ -43,7 +50,36 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    loginLockUntil: {
+      type: Date,
+      default: null,
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    passwordChangedAt: {
+      type: Date,
+      default: null,
+    },
+    firstLoginEmailSentAt: {
+      type: Date,
+      default: null,
+    },
     passwordResetToken: {
+      type: String,
+      default: null,
+    },
+    passwordResetReference: {
       type: String,
       default: null,
     },

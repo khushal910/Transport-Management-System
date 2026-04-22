@@ -32,7 +32,7 @@ export default function SetupPasswordPage() {
   const hasLowerCase = /[a-z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const hasSpecialChar = /[!@#$%^&*]/.test(password);
-  const isPasswordValid = password.length >= 3 && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+  const isPasswordValid = password.length >= 6 && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
   const passwordsMatch = password === confirmPassword && password.length > 0;
   const isFormValid = isPasswordValid && passwordsMatch;
 
@@ -165,9 +165,9 @@ export default function SetupPasswordPage() {
               {/* Password Requirements */}
               <div className="mt-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${password.length >= 3 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                  <span className={`text-xs ${password.length >= 3 ? 'text-emerald-700' : 'text-slate-600'}`}>
-                    At least 3 characters
+                  <div className={`h-2 w-2 rounded-full ${password.length >= 6 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  <span className={`text-xs ${password.length >= 6 ? 'text-emerald-700' : 'text-slate-600'}`}>
+                    At least 6 characters
                   </span>
                 </div>
                 <div className="flex items-center gap-2">

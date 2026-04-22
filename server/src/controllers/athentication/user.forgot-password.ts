@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import joi from 'joi';
 import { sendPasswordResetEmail } from '../../utils/email.service';
+import runtimeConfig from '../../config/runtime';
 
 // Email validation schema
 const emailValidatorSchema = joi.object({
@@ -30,14 +31,18 @@ const userForgotPassword = async (req, res) => {
       return response(res, 200, true, 'If email exists in system, reset link will be sent');
     }
 
+    if (user.isDeleted || user.isActive === false || !user.password) {
+      return response(res, 200, true, 'If email exists in system, reset link will be sent');
+    }
+
     // Generate reset token (64 character random string)
     const resetToken = crypto.randomBytes(32).toString('hex');
 
     // Hash the token for storage
     const hashedToken = await bcrypt.hash(resetToken, 10);
 
-    // Set token expiration (24 hours)
-    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Set token expiration based on runtime configuration
+    const tokenExpiry = new Date(Date.now() + runtimeConfig.passwordResetExpiryHours * 60 * 60 * 1000);
 
     // Update user with reset token and expiry
     user.passwordResetToken = hashedToken;

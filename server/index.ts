@@ -91,8 +91,7 @@ const requireDatabaseConnection = (req: Request, res: Response, next: NextFuncti
 
   res.status(503).json({
     success: false,
-    message:
-      'Database is unavailable. Ensure your MongoDB Atlas IP whitelist and MONGO_URI are configured, then retry.',
+    message: 'Service temporarily unavailable. Please try again later.',
     database: {
       status: getDatabaseStatus(),
     },

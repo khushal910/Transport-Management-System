@@ -60,6 +60,7 @@ const addEmployee = async (req, res) => {
             password: hashedPassword,
             isPasswordSet: true,
             isActive: true,
+            passwordChangedAt: new Date(),
             isDeleted: false,
           };
         } else {
@@ -171,6 +172,7 @@ const addEmployee = async (req, res) => {
         password: hashedPassword,
         isPasswordSet: true,
         isActive: true,
+        passwordChangedAt: new Date(),
         role,
         company: managerCompanyId,
         isDeleted: false,

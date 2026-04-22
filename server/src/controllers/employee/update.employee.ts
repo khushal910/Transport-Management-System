@@ -57,6 +57,10 @@ const updateEmployee = async (req, res) => {
     if (password) {
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(password, salt);
+      updateData.isPasswordSet = true;
+      updateData.passwordChangedAt = new Date();
+      updateData.failedLoginAttempts = 0;
+      updateData.loginLockUntil = null;
     }
 
     const updatedEmployee = await User.findByIdAndUpdate(

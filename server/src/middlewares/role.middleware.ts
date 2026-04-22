@@ -46,15 +46,21 @@ const requiredRole = (...allowedRoles: string[]) => {
       }
 
       const decoded = jwt.verify(token, secretKey) as DecodedToken;
-      const role = decoded.role;
-      const companyId = decoded.companyId;
 
       // Verify the user still exists and has not been deleted
-      const user = await User.findById(decoded.id).select('_id role company');
+      const user = await User.findById(decoded.id).select('_id role company isDeleted isActive');
       if (!user) {
         res.clearCookie('token', buildAuthCookieOptions());
         return response(res, 401, false, 'Your account no longer exists. Please return to the landing page.');
       }
+
+      if (user.isDeleted || user.isActive === false) {
+        res.clearCookie('token', buildAuthCookieOptions());
+        return response(res, 401, false, 'Your account is no longer active. Please contact your manager.');
+      }
+
+      const role = user.role;
+      const companyId = user.company ? String(user.company) : decoded.companyId;
 
       if (!allowedRoles.includes(role)) {
         return response(res, 403, false, 'Forbidden: Access denied');

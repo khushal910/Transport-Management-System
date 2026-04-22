@@ -7,6 +7,12 @@ interface EmailResult {
   error?: string;
 }
 
+interface FirstLoginSecurityContext {
+  loginAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 const isProduction = process.env.NODE_ENV === 'production';
 const debugLog = (...args: unknown[]) => {
   if (!isProduction) {
@@ -274,6 +280,79 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
   } catch (error: any) {
     console.error('❌ [EmailService] Employee setup email sending error:', error.message);
     console.error('❌ [EmailService] Error details:', error.code || error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send security email on the first successful employee login
+ */
+export const sendEmployeeFirstLoginSecurityEmail = async (
+  email: string,
+  name: string,
+  context: FirstLoginSecurityContext,
+): Promise<EmailResult> => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    }
+
+    const loginTime = context.loginAt.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    });
+
+    const deviceInfo = context.userAgent && context.userAgent.trim().length > 0
+      ? context.userAgent
+      : 'Unknown device';
+    const ipAddress = context.ipAddress && context.ipAddress.trim().length > 0
+      ? context.ipAddress
+      : 'Unavailable';
+
+    const mailOptions: SendMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Security Notice: First Login Detected',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: #ecfeff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #a5f3fc;">
+            <h2 style="color: #155e75; margin-top: 0;">First Login Security Notice</h2>
+            <p style="color: #0f766e; font-size: 14px; margin-bottom: 0;">
+              Hi <strong>${name}</strong>, your employee account has been accessed successfully for the first time.
+            </p>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #374151; margin-top: 0; margin-bottom: 14px;"><strong>Login details:</strong></p>
+            <p style="color: #4b5563; margin: 6px 0;"><strong>Time:</strong> ${loginTime}</p>
+            <p style="color: #4b5563; margin: 6px 0;"><strong>IP Address:</strong> ${ipAddress}</p>
+            <p style="color: #4b5563; margin: 6px 0;"><strong>Device:</strong> ${deviceInfo}</p>
+          </div>
+
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 14px; margin-bottom: 20px; border-radius: 4px;">
+            <p style="color: #92400e; font-size: 13px; margin: 0;">
+              <strong>Didn't recognize this login?</strong> Reset your password immediately and contact your manager.
+            </p>
+          </div>
+
+          <div style="color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+            <p style="margin: 5px 0;">This message is sent once on your first successful login to improve account security visibility.</p>
+            <p style="margin: 5px 0;">© 2026 Fleet Management System. All rights reserved.</p>
+          </div>
+        </div>
+      `,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    debugLog('Employee first login security email sent successfully to:', email);
+    return { success: true, message: 'First login security email sent successfully', messageId: result.messageId };
+  } catch (error: any) {
+    console.error('❌ Employee first login security email sending error:', error.message);
+    console.error('Error details:', error.code || error);
     return { success: false, error: error.message };
   }
 };

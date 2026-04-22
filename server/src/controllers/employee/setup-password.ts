@@ -100,6 +100,9 @@ const setupPassword = async (req, res) => {
     user.password = hashedPassword;
     user.isPasswordSet = true; // Mark password as set
     user.isActive = true; // Activate the employee account
+    user.passwordChangedAt = new Date();
+    user.failedLoginAttempts = 0;
+    user.loginLockUntil = null;
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
 

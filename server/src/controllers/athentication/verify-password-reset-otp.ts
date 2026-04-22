@@ -83,6 +83,10 @@ const verifyPasswordResetOTP = async (req, res) => {
       return response(res, 401, false, 'Invalid email or reset code');
     }
 
+    if (user.isDeleted || user.isActive === false || !user.password) {
+      return response(res, 401, false, 'Invalid email or reset code');
+    }
+
     // Check if user has a valid OTP request
     if (!user.passwordResetToken || !user.passwordResetExpires) {
       return response(res, 401, false, 'No password reset request found. Please request a new reset code.');
@@ -111,6 +115,9 @@ const verifyPasswordResetOTP = async (req, res) => {
     // Update user password and clear OTP fields
     user.password = hashedPassword;
     user.isPasswordSet = true;
+    user.passwordChangedAt = new Date();
+    user.failedLoginAttempts = 0;
+    user.loginLockUntil = null;
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
     user.passwordResetReference = null;

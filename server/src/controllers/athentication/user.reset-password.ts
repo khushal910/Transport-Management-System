@@ -91,6 +91,10 @@ const userResetPassword = async (req, res) => {
       return response(res, 401, false, 'Invalid or expired reset token');
     }
 
+    if (user.isDeleted || user.isActive === false || !user.password) {
+      return response(res, 401, false, 'Invalid or expired reset token');
+    }
+
     // Check if token has expired
     if (user.passwordResetExpires < Date.now()) {
       return response(res, 401, false, 'Reset token has expired');
@@ -103,6 +107,9 @@ const userResetPassword = async (req, res) => {
     user.password = hashedPassword;
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
+    user.passwordChangedAt = new Date();
+    user.failedLoginAttempts = 0;
+    user.loginLockUntil = null;
 
     await user.save();
 

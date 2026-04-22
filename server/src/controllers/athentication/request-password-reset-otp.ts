@@ -34,6 +34,10 @@ const requestPasswordResetOTP = async (req, res) => {
       return response(res, 200, true, 'If email exists in system, password reset code will be sent to your inbox');
     }
 
+    if (user.isDeleted || user.isActive === false || !user.password) {
+      return response(res, 200, true, 'If email exists in system, password reset code will be sent to your inbox');
+    }
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 

@@ -44,7 +44,9 @@ const userRegister = async (req, res) => {
     const userData = {
       ...value,
       password: hashedPassword,
-      isActive: environmentConfig.isDevelopment ? true : false, // Auto-activate in dev mode
+      isPasswordSet: true,
+      isActive: true,
+      passwordChangedAt: new Date(),
       company: null, // Will be set after company creation
     };
 
