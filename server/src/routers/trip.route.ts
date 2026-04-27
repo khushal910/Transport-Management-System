@@ -5,8 +5,11 @@ import getTripList from '../controllers/trip/trip.getList';
 import deleteTrip from '../controllers/trip/delete.trip';
 import updateTrip from '../controllers/trip/update.trip';
 import updateTripStatus from '../controllers/trip/update.trip.status';
+import getTripAddressSuggestions from '../controllers/trip/address.suggestions';
 
 const tripRouter = Router();
+
+tripRouter.get('/address-suggestions', requiredRole('manager', 'dispatcher'), getTripAddressSuggestions);
 
 // Both manager and dispatcher can create and view trips, drivers can view their assigned trips
 tripRouter.post('/create', requiredRole('manager', 'dispatcher'), createTrip);

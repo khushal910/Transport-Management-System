@@ -7,6 +7,7 @@ import tripCreateSchema from '../../validations/trip.create.validator.js';
 import Trip from '../../models/trip.schema.js';
 import { DRIVER_STATUS } from '../../constants/driverStatus.constants.js';
 import { validateDriverForAssignment, createStatusChangeRecord } from '../../utils/driverStatusManager.js';
+import { validateAddressSelection } from '../../services/geocoding.service.js';
 
 const createTrip = async (req, res) => {
   try { 
@@ -18,8 +19,53 @@ const createTrip = async (req, res) => {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
     
-    const { vehiclePlateNumber, driverEmail, cargoWeight, startLocation, endLocation, revenue } = value;
+    const {
+      vehiclePlateNumber,
+      driverEmail,
+      cargoWeight,
+      startLocationDetails,
+      endLocationDetails,
+      revenue,
+    } = value;
     const companyId = req.user.companyId;
+
+    let normalizedStartLocation;
+    let normalizedEndLocation;
+
+    try {
+      const [startLocationValidation, endLocationValidation] = await Promise.all([
+        validateAddressSelection(startLocationDetails),
+        validateAddressSelection(endLocationDetails),
+      ]);
+
+      if (!startLocationValidation.isValid || !startLocationValidation.normalized) {
+        return response(
+          res,
+          400,
+          false,
+          startLocationValidation.reason || 'Invalid start location. Please select an address from suggestions.',
+        );
+      }
+
+      if (!endLocationValidation.isValid || !endLocationValidation.normalized) {
+        return response(
+          res,
+          400,
+          false,
+          endLocationValidation.reason || 'Invalid destination location. Please select an address from suggestions.',
+        );
+      }
+
+      normalizedStartLocation = startLocationValidation.normalized;
+      normalizedEndLocation = endLocationValidation.normalized;
+    } catch (addressError) {
+      console.error('Address verification failed:', addressError);
+      return response(res, 502, false, 'Address validation service unavailable. Please try again.');
+    }
+
+    if (normalizedStartLocation.placeId === normalizedEndLocation.placeId) {
+      return response(res, 400, false, 'Start and destination locations must be different');
+    }
 
     // Check if vehicle exists and is available and belongs to the same company
     const isVehicleExist = await Vehicle.findOne({ 
@@ -85,8 +131,10 @@ const createTrip = async (req, res) => {
       vehicle: isVehicleExist._id,
       driver: isDriverExist._id,
       cargoWeight,
-      startLocation,
-      endLocation,
+      startLocation: normalizedStartLocation.displayName,
+      endLocation: normalizedEndLocation.displayName,
+      startLocationDetails: normalizedStartLocation,
+      endLocationDetails: normalizedEndLocation,
       revenue,
     };
 

@@ -66,6 +66,7 @@ const App = () => (
             {/* Trips: manager, dispatcher, driver */}
             <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'driver']} />}>
               <Route path="/trips" element={<TripsPage />} />
+              <Route path="/trips/live-map" element={<TripsPage />} />
             </Route>
 
             {/* Expenses: manager, dispatcher, driver, financial_analyst (view-only for analyst) */}

@@ -2,6 +2,14 @@ import mongoose, { Document, Schema, Model } from 'mongoose';
 
 type TripStatus = 'draft' | 'dispatched' | 'completed' | 'cancelled';
 
+interface ITripLocationDetails {
+  placeId: string;
+  displayName: string;
+  latitude: number;
+  longitude: number;
+  source?: string;
+}
+
 interface ITrip extends Document {
   company: mongoose.Types.ObjectId;
   vehicle: mongoose.Types.ObjectId;
@@ -9,6 +17,8 @@ interface ITrip extends Document {
   cargoWeight: number;
   startLocation?: string;
   endLocation?: string;
+  startLocationDetails?: ITripLocationDetails;
+  endLocationDetails?: ITripLocationDetails;
   revenue: number;
   status: TripStatus;
   startOdometer?: number;
@@ -16,6 +26,34 @@ interface ITrip extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const locationDetailsSchema = new Schema<ITripLocationDetails>(
+  {
+    placeId: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    displayName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    latitude: {
+      type: Number,
+      required: true,
+    },
+    longitude: {
+      type: Number,
+      required: true,
+    },
+    source: {
+      type: String,
+      default: 'nominatim',
+    },
+  },
+  { _id: false },
+);
 
 const tripSchema = new Schema<ITrip>(
   {
@@ -39,8 +77,22 @@ const tripSchema = new Schema<ITrip>(
       type: Number,
       required: true,
     },
-    startLocation: String,
-    endLocation: String,
+    startLocation: {
+      type: String,
+      trim: true,
+    },
+    endLocation: {
+      type: String,
+      trim: true,
+    },
+    startLocationDetails: {
+      type: locationDetailsSchema,
+      required: false,
+    },
+    endLocationDetails: {
+      type: locationDetailsSchema,
+      required: false,
+    },
     revenue: {
       type: Number,
       default: 0,
@@ -57,5 +109,5 @@ const tripSchema = new Schema<ITrip>(
 );
 
 const Trip: Model<ITrip> = mongoose.model('Trip', tripSchema);
-export { Trip, ITrip, TripStatus };
+export { Trip, ITrip, TripStatus, ITripLocationDetails };
 export default Trip;

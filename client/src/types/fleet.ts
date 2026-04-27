@@ -53,6 +53,14 @@ export interface Driver {
 
 export type TripStatus = 'draft' | 'dispatched' | 'completed' | 'cancelled';
 
+export interface TripLocationDetails {
+  placeId: string;
+  displayName: string;
+  latitude: number;
+  longitude: number;
+  source?: string;
+}
+
 export interface Trip {
   _id: string;
   company: string;
@@ -61,6 +69,8 @@ export interface Trip {
   cargoWeight: number;
   startLocation: string;
   endLocation: string;
+  startLocationDetails?: TripLocationDetails;
+  endLocationDetails?: TripLocationDetails;
   revenue: number;
   status: TripStatus;
   startOdometer?: number;

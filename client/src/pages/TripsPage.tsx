@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Search, ArrowRight, AlertCircle, Check, ChevronsUpDown } from 'lucide-react';
-import { getTripList, createTrip } from '@/api/trip';
+import { Plus, Search, ArrowRight, AlertCircle, Check, ChevronsUpDown, ExternalLink, Loader2, MapPin } from 'lucide-react';
+import { getTripList, createTrip, getTripAddressSuggestions, type TripLocationSuggestion } from '@/api/trip';
 import { getVehicleList } from '@/api/vehicle';
 import { getDriverList } from '@/api/driver';
 import { useAuth } from '@/context/AuthContext';
@@ -22,12 +23,24 @@ type DriverOption = {
   email: string;
 };
 
+type TripFormState = {
+  vehicleId: string;
+  driverId: string;
+  cargoWeight: string;
+  startLocation: string;
+  endLocation: string;
+  revenue: string;
+};
+
 export default function TripsPage() {
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [liveMapDialogInitialized, setLiveMapDialogInitialized] = useState(false);
   const { user } = useAuth();
   const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
+  const isLiveMapRoute = location.pathname === '/trips/live-map';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['trips', statusFilter],
@@ -54,22 +67,39 @@ export default function TripsPage() {
     });
   }, [trips, search, statusFilter]);
 
+  useEffect(() => {
+    if (!isLiveMapRoute) {
+      setLiveMapDialogInitialized(false);
+      return;
+    }
+
+    if (canCreate && !liveMapDialogInitialized) {
+      setDialogOpen(true);
+      setLiveMapDialogInitialized(true);
+    }
+  }, [canCreate, isLiveMapRoute, liveMapDialogInitialized]);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Trips</h1>
-            <p className="page-description">Manage trip assignments and tracking</p>
+            <h1 className="page-title">{isLiveMapRoute ? 'Live Map Planner' : 'Trips'}</h1>
+            <p className="page-description">
+              {isLiveMapRoute ? 'Plan trips with live address suggestions and map validation' : 'Manage trip assignments and tracking'}
+            </p>
           </div>
           {canCreate && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button><Plus className="mr-2 h-4 w-4" />Create Trip</Button>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {isLiveMapRoute ? 'Open Live Map Planner' : 'Create Trip'}
+                </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Create Trip</DialogTitle>
+                  <DialogTitle>{isLiveMapRoute ? 'Live Map Trip Planner' : 'Create Trip'}</DialogTitle>
                   <DialogDescription className="sr-only">
                     Select vehicle and driver, then provide route and cargo details to create a trip.
                   </DialogDescription>
@@ -79,6 +109,12 @@ export default function TripsPage() {
             </Dialog>
           )}
         </div>
+
+        {isLiveMapRoute && !canCreate && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            Live map trip planning is available for Manager and Dispatcher roles.
+          </div>
+        )}
 
         <div className="filter-bar">
           <div className="relative flex-1 max-w-sm">
@@ -155,16 +191,24 @@ export default function TripsPage() {
 }
 
 function TripForm({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({ vehicleId: '', driverId: '', cargoWeight: '', startLocation: '', endLocation: '', revenue: '' });
+  const [form, setForm] = useState<TripFormState>({
+    vehicleId: '',
+    driverId: '',
+    cargoWeight: '',
+    startLocation: '',
+    endLocation: '',
+    revenue: '',
+  });
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [driverSearch, setDriverSearch] = useState('');
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const [driverOpen, setDriverOpen] = useState(false);
+  const [selectedStartLocation, setSelectedStartLocation] = useState<TripLocationSuggestion | null>(null);
+  const [selectedEndLocation, setSelectedEndLocation] = useState<TripLocationSuggestion | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Fetch vehicles
   const { data: vehiclesData, isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles-trip-form'],
     queryFn: async () => {
@@ -175,7 +219,6 @@ function TripForm({ onClose }: { onClose: () => void }) {
     retry: 1,
   });
 
-  // Fetch drivers
   const { data: driversData, isLoading: driversLoading } = useQuery({
     queryKey: ['drivers-trip-form'],
     queryFn: async () => {
@@ -209,62 +252,88 @@ function TripForm({ onClose }: { onClose: () => void }) {
       .filter((driver): driver is DriverOption => Boolean(driver));
   }, [driversData]);
 
-  // Filter vehicles by name or plate
   const filteredVehicles = useMemo(() => {
     if (!vehicleSearch.trim()) return vehicles;
-    const search = vehicleSearch.toLowerCase();
-    return vehicles.filter((v) => v.name.toLowerCase().includes(search) || v.licensePlate.toLowerCase().includes(search));
+    const searchTerm = vehicleSearch.toLowerCase();
+    return vehicles.filter((v) => v.name.toLowerCase().includes(searchTerm) || v.licensePlate.toLowerCase().includes(searchTerm));
   }, [vehicles, vehicleSearch]);
 
-  // Filter drivers by name or email
   const filteredDrivers = useMemo(() => {
     if (!driverSearch.trim()) return drivers;
-    const search = driverSearch.toLowerCase();
-    return drivers.filter((d) => d.name.toLowerCase().includes(search) || d.email.toLowerCase().includes(search));
+    const searchTerm = driverSearch.toLowerCase();
+    return drivers.filter((d) => d.name.toLowerCase().includes(searchTerm) || d.email.toLowerCase().includes(searchTerm));
   }, [drivers, driverSearch]);
 
-  // Get selected vehicle and driver objects
   const selectedVehicle = vehicles.find((v) => v._id === form.vehicleId);
   const selectedDriver = drivers.find((d) => d._id === form.driverId);
 
-  // Live validation for cargo weight
-  const validateCargoWeight = useCallback((weight: string) => {
-    const newErrors = { ...errors };
-    if (!weight) {
-      newErrors.cargoWeight = 'Cargo weight is required';
-    } else if (isNaN(Number(weight))) {
-      newErrors.cargoWeight = 'Cargo weight must be a number';
-    } else if (Number(weight) <= 0) {
-      newErrors.cargoWeight = 'Cargo weight must be greater than 0';
-    } else if (selectedVehicle && Number(weight) > selectedVehicle.maxCapacity) {
-      newErrors.cargoWeight = `Exceeds max capacity: ${selectedVehicle.maxCapacity} kg`;
-    } else {
-      delete newErrors.cargoWeight;
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [errors, selectedVehicle]);
+  const validateCargoWeight = useCallback(
+    (weight: string) => {
+      setErrors((prev) => {
+        const next = { ...prev };
+
+        if (!weight) {
+          next.cargoWeight = 'Cargo weight is required';
+        } else if (Number.isNaN(Number(weight))) {
+          next.cargoWeight = 'Cargo weight must be a number';
+        } else if (Number(weight) <= 0) {
+          next.cargoWeight = 'Cargo weight must be greater than 0';
+        } else if (selectedVehicle && Number(weight) > selectedVehicle.maxCapacity) {
+          next.cargoWeight = `Exceeds max capacity: ${selectedVehicle.maxCapacity} kg`;
+        } else {
+          delete next.cargoWeight;
+        }
+
+        return next;
+      });
+    },
+    [selectedVehicle],
+  );
 
   const handleCargoWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setForm({ ...form, cargoWeight: value });
+    setForm((prev) => ({ ...prev, cargoWeight: value }));
     validateCargoWeight(value);
+  };
+
+  const handleStartLocationInputChange = (value: string) => {
+    setForm((prev) => ({ ...prev, startLocation: value }));
+    setSelectedStartLocation((prev) => (prev?.displayName === value ? prev : null));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.startLocation;
+      return next;
+    });
+  };
+
+  const handleEndLocationInputChange = (value: string) => {
+    setForm((prev) => ({ ...prev, endLocation: value }));
+    setSelectedEndLocation((prev) => (prev?.displayName === value ? prev : null));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.endLocation;
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate all fields
     const newErrors: Record<string, string> = {};
     if (!form.vehicleId) newErrors.vehicleId = 'Vehicle is required';
     if (!form.driverId) newErrors.driverId = 'Driver is required';
-    if (!form.startLocation.trim()) newErrors.startLocation = 'Start location is required';
-    if (!form.endLocation.trim()) newErrors.endLocation = 'End location is required';
+    if (!selectedStartLocation) newErrors.startLocation = 'Select a start address from suggestions';
+    if (!selectedEndLocation) newErrors.endLocation = 'Select a destination address from suggestions';
     if (!form.cargoWeight) newErrors.cargoWeight = 'Cargo weight is required';
     if (!form.revenue) newErrors.revenue = 'Revenue is required';
     if (Number(form.revenue) <= 0) newErrors.revenue = 'Revenue must be greater than 0';
+
     if (selectedVehicle && Number(form.cargoWeight) > selectedVehicle.maxCapacity) {
       newErrors.cargoWeight = `Exceeds max capacity: ${selectedVehicle.maxCapacity} kg`;
+    }
+
+    if (selectedStartLocation && selectedEndLocation && selectedStartLocation.placeId === selectedEndLocation.placeId) {
+      newErrors.endLocation = 'Destination must be different from start location';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -274,6 +343,7 @@ function TripForm({ onClose }: { onClose: () => void }) {
 
     setIsSubmitting(true);
     setSubmitMessage(null);
+
     try {
       if (!selectedVehicle || !selectedDriver) {
         setSubmitMessage({ type: 'error', text: 'Please select a valid vehicle and driver' });
@@ -287,12 +357,18 @@ function TripForm({ onClose }: { onClose: () => void }) {
         return;
       }
 
+      if (!selectedStartLocation || !selectedEndLocation) {
+        setSubmitMessage({ type: 'error', text: 'Please select valid addresses from suggestions' });
+        setIsSubmitting(false);
+        return;
+      }
+
       await createTrip({
         vehiclePlateNumber: selectedVehicle.licensePlate,
         driverEmail: selectedDriver.email,
         cargoWeight: Number(form.cargoWeight),
-        startLocation: form.startLocation.trim(),
-        endLocation: form.endLocation.trim(),
+        startLocationDetails: selectedStartLocation,
+        endLocationDetails: selectedEndLocation,
         revenue: Number(form.revenue),
       });
 
@@ -314,7 +390,6 @@ function TripForm({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      {/* Vehicle Search */}
       <div className="space-y-2">
         <Label>Vehicle (Name or Plate)</Label>
         <Popover open={vehicleOpen} onOpenChange={setVehicleOpen}>
@@ -340,7 +415,7 @@ function TripForm({ onClose }: { onClose: () => void }) {
                       variant="ghost"
                       className="w-full justify-start mb-1 font-normal"
                       onClick={() => {
-                        setForm({ ...form, vehicleId: v._id });
+                        setForm((prev) => ({ ...prev, vehicleId: v._id }));
                         setErrors((prev) => {
                           const next = { ...prev };
                           delete next.vehicleId;
@@ -365,7 +440,6 @@ function TripForm({ onClose }: { onClose: () => void }) {
         {selectedVehicle && <p className="text-xs text-muted-foreground">Max capacity: {selectedVehicle.maxCapacity} kg</p>}
       </div>
 
-      {/* Driver Search */}
       <div className="space-y-2">
         <Label>Driver (Name or Email)</Label>
         <Popover open={driverOpen} onOpenChange={setDriverOpen}>
@@ -391,7 +465,7 @@ function TripForm({ onClose }: { onClose: () => void }) {
                       variant="ghost"
                       className="w-full justify-start mb-1 font-normal"
                       onClick={() => {
-                        setForm({ ...form, driverId: d._id });
+                        setForm((prev) => ({ ...prev, driverId: d._id }));
                         setErrors((prev) => {
                           const next = { ...prev };
                           delete next.driverId;
@@ -415,21 +489,46 @@ function TripForm({ onClose }: { onClose: () => void }) {
         {errors.driverId && <p className="text-xs text-destructive">{errors.driverId}</p>}
       </div>
 
-      {/* Locations */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Start Location</Label>
-          <Input placeholder="e.g., Delhi" value={form.startLocation} onChange={(e) => setForm({ ...form, startLocation: e.target.value })} className={errors.startLocation ? 'border-destructive' : ''} />
-          {errors.startLocation && <p className="text-xs text-destructive">{errors.startLocation}</p>}
-        </div>
-        <div className="space-y-2">
-          <Label>End Location</Label>
-          <Input placeholder="e.g., Bangalore" value={form.endLocation} onChange={(e) => setForm({ ...form, endLocation: e.target.value })} className={errors.endLocation ? 'border-destructive' : ''} />
-          {errors.endLocation && <p className="text-xs text-destructive">{errors.endLocation}</p>}
-        </div>
+        <LocationAutocompleteField
+          label="Start Location"
+          placeholder="Type pickup address"
+          value={form.startLocation}
+          selectedLocation={selectedStartLocation}
+          onInputChange={handleStartLocationInputChange}
+          onSelect={(location) => {
+            setSelectedStartLocation(location);
+            setForm((prev) => ({ ...prev, startLocation: location.displayName }));
+            setErrors((prev) => {
+              const next = { ...prev };
+              delete next.startLocation;
+              return next;
+            });
+          }}
+          error={errors.startLocation}
+        />
+
+        <LocationAutocompleteField
+          label="End Location"
+          placeholder="Type destination address"
+          value={form.endLocation}
+          selectedLocation={selectedEndLocation}
+          onInputChange={handleEndLocationInputChange}
+          onSelect={(location) => {
+            setSelectedEndLocation(location);
+            setForm((prev) => ({ ...prev, endLocation: location.displayName }));
+            setErrors((prev) => {
+              const next = { ...prev };
+              delete next.endLocation;
+              return next;
+            });
+          }}
+          error={errors.endLocation}
+        />
       </div>
 
-      {/* Cargo Weight with Live Validation */}
+      <TripRouteMapPreview startLocation={selectedStartLocation} endLocation={selectedEndLocation} />
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Cargo Weight (kg) {errors.cargoWeight && <span className="text-destructive">*</span>}</Label>
@@ -444,22 +543,237 @@ function TripForm({ onClose }: { onClose: () => void }) {
             </p>
           )}
         </div>
+
         <div className="space-y-2">
           <Label>Revenue (₹)</Label>
-          <Input type="number" placeholder="e.g., 15000" value={form.revenue} onChange={(e) => setForm({ ...form, revenue: e.target.value })} className={errors.revenue ? 'border-destructive' : ''} />
+          <Input
+            type="number"
+            placeholder="e.g., 15000"
+            value={form.revenue}
+            onChange={(e) => setForm((prev) => ({ ...prev, revenue: e.target.value }))}
+            className={errors.revenue ? 'border-destructive' : ''}
+          />
           {errors.revenue && <p className="text-xs text-destructive">{errors.revenue}</p>}
         </div>
       </div>
 
-      {/* Submit Buttons */}
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting || !form.vehicleId || !form.driverId}>
+        <Button
+          type="submit"
+          disabled={isSubmitting || !form.vehicleId || !form.driverId || !selectedStartLocation || !selectedEndLocation}
+        >
           {isSubmitting ? 'Creating...' : 'Create Trip'}
         </Button>
       </div>
     </form>
+  );
+}
+
+type LocationAutocompleteFieldProps = {
+  label: string;
+  placeholder: string;
+  value: string;
+  selectedLocation: TripLocationSuggestion | null;
+  onInputChange: (value: string) => void;
+  onSelect: (location: TripLocationSuggestion) => void;
+  error?: string;
+};
+
+function LocationAutocompleteField({
+  label,
+  placeholder,
+  value,
+  selectedLocation,
+  onInputChange,
+  onSelect,
+  error,
+}: LocationAutocompleteFieldProps) {
+  const [open, setOpen] = useState(false);
+  const debouncedValue = useDebouncedValue(value, 350);
+  const trimmedQuery = debouncedValue.trim();
+  const shouldFetchSuggestions = trimmedQuery.length >= 3;
+
+  const {
+    data: suggestionData,
+    isFetching,
+    isError,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['trip-address-suggestions', trimmedQuery],
+    queryFn: async () => {
+      const result = await getTripAddressSuggestions(trimmedQuery);
+      return result.data ?? [];
+    },
+    enabled: shouldFetchSuggestions,
+    retry: 1,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const suggestions = suggestionData ?? [];
+  const shouldShowDropdown = open && value.trim().length > 0;
+
+  return (
+    <div className="space-y-2 relative">
+      <Label>{label}</Label>
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(e) => onInputChange(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={placeholder}
+          className={cn(error && 'border-destructive', selectedLocation && 'pr-10')}
+        />
+        {selectedLocation && (
+          <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600" />
+        )}
+      </div>
+
+      {shouldShowDropdown && (
+        <div className="absolute z-30 mt-1 w-full rounded-md border bg-popover shadow-md">
+          {!shouldFetchSuggestions ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground">Type at least 3 characters for address suggestions</p>
+          ) : isFetching ? (
+            <div className="px-3 py-4 text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading suggestions...
+            </div>
+          ) : isError ? (
+            <div className="px-3 py-3 text-sm text-destructive space-y-2">
+              <p>{queryError instanceof Error ? queryError.message : 'Failed to fetch suggestions'}</p>
+              <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+                Retry
+              </Button>
+            </div>
+          ) : suggestions.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground">No addresses found. Try a different search.</p>
+          ) : (
+            <div className="max-h-56 overflow-y-auto">
+              {suggestions.map((suggestion) => (
+                <button
+                  type="button"
+                  key={suggestion.placeId}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onSelect(suggestion);
+                    setOpen(false);
+                  }}
+                >
+                  <p className="font-medium leading-tight">{suggestion.displayName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {suggestion.latitude.toFixed(5)}, {suggestion.longitude.toFixed(5)}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : selectedLocation ? (
+        <p className="text-xs text-green-700 flex items-center gap-1">
+          <MapPin className="h-3 w-3" /> Verified via map lookup
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">Select an address suggestion to continue.</p>
+      )}
+    </div>
+  );
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
+
+const buildOsmEmbedUrl = (location: TripLocationSuggestion): string => {
+  const delta = 0.06;
+  const minLon = location.longitude - delta;
+  const minLat = location.latitude - delta;
+  const maxLon = location.longitude + delta;
+  const maxLat = location.latitude + delta;
+  const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${location.latitude},${location.longitude}`;
+};
+
+function TripRouteMapPreview({
+  startLocation,
+  endLocation,
+}: {
+  startLocation: TripLocationSuggestion | null;
+  endLocation: TripLocationSuggestion | null;
+}) {
+  if (!startLocation && !endLocation) {
+    return (
+      <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+        Live map preview will appear once you select valid start and destination addresses.
+      </div>
+    );
+  }
+
+  const routeUrl =
+    startLocation && endLocation
+      ? `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${startLocation.latitude}%2C${startLocation.longitude}%3B${endLocation.latitude}%2C${endLocation.longitude}`
+      : null;
+
+  return (
+    <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">Live Map Preview</p>
+        {routeUrl && (
+          <a
+            href={routeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
+          >
+            Open Route
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[{ title: 'Start', value: startLocation }, { title: 'Destination', value: endLocation }].map((item) => (
+          <div key={item.title} className="rounded-md border bg-background p-2">
+            <p className="text-xs font-medium mb-2">{item.title}</p>
+            {item.value ? (
+              <>
+                <iframe
+                  title={`${item.title} location map`}
+                  src={buildOsmEmbedUrl(item.value)}
+                  className="h-40 w-full rounded border"
+                  loading="lazy"
+                />
+                <p className="mt-2 text-[11px] text-muted-foreground line-clamp-2">{item.value.displayName}</p>
+              </>
+            ) : (
+              <div className="h-40 w-full rounded border border-dashed flex items-center justify-center text-xs text-muted-foreground">
+                Select {item.title.toLowerCase()} address
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

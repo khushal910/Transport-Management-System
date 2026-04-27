@@ -4,7 +4,7 @@ import Trip from '../../models/trip.schema.js';
 import User from '../../models/user.schema.js';
 import Driver from '../../models/driver.schema.js';
 import Vehicle from '../../models/vehicle.schema.js';
-import tripCreateSchema from '../../validations/trip.create.validator.js';
+import tripUpdateSchema from '../../validations/trip.update.validator.js';
 import { DRIVER_STATUS } from '../../constants/driverStatus.constants.js';
 import { validateDriverForAssignment, createStatusChangeRecord } from '../../utils/driverStatusManager.js';
 
@@ -35,12 +35,21 @@ const updateTrip = async (req, res) => {
     }
 
     // Validate input
-    const { error, value } = tripCreateSchema.validate(req.body);
+    const { error, value } = tripUpdateSchema.validate(req.body);
     if (error) {
       return response(res, 400, false, error.details[0].message.replace(/"/g, ""));
     }
 
-    const { vehiclePlateNumber, driverEmail, cargoWeight, startLocation, endLocation, revenue } = value;
+    const {
+      vehiclePlateNumber,
+      driverEmail,
+      cargoWeight,
+      startLocation,
+      endLocation,
+      startLocationDetails,
+      endLocationDetails,
+      revenue,
+    } = value;
 
     // Check if vehicle exists and belongs to the same company
     const newVehicle = await Vehicle.findOne(
@@ -163,18 +172,24 @@ const updateTrip = async (req, res) => {
     }
 
     // Update the trip
-    const updatedTrip = await Trip.findByIdAndUpdate(
-      tripId,
-      {
-        vehicle: newVehicle._id,
-        driver: newDriver._id,
-        cargoWeight,
-        startLocation,
-        endLocation,
-        revenue,
-      },
-      { new: true }
-    )
+    const tripUpdateData = {
+      vehicle: newVehicle._id,
+      driver: newDriver._id,
+      cargoWeight,
+      startLocation,
+      endLocation,
+      revenue,
+    };
+
+    if (startLocationDetails) {
+      tripUpdateData.startLocationDetails = startLocationDetails;
+    }
+
+    if (endLocationDetails) {
+      tripUpdateData.endLocationDetails = endLocationDetails;
+    }
+
+    const updatedTrip = await Trip.findByIdAndUpdate(tripId, tripUpdateData, { new: true })
       .populate("vehicle")
       .populate("driver");
 

@@ -7,13 +7,15 @@ const locationDetailsSchema: ObjectSchema = Joi.object({
   longitude: Joi.number().min(-180).max(180).required(),
 });
 
-const tripCreateSchema: ObjectSchema = Joi.object({
+const tripUpdateSchema: ObjectSchema = Joi.object({
   vehiclePlateNumber: Joi.string().trim().required(),
   cargoWeight: Joi.number().positive().required(),
   driverEmail: Joi.string().email().lowercase().trim().required(),
-  startLocationDetails: locationDetailsSchema.required(),
-  endLocationDetails: locationDetailsSchema.required(),
+  startLocation: Joi.string().trim().min(2).max(255).required(),
+  endLocation: Joi.string().trim().min(2).max(255).required(),
+  startLocationDetails: locationDetailsSchema.optional(),
+  endLocationDetails: locationDetailsSchema.optional(),
   revenue: Joi.number().positive().required(),
 }).options({ abortEarly: false, stripUnknown: true });
 
-export default tripCreateSchema;
+export default tripUpdateSchema;
