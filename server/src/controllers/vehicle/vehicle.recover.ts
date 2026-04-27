@@ -38,7 +38,10 @@ const recoverVehicle = async (req, res) => {
       200,
       true,
       "Vehicle recovered successfully",
-      recoveredVehicle
+      {
+        ...recoveredVehicle.toObject(),
+        model: recoveredVehicle.vehicleModel,
+      }
     );
   } catch (error) {
     console.error("Error recovering vehicle:", error);

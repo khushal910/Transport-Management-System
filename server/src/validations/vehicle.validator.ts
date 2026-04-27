@@ -6,7 +6,7 @@ const vehicleRegisterSchema: ObjectSchema = Joi.object({
   model: Joi.string().trim().required(),
   vehicleType: Joi.string().trim().lowercase().valid('truck', 'van', 'bike').required(),
   maxCapacity: Joi.number().positive().required(),
-  odometer: Joi.number().min(0).positive().required(),
+  odometer: Joi.number().min(0).required(),
   status: Joi.string().trim().lowercase().valid('available', 'on_trip', 'in_shop', 'retired').default('available'),
 });
 

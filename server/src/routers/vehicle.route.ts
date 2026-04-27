@@ -10,8 +10,11 @@ import updateVehicleStatus from '../controllers/vehicle/vehicle.updateStatus';
 
 const vehicleRoute = Router();
 
+// Keep both /register and /create for backward compatibility across clients.
+vehicleRoute.post('/create', requiredRole('manager'), vehicleRegister);
 vehicleRoute.post('/register', requiredRole('manager'), vehicleRegister);
 vehicleRoute.post('/update/:vehicleId', requiredRole('manager'), vehicleUpdate);
+vehicleRoute.put('/update/:vehicleId', requiredRole('manager'), vehicleUpdate);
 vehicleRoute.get('/list', requiredRole('manager', 'dispatcher', 'safety_officer'), getVehicleList);
 vehicleRoute.patch('/:vehicleId/status', requiredRole('manager', 'safety_officer', 'dispatcher'), updateVehicleStatus);
 vehicleRoute.delete('/delete/:vehicleId', requiredRole('manager'), deleteVehicle);

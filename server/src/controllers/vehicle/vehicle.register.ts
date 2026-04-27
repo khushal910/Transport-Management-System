@@ -26,14 +26,22 @@ const vehicleRegister = async (req, res) => {
       );
     }
 
+    const { model, ...rest } = value;
+
     const vehicleRegisterData = {
-      ...value,
+      ...rest,
+      vehicleModel: model,
       company: req.user.companyId,
       createdBy: req.user.id
     };
 
     const vehicleRegister = await Vehicle.create(vehicleRegisterData);
-    return response(res, 201, true, 'Vehicle registered successfully', vehicleRegister);
+    const createdVehicle = vehicleRegister.toObject();
+
+    return response(res, 201, true, 'Vehicle registered successfully', {
+      ...createdVehicle,
+      model: createdVehicle.vehicleModel,
+    });
   
   } catch (err) {
     if (err.code === 11000) {

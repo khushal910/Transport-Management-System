@@ -3,6 +3,8 @@ import Vehicle from '../../models/vehicle.schema';
 import response from '../../response/response';
 import { DEFAULT_LIMIT, MAX_LIMIT } from '../../config/paginationConfig';
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const getVehicleList = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
@@ -32,7 +34,13 @@ const getVehicleList = async (req, res) => {
     }
 
     if (search) {
-      query.$text = { $search: search };
+      const safeSearch = escapeRegex(search.trim());
+      query.$or = [
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { licensePlate: { $regex: safeSearch, $options: 'i' } },
+        { vehicleModel: { $regex: safeSearch, $options: 'i' } },
+        { vehicleType: { $regex: safeSearch, $options: 'i' } },
+      ];
     }
     
     const listOfVehicles = await Vehicle.find(query)
@@ -41,18 +49,19 @@ const getVehicleList = async (req, res) => {
       .limit(limit)
       .lean();
 
+    const normalizedVehicles = listOfVehicles.map((vehicle) => ({
+      ...vehicle,
+      model: vehicle.vehicleModel,
+    }));
+
     return response(
       res,
       200,
       true,
       'Vehicle list fetched successfully',
-      listOfVehicles
+      normalizedVehicles
     );
   } catch (error) {
-    if (error.codeName === 'IndexNotFound') {
-      return response(res, 200, true, 'Vehicle list fetched successfully', []);
-    }
-
     return response(res, 500, false, 'Error fetching vehicle list');
   }
 };

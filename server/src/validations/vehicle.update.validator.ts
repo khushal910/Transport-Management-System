@@ -12,7 +12,7 @@ const vehicleUpdateSchema: ObjectSchema = Joi.object({
   model: Joi.string().trim(),
   vehicleType: Joi.string().trim().lowercase().valid('truck', 'van', 'bike'),
   maxCapacity: Joi.number().positive(),
-  odometer: Joi.number().min(0).positive(),
+  odometer: Joi.number().min(0),
   // Status intentionally excluded - managed through lifecycle events only
 });
 

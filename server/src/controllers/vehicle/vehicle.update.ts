@@ -48,7 +48,13 @@ const vehicleUpdate = async (req, res) => {
       return response(res, 403, false, 'Vehicle status cannot be manually changed. Status is managed through system lifecycle events (trips, maintenance, etc.).');
     }
 
-    const updatedVehicle = await Vehicle.findByIdAndUpdate(vehicleId, value, {
+    const { model, ...restValue } = value;
+    const updatePayload = {
+      ...restValue,
+      ...(model ? { vehicleModel: model } : {}),
+    };
+
+    const updatedVehicle = await Vehicle.findByIdAndUpdate(vehicleId, updatePayload, {
       returnDocument: "after",
       runValidators: true,
     });
@@ -57,7 +63,11 @@ const vehicleUpdate = async (req, res) => {
       return response(res, 404, false, 'Vehicle not found');
     }
 
-    response(res, 200, true, 'Vehicle updated successfully', updatedVehicle);
+    const updatedVehicleData = updatedVehicle.toObject();
+    response(res, 200, true, 'Vehicle updated successfully', {
+      ...updatedVehicleData,
+      model: updatedVehicleData.vehicleModel,
+    });
   } catch (error) {
     console.error('Vehicle update error:', error);
     response(res, 500, false, 'Error updating vehicle');

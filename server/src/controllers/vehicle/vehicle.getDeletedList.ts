@@ -26,7 +26,7 @@ const getDeletedVehicleList = async (req, res) => {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
         { licensePlate: { $regex: search, $options: "i" } },
-        { model: { $regex: search, $options: "i" } },
+        { vehicleModel: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -36,8 +36,13 @@ const getDeletedVehicleList = async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
+    const normalizedVehicles = deletedVehicles.map((vehicle) => ({
+      ...vehicle,
+      model: vehicle.vehicleModel,
+    }));
+
     // Return the list
-    return response(res, 200, true, "Deleted vehicles retrieved successfully", deletedVehicles);
+    return response(res, 200, true, "Deleted vehicles retrieved successfully", normalizedVehicles);
   } catch (error) {
     console.error("Error fetching deleted vehicles:", error);
     return response(res, 500, false, "Internal server error");
