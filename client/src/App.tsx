@@ -16,6 +16,7 @@ import DocumentationTopicPage from "./pages/DocumentationTopicPage";
 import DashboardPage from "./pages/DashboardPage";
 import VehiclesPage from "./pages/VehiclesPage";
 import TripsPage from "./pages/TripsPage";
+import LiveMapPage from "./pages/LiveMapPage";
 import DriversPage from "./pages/DriversPage";
 import MaintenancePage from "./pages/MaintenancePage";
 import ExpensesPage from "./pages/ExpensesPage";
@@ -66,7 +67,7 @@ const App = () => (
             {/* Trips: manager, dispatcher, driver */}
             <Route element={<ProtectedRoute allowedRoles={['manager', 'dispatcher', 'driver']} />}>
               <Route path="/trips" element={<TripsPage />} />
-              <Route path="/trips/live-map" element={<TripsPage />} />
+              <Route path="/trips/live-map" element={<LiveMapPage />} />
             </Route>
 
             {/* Expenses: manager, dispatcher, driver, financial_analyst (view-only for analyst) */}

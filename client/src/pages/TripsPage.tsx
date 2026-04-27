@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -33,14 +32,11 @@ type TripFormState = {
 };
 
 export default function TripsPage() {
-  const location = useLocation();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [liveMapDialogInitialized, setLiveMapDialogInitialized] = useState(false);
   const { user } = useAuth();
   const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
-  const isLiveMapRoute = location.pathname === '/trips/live-map';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['trips', statusFilter],
@@ -67,39 +63,22 @@ export default function TripsPage() {
     });
   }, [trips, search, statusFilter]);
 
-  useEffect(() => {
-    if (!isLiveMapRoute) {
-      setLiveMapDialogInitialized(false);
-      return;
-    }
-
-    if (canCreate && !liveMapDialogInitialized) {
-      setDialogOpen(true);
-      setLiveMapDialogInitialized(true);
-    }
-  }, [canCreate, isLiveMapRoute, liveMapDialogInitialized]);
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="page-header">
           <div>
-            <h1 className="page-title">{isLiveMapRoute ? 'Live Map Planner' : 'Trips'}</h1>
-            <p className="page-description">
-              {isLiveMapRoute ? 'Plan trips with live address suggestions and map validation' : 'Manage trip assignments and tracking'}
-            </p>
+            <h1 className="page-title">Trips</h1>
+            <p className="page-description">Manage trip assignments and tracking</p>
           </div>
           {canCreate && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  {isLiveMapRoute ? 'Open Live Map Planner' : 'Create Trip'}
-                </Button>
+                <Button><Plus className="mr-2 h-4 w-4" />Create Trip</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>{isLiveMapRoute ? 'Live Map Trip Planner' : 'Create Trip'}</DialogTitle>
+                  <DialogTitle>Create Trip</DialogTitle>
                   <DialogDescription className="sr-only">
                     Select vehicle and driver, then provide route and cargo details to create a trip.
                   </DialogDescription>
@@ -109,12 +88,6 @@ export default function TripsPage() {
             </Dialog>
           )}
         </div>
-
-        {isLiveMapRoute && !canCreate && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-            Live map trip planning is available for Manager and Dispatcher roles.
-          </div>
-        )}
 
         <div className="filter-bar">
           <div className="relative flex-1 max-w-sm">

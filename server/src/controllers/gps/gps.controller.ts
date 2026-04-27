@@ -19,7 +19,7 @@ export const getActiveTrips = async (
   res: any
 ): Promise<any> => {
   try {
-    const { userRole, companyId } = req.user;
+    const { role: userRole, companyId } = req.user;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
     const { search } = req.query;
 
@@ -28,7 +28,15 @@ export const getActiveTrips = async (
       company: companyId,
       status: 'dispatched', // Only active trips
     })
-      .populate('vehicle driver')
+      .populate('vehicle', 'name licensePlate')
+      .populate({
+        path: 'driver',
+        select: 'user',
+        populate: {
+          path: 'user',
+          select: 'name email',
+        },
+      })
       .sort({ createdAt: -1 })
       .limit(100) as any;
 
@@ -38,9 +46,14 @@ export const getActiveTrips = async (
         trips = [];
       } else {
         const driverData = await Driver.findOne({ user: userId });
+        const driverId = driverData?._id?.toString();
+        if (!driverId) {
+          trips = [];
+        } else {
         trips = trips.filter(
-          (trip: any) => trip.driver._id.toString() === driverData?._id.toString()
+          (trip: any) => trip.driver?._id?.toString() === driverId
         );
+        }
       }
     }
 
@@ -51,6 +64,8 @@ export const getActiveTrips = async (
         const vehicleName =
           trip.vehicle?.name?.toLowerCase() || '';
         const driverName =
+          trip.driver?.user?.name?.toLowerCase() || '';
+        const driverEmail =
           trip.driver?.user?.email?.toLowerCase() || '';
         const tripStart = trip.startLocation?.toLowerCase() || '';
         const tripEnd = trip.endLocation?.toLowerCase() || '';
@@ -58,6 +73,7 @@ export const getActiveTrips = async (
         return (
           vehicleName.includes(lowerSearch) ||
           driverName.includes(lowerSearch) ||
+          driverEmail.includes(lowerSearch) ||
           tripStart.includes(lowerSearch) ||
           tripEnd.includes(lowerSearch)
         );
@@ -69,9 +85,12 @@ export const getActiveTrips = async (
         _id: trip._id,
         vehicleName: trip.vehicle?.name,
         licensePlate: trip.vehicle?.licensePlate,
-        driverName: trip.driver?.user?.email,
+        driverName: trip.driver?.user?.name,
+        driverEmail: trip.driver?.user?.email,
         startLocation: trip.startLocation,
         endLocation: trip.endLocation,
+        startLocationDetails: trip.startLocationDetails,
+        endLocationDetails: trip.endLocationDetails,
         cargoWeight: trip.cargoWeight,
         status: trip.status,
         createdAt: trip.createdAt,
@@ -94,7 +113,7 @@ export const getTripLatestLocation = async (
 ): Promise<any> => {
   try {
     const { tripId } = req.params;
-    const { userRole, companyId } = req.user;
+    const { role: userRole, companyId } = req.user;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
 
     if (!mongoose.isValidObjectId(tripId)) {
@@ -105,7 +124,16 @@ export const getTripLatestLocation = async (
     const trip = await Trip.findOne({
       _id: tripId,
       company: companyId,
-    }).populate('driver');
+    })
+      .populate('vehicle', 'name licensePlate')
+      .populate({
+        path: 'driver',
+        select: 'user',
+        populate: {
+          path: 'user',
+          select: 'name email',
+        },
+      });
 
     if (!trip) {
       return response(res, 404, false, 'Trip not found or access denied');
@@ -151,6 +179,8 @@ export const getTripLatestLocation = async (
       route: {
         startLocation: trip.startLocation,
         endLocation: trip.endLocation,
+        startLocationDetails: trip.startLocationDetails,
+        endLocationDetails: trip.endLocationDetails,
       },
     });
   } catch (error: any) {
@@ -170,7 +200,7 @@ export const getTripLocationHistory = async (
   try {
     const { tripId } = req.params;
     const { limit = 100 } = req.query;
-    const { userRole, companyId } = req.user;
+    const { role: userRole, companyId } = req.user;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
 
     // Validate inputs
@@ -183,7 +213,16 @@ export const getTripLocationHistory = async (
     const trip = await Trip.findOne({
       _id: tripId,
       company: companyId,
-    }).populate('driver');
+    })
+      .populate('vehicle', 'name licensePlate')
+      .populate({
+        path: 'driver',
+        select: 'user',
+        populate: {
+          path: 'user',
+          select: 'name email',
+        },
+      });
 
     if (!trip) {
       return response(res, 404, false, 'Trip not found or access denied');
@@ -225,6 +264,8 @@ export const getTripLocationHistory = async (
         driverEmail: tripData.driver?.user?.email,
         startLocation: trip.startLocation,
         endLocation: trip.endLocation,
+        startLocationDetails: trip.startLocationDetails,
+        endLocationDetails: trip.endLocationDetails,
       },
       totalRecords: history.length,
     });
@@ -243,7 +284,7 @@ export const getAllActiveTripsGPS = async (
   res: any
 ): Promise<any> => {
   try {
-    const { userRole, companyId } = req.user;
+    const { role: userRole, companyId } = req.user;
     const userId = (req.user as any)?.userId || (req.user as any)?.id;
 
     // Get all active trips for company
@@ -251,7 +292,15 @@ export const getAllActiveTripsGPS = async (
       company: companyId,
       status: 'dispatched',
     })
-      .populate('vehicle driver')
+      .populate('vehicle', 'name licensePlate')
+      .populate({
+        path: 'driver',
+        select: 'user',
+        populate: {
+          path: 'user',
+          select: 'name email',
+        },
+      })
       .lean()
       .limit(100);
 
@@ -261,9 +310,14 @@ export const getAllActiveTripsGPS = async (
         trips = [];
       } else {
         const driverData = await Driver.findOne({ user: userId });
+        const driverId = driverData?._id?.toString();
+        if (!driverId) {
+          trips = [];
+        } else {
         trips = trips.filter(
-          (trip) => trip.driver._id.toString() === driverData?._id.toString()
+          (trip) => trip.driver?._id?.toString() === driverId
         );
+        }
       }
     }
 
@@ -275,9 +329,12 @@ export const getAllActiveTripsGPS = async (
           tripId: trip._id,
           vehicleName: trip.vehicle?.name,
           licensePlate: trip.vehicle?.licensePlate,
-          driverName: trip.driver?.user?.email,
+          driverName: trip.driver?.user?.name,
+          driverEmail: trip.driver?.user?.email,
           startLocation: trip.startLocation,
           endLocation: trip.endLocation,
+          startLocationDetails: trip.startLocationDetails,
+          endLocationDetails: trip.endLocationDetails,
           status: trip.status,
           gps: latestLocation
             ? {
