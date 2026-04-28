@@ -146,6 +146,12 @@ export async function deleteEmployee(employeeId: string) {
   });
 }
 
+export async function hardDeleteEmployee(employeeId: string) {
+  return fetchBackend<null>(`/api/auth/employee/hard/${employeeId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function recoverEmployee(employeeId: string) {
   return fetchBackend<EmployeeRecord>(`/api/auth/employee/recover/${employeeId}`, {
     method: 'POST',

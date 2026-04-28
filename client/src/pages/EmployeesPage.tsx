@@ -17,6 +17,7 @@ import {
   getDeletedEmployees,
   getEmployees,
   recoverEmployee,
+  hardDeleteEmployee,
   sendEmployeeEmail,
   type AddEmployeePayload,
   type EmployeeRecord,
@@ -167,6 +168,18 @@ export default function EmployeesPage() {
     },
   });
 
+  const hardDeleteEmployeeMutation = useMutation({
+    mutationFn: hardDeleteEmployee,
+    onSuccess: async (result) => {
+      setPageFeedback({ type: 'success', message: result.message });
+      await queryClient.invalidateQueries({ queryKey: ['employees', 'active'] });
+      await queryClient.invalidateQueries({ queryKey: ['employees', 'deleted'] });
+    },
+    onError: (error: Error) => {
+      setPageFeedback({ type: 'error', message: error.message || 'Failed to permanently delete employee.' });
+    },
+  });
+
   const sendEmailMutation = useMutation({
     mutationFn: sendEmployeeEmail,
     onSuccess: (result) => {
@@ -246,7 +259,7 @@ export default function EmployeesPage() {
     if (addForm.role === 'driver') {
       payload.licenseNumber = addForm.licenseNumber.trim().toUpperCase();
       payload.licenseExpiry = addForm.licenseExpiry;
-      payload.licenseCategory = addForm.licenseCategory;
+      payload.licenseCategory = addForm.licenseCategory as 'truck' | 'van' | 'bike';
     }
 
     await addEmployeeMutation.mutateAsync(payload);
@@ -266,6 +279,15 @@ export default function EmployeesPage() {
     if (!confirmed) return;
 
     await recoverEmployeeMutation.mutateAsync(employee._id);
+  };
+
+  const handleHardDelete = async (employee: EmployeeRecord) => {
+    const confirmed = window.confirm(
+      `Permanently delete ${employee.name}? This action cannot be undone and will remove all associated records.`,
+    );
+    if (!confirmed) return;
+
+    await hardDeleteEmployeeMutation.mutateAsync(employee._id);
   };
 
   const openEmailDialog = (employee: EmployeeRecord) => {
@@ -673,12 +695,21 @@ export default function EmployeesPage() {
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                title="Recover"
+                                variant="outline"
                                 onClick={() => handleRecover(employee)}
                                 disabled={recoverEmployeeMutation.isPending}
                               >
-                                <RotateCcw className="h-4 w-4" />
+                                <RotateCcw className="mr-2 h-4 w-4" />
+                                Recover
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleHardDelete(employee)}
+                                disabled={hardDeleteEmployeeMutation.isPending}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Permanently Delete
                               </Button>
                             </div>
                           </td>
