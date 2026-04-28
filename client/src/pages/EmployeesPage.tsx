@@ -294,12 +294,12 @@ export default function EmployeesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="page-header">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="page-title">Employees</h1>
-            <p className="page-description">Manage onboarding, notifications, deletion, and recovery workflows</p>
+            <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Manage employee onboarding, status, and vehicle assignments</p>
           </div>
-
           <Dialog
             open={addDialogOpen}
             onOpenChange={(open) => {
@@ -311,7 +311,7 @@ export default function EmployeesPage() {
             }}
           >
             <DialogTrigger asChild>
-              <Button>
+              <Button size="lg">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Employee
               </Button>
@@ -451,28 +451,32 @@ export default function EmployeesPage() {
           </TabsList>
 
           <TabsContent value="active" className="space-y-4">
-            <div className="filter-bar">
-              <div className="relative max-w-sm flex-1">
+            {/* Filters Section */}
+            <div className="flex flex-col gap-4 rounded-lg border bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search active employees..."
+                  placeholder="Search by name or email..."
                   className="pl-9"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
-              <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as typeof roleFilter)}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="driver">Driver</SelectItem>
-                  <SelectItem value="dispatcher">Dispatcher</SelectItem>
-                  <SelectItem value="safety_officer">Safety Officer</SelectItem>
-                  <SelectItem value="financial_analyst">Financial Analyst</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <span className="text-sm font-medium text-muted-foreground">Filter by role:</span>
+                <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as typeof roleFilter)}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="driver">Driver</SelectItem>
+                    <SelectItem value="dispatcher">Dispatcher</SelectItem>
+                    <SelectItem value="safety_officer">Safety Officer</SelectItem>
+                    <SelectItem value="financial_analyst">Financial Analyst</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="rounded-xl border bg-card overflow-x-auto">
@@ -494,61 +498,87 @@ export default function EmployeesPage() {
                     : 'No active employees found. Add your first employee to begin.'}
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="px-6 py-3 font-medium">Name</th>
-                      <th className="px-6 py-3 font-medium">Email</th>
-                      <th className="px-6 py-3 font-medium">Role</th>
-                      <th className="px-6 py-3 font-medium">Driver Status</th>
-                      <th className="px-6 py-3 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedActiveEmployees.map((employee) => (
-                      <tr key={employee._id} className="data-table-row">
-                        <td className="px-6 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                              {employee.name.charAt(0)}
-                            </div>
-                            <span className="font-medium">{employee.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 text-muted-foreground">{employee.email}</td>
-                        <td className="px-6 py-3">
-                          <span className="status-badge bg-secondary text-secondary-foreground">
-                            {roleLabels[employee.role] || employee.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          {employee.role === 'driver' && employee.status ? (
-                            <StatusBadge status={employee.status} />
-                          ) : (
-                            <span className="text-muted-foreground">Not applicable</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-3">
-                          <div className="flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline" onClick={() => openEmailDialog(employee)}>
-                              <Mail className="h-3.5 w-3.5" />
-                              Email
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(employee)}
-                              disabled={deleteEmployeeMutation.isPending}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="rounded-lg border bg-card">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-3 text-left font-semibold">Name & Email</th>
+                          <th className="px-4 py-3 text-left font-semibold">Role</th>
+                          <th className="px-4 py-3 text-left font-semibold">Status</th>
+                          <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedActiveEmployees.map((employee) => (
+                          <tr key={employee._id} className="border-b hover:bg-muted/30 transition-colors">
+                            {/* Name & Email */}
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                                  {employee.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">{employee.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{employee.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            {/* Role */}
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center rounded-md bg-secondary/50 px-2 py-1 text-xs font-medium text-secondary-foreground">
+                                {roleLabels[employee.role] || employee.role}
+                              </span>
+                            </td>
+                            {/* Lifecycle & Driver Status */}
+                            <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  {/* Show driver runtime status when employee is active; otherwise show lifecycle status */}
+                                  {employee.role === 'driver' && employee.lifecycleStatus === 'active' && employee.status ? (
+                                    <StatusBadge status={employee.status} />
+                                  ) : (
+                                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium max-w-max ${
+                                      employee.lifecycleStatus === 'active'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : employee.lifecycleStatus === 'pending_setup'
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : employee.lifecycleStatus === 'suspended' || employee.lifecycleStatus === 'inactive'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {((employee.lifecycleStatus || 'unknown').replace(/_/g, ' ')).toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                            </td>
+                            {/* Actions */}
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openEmailDialog(employee)}
+                                >
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Email
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDelete(employee)}
+                                  disabled={deleteEmployeeMutation.isPending}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -581,8 +611,9 @@ export default function EmployeesPage() {
           </TabsContent>
 
           <TabsContent value="deleted" className="space-y-4">
-            <div className="filter-bar">
-              <div className="relative max-w-sm flex-1">
+            {/* Filters Section */}
+            <div className="flex flex-col gap-4 rounded-lg border bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search deleted employees..."
@@ -593,7 +624,7 @@ export default function EmployeesPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border bg-card overflow-x-auto">
+            <div className="rounded-lg border bg-card">
               {isDeletedLoading ? (
                 <div className="p-8 text-center text-muted-foreground">Loading deleted employees...</div>
               ) : isDeletedError ? (
@@ -610,40 +641,52 @@ export default function EmployeesPage() {
                   No deleted employees found for the current search.
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="px-6 py-3 font-medium">Name</th>
-                      <th className="px-6 py-3 font-medium">Email</th>
-                      <th className="px-6 py-3 font-medium">Role</th>
-                      <th className="px-6 py-3 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deletedEmployees.map((employee) => (
-                      <tr key={employee._id} className="data-table-row">
-                        <td className="px-6 py-3 font-medium">{employee.name}</td>
-                        <td className="px-6 py-3 text-muted-foreground">{employee.email}</td>
-                        <td className="px-6 py-3">
-                          <span className="status-badge bg-secondary text-secondary-foreground">
-                            {roleLabels[employee.role] || employee.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRecover(employee)}
-                            disabled={recoverEmployeeMutation.isPending}
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                            Recover
-                          </Button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-3 text-left font-semibold">Name & Email</th>
+                        <th className="px-4 py-3 text-left font-semibold">Role</th>
+                        <th className="px-4 py-3 text-right font-semibold">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {deletedEmployees.map((employee) => (
+                        <tr key={employee._id} className="border-b hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-700">
+                                {employee.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium truncate">{employee.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{employee.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center rounded-md bg-secondary/50 px-2 py-1 text-xs font-medium text-secondary-foreground">
+                              {roleLabels[employee.role] || employee.role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="Recover"
+                                onClick={() => handleRecover(employee)}
+                                disabled={recoverEmployeeMutation.isPending}
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 

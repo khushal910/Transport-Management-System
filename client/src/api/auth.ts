@@ -40,6 +40,10 @@ export interface EmployeeRecord {
   isDeleted?: boolean;
   status?: 'available' | 'on_trip' | 'off_duty' | 'suspended';
   driverId?: string;
+  lifecycleStatus?: 'pending_setup' | 'active' | 'suspended' | 'inactive';
+  user?: {
+    lifecycleStatus?: 'pending_setup' | 'active' | 'suspended' | 'inactive';
+  };
 }
 
 export interface AddEmployeePayload {

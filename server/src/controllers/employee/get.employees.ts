@@ -16,27 +16,35 @@ const getEmployees = async (req, res) => {
       company: managerCompanyId,
       role: { $ne: 'manager' },
       isDeleted: false,
-    }).select('-password');
+    }).select('-password -passwordResetToken -emailVerificationToken -emailVerificationOTP');
 
     if (employees.length === 0) {
       // No employees found
     }
 
-    // For drivers, populate their driver status and ID
+    // For drivers, populate their driver status, ID, and assigned vehicle
     const employeesWithStatus = await Promise.all(
       employees.map(async (employee) => {
         const emp = employee.toObject();
         
         if (emp.role === 'driver') {
           try {
-            const driverData = await Driver.findOne({ user: employee._id }).select('_id status');
+            const driverData = await Driver.findOne({ user: employee._id })
+              .select('_id status assignedVehicle')
+              .populate('assignedVehicle', 'registrationNumber model make');
             if (driverData) {
               emp.status = driverData.status;
               emp.driverId = driverData._id;
+              emp.assignedVehicle = driverData.assignedVehicle;
             }
           } catch (err) {
             console.error(`Failed to fetch driver status for user ${employee._id}:`, err);
           }
+        }
+
+        // Expose lifecycleStatus at top level for easier access
+        if (emp.lifecycleStatus) {
+          emp.lifecycleStatus = emp.lifecycleStatus;
         }
         
         return emp;

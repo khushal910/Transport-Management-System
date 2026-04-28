@@ -209,6 +209,22 @@ const getDriverList = async (req, res) => {
             preserveNullAndEmptyArrays: true,
           },
         },
+        // Join with Vehicle collection for assigned vehicle
+        {
+          $lookup: {
+            from: "vehicles",
+            localField: "assignedVehicle",
+            foreignField: "_id",
+            as: "assignedVehicleData",
+          },
+        },
+        // Unwind assigned vehicle data
+        {
+          $unwind: {
+            path: "$assignedVehicleData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         // Filter by company
         {
           $match: {
@@ -266,6 +282,12 @@ const getDriverList = async (req, res) => {
           complaints: doc.complaints,
           status: doc.status,
           createdAt: doc.createdAt,
+          assignedVehicle: doc.assignedVehicleData ? {
+            _id: doc.assignedVehicleData._id,
+            registrationNumber: doc.assignedVehicleData.registrationNumber,
+            model: doc.assignedVehicleData.model,
+            make: doc.assignedVehicleData.make,
+          } : null,
         }));
 
         const grouped = groupDrivers(drivers, value.groupBy);
@@ -295,6 +317,12 @@ const getDriverList = async (req, res) => {
         complaints: doc.complaints,
         status: doc.status,
         createdAt: doc.createdAt,
+        assignedVehicle: doc.assignedVehicleData ? {
+          _id: doc.assignedVehicleData._id,
+          registrationNumber: doc.assignedVehicleData.registrationNumber,
+          model: doc.assignedVehicleData.model,
+          make: doc.assignedVehicleData.make,
+        } : null,
       }));
 
       return response(res, 200, true, "Drivers fetched successfully", {

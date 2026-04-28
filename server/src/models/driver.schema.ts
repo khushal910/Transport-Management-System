@@ -29,6 +29,7 @@ interface IDriver extends Document {
   assignedTrips: number;
   completedTrips: number;
   completionRate: number;
+  assignedVehicle?: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -119,6 +120,11 @@ const driverSchema = new Schema<IDriver>(
       default: 0,
       min: 0,
       max: 100,
+    },
+    assignedVehicle: {
+      type: Schema.Types.ObjectId,
+      ref: 'Vehicle',
+      default: null,
     },
   },
   { timestamps: true }
