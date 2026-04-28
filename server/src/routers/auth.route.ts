@@ -19,6 +19,7 @@ import getDeletedEmployees from '../controllers/employee/get.deletedEmployees';
 import recoverEmployee from '../controllers/employee/recover.employee';
 import updateEmployee from '../controllers/employee/update.employee';
 import deleteEmployee from '../controllers/employee/delete.employee';
+import hardDeleteEmployee from '../controllers/employee/hard-delete.employee';
 import requiredRole from '../middlewares/role.middleware';
 
 const authRouter = Router();
@@ -43,5 +44,6 @@ authRouter.put('/employee/:employeeId', requiredRole('manager'), updateEmployee)
 authRouter.delete('/employee/:employeeId', requiredRole('manager'), deleteEmployee);
 authRouter.get('/employees/deleted', requiredRole('manager'), getDeletedEmployees);
 authRouter.post('/employee/recover/:employeeId', requiredRole('manager'), recoverEmployee);
+authRouter.delete('/employee/hard/:employeeId', requiredRole('manager'), hardDeleteEmployee);
 
 export default authRouter;

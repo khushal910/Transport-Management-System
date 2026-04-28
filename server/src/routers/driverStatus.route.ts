@@ -4,6 +4,7 @@ import {
   updateDriverStatus,
   getDriverStatusHistory,
   getDriversByStatus,
+  updateDriverStatusSelf,
 } from '../controllers/employee/updateDriverStatus';
 
 const driverStatusRouter = express.Router();
@@ -17,6 +18,17 @@ driverStatusRouter.get(
   '/history/:driverId',
   roleMiddleware('manager', 'dispatcher', 'driver', 'safety_officer'),
   getDriverStatusHistory
+);
+
+/**
+ * Driver self status toggle (MUST be before /:driverId to match first)
+ * POST /driver-status/self
+ * Body: { status: 'available' | 'off_duty' }
+ */
+driverStatusRouter.post(
+  '/self',
+  roleMiddleware('driver'),
+  updateDriverStatusSelf
 );
 
 /**

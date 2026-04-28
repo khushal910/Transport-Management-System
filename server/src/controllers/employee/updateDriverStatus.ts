@@ -192,3 +192,76 @@ const getDriversByStatus = async (req, res) => {
 
 export { updateDriverStatus, getDriverStatusHistory, getDriversByStatus };
 
+/**
+ * Allow a driver to change their own status (self-toggle)
+ * Only permits a limited set of statuses (available <-> off_duty)
+ */
+const updateDriverStatusSelf = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const userId = req.user.userId;
+    const companyId = req.user.companyId;
+
+    if (!status) {
+      return response(res, 400, false, 'Driver status is required');
+    }
+
+    const allowedSelfStatuses = [DRIVER_STATUS.AVAILABLE, DRIVER_STATUS.OFF_DUTY];
+    if (!allowedSelfStatuses.includes(status)) {
+      return response(res, 400, false, `Invalid self-update status: "${status}". Allowed: ${allowedSelfStatuses.join(', ')}`);
+    }
+
+    // Find driver record for the current user
+    const driver = await Driver.findOne({ user: userId }).populate('user', 'name email company');
+    if (!driver) {
+      return response(res, 404, false, 'Driver profile not found for current user');
+    }
+
+    // Verify driver belongs to same company
+    if (driver.user.company.toString() !== companyId.toString()) {
+      return response(res, 403, false, 'Unauthorized: Driver does not belong to your company');
+    }
+
+    // Validate transition
+    try {
+      validateStatusTransition(driver.status, status);
+    } catch (error) {
+      return response(res, 400, false, error.message);
+    }
+
+    // No-op if same status
+    if (driver.status === status) {
+      return response(res, 200, true, 'Driver status unchanged', {
+        driverId: driver._id,
+        currentStatus: driver.status,
+      });
+    }
+
+    // Cannot change while on trip
+    if (driver.status === DRIVER_STATUS.ON_TRIP) {
+      return response(res, 400, false, 'Cannot change status while on an active trip');
+    }
+
+    const updateData = prepareDriverStatusUpdate(driver, status, {
+      reason: 'self_update',
+      changedBy: userId,
+    });
+
+    const updatedDriver = await Driver.findByIdAndUpdate(driver._id, updateData, { new: true }).populate('user', 'name email');
+
+    return response(res, 200, true, 'Driver status updated', {
+      driverId: updatedDriver._id,
+      previousStatus: driver.status,
+      currentStatus: updatedDriver.status,
+      lastStatusChange: updatedDriver.lastStatusChange,
+      driverName: updatedDriver.user.name,
+      driverEmail: updatedDriver.user.email,
+    });
+  } catch (error) {
+    console.error('Error in driver self status update:', error);
+    return response(res, 500, false, 'Internal server error');
+  }
+};
+
+export { updateDriverStatusSelf };
+

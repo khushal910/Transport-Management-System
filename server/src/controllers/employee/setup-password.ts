@@ -1,6 +1,8 @@
 ﻿// @ts-nocheck
 import response from '../../response/response';
 import User from '../../models/user.schema';
+import Driver from '../../models/driver.schema';
+import { DRIVER_STATUS } from '../../constants/driverStatus.constants';
 import bcrypt from 'bcryptjs';
 import joi from 'joi';
 import environmentConfig from '../../config/environment';
@@ -100,6 +102,7 @@ const setupPassword = async (req, res) => {
     user.password = hashedPassword;
     user.isPasswordSet = true; // Mark password as set
     user.isActive = true; // Activate the employee account
+    user.lifecycleStatus = 'active'; // Mark lifecycle as active
     user.passwordChangedAt = new Date();
     user.failedLoginAttempts = 0;
     user.loginLockUntil = null;
@@ -107,6 +110,31 @@ const setupPassword = async (req, res) => {
     user.passwordResetExpires = null;
 
     await user.save();
+
+    // If user is a driver, set their driver operational status to AVAILABLE
+    try {
+      if (user.role === 'driver') {
+        await Driver.findOneAndUpdate(
+          { user: user._id },
+          {
+            status: DRIVER_STATUS.AVAILABLE,
+            lastStatusChange: new Date(),
+            $push: {
+              statusHistory: {
+                fromStatus: null,
+                toStatus: DRIVER_STATUS.AVAILABLE,
+                reason: 'manual_update',
+                changedBy: user._id,
+                changedAt: new Date(),
+              },
+            },
+          },
+          { new: true }
+        );
+      }
+    } catch (err) {
+      console.error('Failed to update driver status on setup:', err.message || err);
+    }
 
     return response(res, 200, true, 'Password set successfully. You can now login with your credentials.');
   } catch (err) {

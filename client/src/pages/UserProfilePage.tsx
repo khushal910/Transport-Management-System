@@ -14,6 +14,8 @@ import {
   XCircle,
   RefreshCw,
 } from 'lucide-react';
+import { updateDriverStatusSelf } from '@/api/driver';
+import { useMutation } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { toast } from '@/components/ui/sonner';
 import {
@@ -380,6 +382,11 @@ export default function UserProfilePage() {
                   <span>{currentRole?.icon || '👤'}</span>
                   <span>{currentRole?.label || 'User'}</span>
                 </div>
+                {personal.role === 'driver' && driver ? (
+                  <div className="ml-4">
+                    <DriverSelfToggle driverStatus={driver.status} onUpdated={loadProfile} />
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -673,6 +680,39 @@ export default function UserProfilePage() {
       </div>
     );
   };
+
+function DriverSelfToggle({ driverStatus, onUpdated }: { driverStatus: string; onUpdated: () => Promise<void> }) {
+  const mutation = useMutation({
+    mutationFn: async (status: string) => {
+      const result = await updateDriverStatusSelf(status);
+      await onUpdated();
+      return result;
+    },
+    onSuccess: (result) => {
+      toast.success(result.message || 'Driver status updated');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update driver status');
+    },
+  });
+
+  const handleToggle = async () => {
+    const next = driverStatus === 'available' ? 'off_duty' : 'available';
+    await mutation.mutateAsync(next);
+  };
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={mutation.isPending || driverStatus === 'on_trip'}
+      className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${
+        driverStatus === 'available' ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-800'
+      }`}
+    >
+      {mutation.isPending ? 'Updating...' : driverStatus === 'available' ? 'Go Off Duty' : 'Go Available'}
+    </button>
+  );
+}
 
   return <DashboardLayout>{renderContent()}</DashboardLayout>;
 }

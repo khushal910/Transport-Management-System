@@ -119,34 +119,45 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </button>
 
         {/* User section */}
-        <div className={cn('border-t border-sidebar-border p-3', collapsed && 'flex flex-col items-center')}>
-          <div className={cn('flex items-center justify-between gap-4', collapsed && 'flex-col gap-4')}>
-            <Link
-              to="/profile"
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors flex-1',
-                collapsed && 'flex-col justify-center'
-              )}
-              title="View Profile"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-                {user?.name?.charAt(0) ?? '?'}
+        <div className={cn('border-t border-sidebar-border p-3 flex items-center gap-2 w-full', collapsed && 'flex-col gap-1')}>
+          <button
+            onClick={handleLogout}
+            className={cn(
+              'text-sidebar-muted hover:text-destructive flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent/50 shrink-0',
+              !collapsed && 'hidden'
+            )}
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+          <Link
+            to="/profile"
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors flex-1 min-w-0',
+              collapsed && 'flex-col justify-center w-full'
+            )}
+            title="View Profile"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+              {user?.name?.charAt(0) ?? '?'}
+            </div>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user?.name?.split(' ').slice(0, 2).join(' ') ?? ''}</p>
+                <p className="truncate text-xs text-sidebar-muted capitalize">{user?.role?.replace('_', ' ') ?? ''}</p>
               </div>
-              {!collapsed && (
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-sidebar-accent-foreground">{user?.name ?? ''}</p>
-                  <p className="truncate text-xs text-sidebar-muted capitalize">{user?.role?.replace('_', ' ') ?? ''}</p>
-                </div>
-              )}
-            </Link>
-            <button
-              onClick={handleLogout}
-              className={cn('text-sidebar-muted hover:text-destructive', collapsed && 'mt-4')}
-              title="Logout"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+            )}
+          </Link>
+          <button
+            onClick={handleLogout}
+            className={cn(
+              'text-sidebar-muted hover:text-destructive flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent/50 shrink-0',
+              collapsed && 'hidden'
+            )}
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </aside>
 

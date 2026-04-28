@@ -2,12 +2,15 @@ import mongoose, { Document, Schema, Model } from 'mongoose';
 
 type UserRole = 'manager' | 'driver' | 'dispatcher' | 'safety_officer' | 'financial_analyst';
 
+type EmployeeLifecycleStatus = 'pending_setup' | 'active' | 'suspended' | 'inactive';
+
 interface IUser extends Document {
   name: string;
   email: string;
   password: string | null;
   isPasswordSet: boolean;
   isActive: boolean;
+  lifecycleStatus: EmployeeLifecycleStatus;
   failedLoginAttempts: number;
   loginLockUntil: Date | null;
   lastLoginAt: Date | null;
@@ -53,6 +56,11 @@ const userSchema = new Schema<IUser>(
     isActive: {
       type: Boolean,
       default: false,
+    },
+    lifecycleStatus: {
+      type: String,
+      enum: ['pending_setup', 'active', 'suspended', 'inactive'],
+      default: 'pending_setup',
     },
     failedLoginAttempts: {
       type: Number,
@@ -123,5 +131,5 @@ const userSchema = new Schema<IUser>(
 );
 
 const User: Model<IUser> = mongoose.model('User', userSchema);
-export { User, IUser, UserRole };
+export { User, IUser, UserRole, EmployeeLifecycleStatus };
 export default User;

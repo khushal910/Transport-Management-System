@@ -40,6 +40,10 @@ export interface EmployeeRecord {
   isDeleted?: boolean;
   status?: 'available' | 'on_trip' | 'off_duty' | 'suspended';
   driverId?: string;
+  lifecycleStatus?: 'pending_setup' | 'active' | 'suspended' | 'inactive';
+  user?: {
+    lifecycleStatus?: 'pending_setup' | 'active' | 'suspended' | 'inactive';
+  };
 }
 
 export interface AddEmployeePayload {
@@ -138,6 +142,12 @@ export async function addEmployee(payload: AddEmployeePayload) {
 
 export async function deleteEmployee(employeeId: string) {
   return fetchBackend<null>(`/api/auth/employee/${employeeId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function hardDeleteEmployee(employeeId: string) {
+  return fetchBackend<null>(`/api/auth/employee/hard/${employeeId}`, {
     method: 'DELETE',
   });
 }
