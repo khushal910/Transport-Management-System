@@ -29,10 +29,11 @@ export default function ForgotPasswordPage() {
 
       await requestPasswordResetOTP({ email });
       setStep('success');
+      sessionStorage.setItem('password-reset-email', email.trim());
 
       // Redirect to reset password page after 2 seconds
       setTimeout(() => {
-        navigate('/reset-password');
+        navigate('/reset-password', { state: { email: email.trim() } });
       }, 2000);
     } catch (err: any) {
       setError(err?.message || 'Failed to send reset code. Please try again.');
