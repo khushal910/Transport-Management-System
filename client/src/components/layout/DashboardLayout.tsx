@@ -39,6 +39,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const filteredNav = navigation.filter((item) => user && item.roles.includes(user.role));
 
+  const isNavItemActive = (href: string) => {
+    if (href === '/trips') {
+      return location.pathname === href;
+    }
+
+    return location.pathname === href || location.pathname.startsWith(`${href}/`);
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -82,7 +90,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {filteredNav.map((item) => {
-            const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
+            const isActive = isNavItemActive(item.href);
             return (
               <Link
                 key={item.name}

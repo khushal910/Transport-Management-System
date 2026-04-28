@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,18 +36,24 @@ const getErrorMessage = (err: unknown, fallback: string): string => {
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const resetToken = searchParams.get('token');
   const hasTokenInUrl = Boolean(resetToken);
   const isTokenFormatValid = !hasTokenInUrl || RESET_TOKEN_REGEX.test(resetToken ?? '');
 
+  const resetEmail =
+    (location.state as { email?: string } | null | undefined)?.email ??
+    sessionStorage.getItem('password-reset-email') ??
+    '';
+
   const [step, setStep] = useState<'otp' | 'password' | 'success'>(hasTokenInUrl ? 'password' : 'otp');
   
   // OTP Step
-  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
 
@@ -105,33 +111,46 @@ export default function ResetPasswordPage() {
     };
   }, [step, navigate]);
 
-  const handleVerifyOTP = (e: React.FormEvent) => {
+  const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setOtpError(null);
+    setOtpLoading(true);
 
-    const trimmedEmail = email.trim();
+    const trimmedEmail = resetEmail.trim();
     const trimmedOtp = otp.trim();
 
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setOtpError('Please enter a valid email address');
+      setOtpError('Your reset session is missing an email address. Please request a new code.');
+      setOtpLoading(false);
       return;
     }
 
     if (!OTP_REGEX.test(trimmedOtp)) {
       setOtpError('Reset code must be a valid 6-digit number');
+      setOtpLoading(false);
       return;
     }
 
-    setEmail(trimmedEmail);
-    setOtp(trimmedOtp);
-    setStep('password');
+    try {
+      await verifyPasswordResetOTP({
+        email: trimmedEmail,
+        otp: trimmedOtp,
+      });
+
+      setOtp(trimmedOtp);
+      setStep('password');
+    } catch (err: unknown) {
+      setOtpError(getErrorMessage(err, 'Invalid reset code. Please check the code and try again.'));
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleResendOTP = async () => {
-    const trimmedEmail = email.trim();
+    const trimmedEmail = resetEmail.trim();
 
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setOtpError('Enter a valid email address before requesting a new code');
+      setOtpError('Your reset session is missing an email address. Please request a new code.');
       return;
     }
 
@@ -278,6 +297,23 @@ export default function ResetPasswordPage() {
                 </p>
               </div>
 
+              {resetEmail ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  <p className="font-medium text-slate-900">Reset code sent to</p>
+                  <p className="mt-1 break-all">{resetEmail}</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <p className="font-medium">No reset session found</p>
+                  <p className="mt-1">
+                    Request a new reset code first so we can send it to your email address.
+                  </p>
+                  <Link to="/forgot-password" className="mt-3 inline-block font-medium underline">
+                    Go to forgot password
+                  </Link>
+                </div>
+              )}
+
               {otpError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex gap-2">
                   <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
@@ -286,19 +322,6 @@ export default function ResetPasswordPage() {
               )}
 
               <form onSubmit={handleVerifyOTP} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={resendLoading}
-                    required
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="otp">Reset code</Label>
                   <Input
@@ -317,8 +340,8 @@ export default function ResetPasswordPage() {
                   </p>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={resendLoading || !email || otp.length !== 6}>
-                  Verify code
+                <Button type="submit" className="w-full" disabled={resendLoading || otpLoading || !resetEmail || otp.length !== 6}>
+                  {otpLoading ? 'Verifying...' : 'Verify code'}
                 </Button>
               </form>
 

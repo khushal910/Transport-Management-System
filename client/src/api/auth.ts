@@ -261,8 +261,8 @@ export async function requestPasswordResetOTP(payload: RequestPasswordResetOTPPa
 export interface VerifyPasswordResetOTPPayload {
   email: string;
   otp: string;
-  password: string;
-  passwordConfirm: string;
+  password?: string;
+  passwordConfirm?: string;
 }
 
 export async function verifyPasswordResetOTP(payload: VerifyPasswordResetOTPPayload) {

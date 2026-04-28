@@ -15,31 +15,6 @@ const getVerifyPasswordResetSchema = () => {
   const minLength = environmentConfig.getMinPasswordLength();
   const isDev = environmentConfig.isDevelopment;
 
-  let passwordRule = joi.string().trim();
-
-  if (isDev) {
-    // Development mode: minimal requirements
-    passwordRule = passwordRule.min(1).required().messages({
-      'string.min': 'Password must be at least 1 character',
-      'any.required': 'Password is required',
-    });
-  } else {
-    // Production mode: strict requirements
-    passwordRule = passwordRule
-      .min(minLength)
-      .regex(/[A-Z]/)
-      .regex(/[a-z]/)
-      .regex(/[0-9]/)
-      .regex(/[!@#$%^&*]/)
-      .required()
-      .messages({
-        'string.min': `Password must be at least ${minLength} characters long`,
-        'string.pattern.base':
-          'Password must contain uppercase, lowercase, number, and special character',
-        'any.required': 'Password is required',
-      });
-  }
-
   return joi.object({
     email: joi.string().email().trim().required().messages({
       'string.email': 'Valid email is required',
@@ -55,11 +30,8 @@ const getVerifyPasswordResetSchema = () => {
         'string.pattern.base': 'Password reset code must be a 6-digit number',
         'any.required': 'Password reset code is required',
       }),
-    password: passwordRule,
-    passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
-      'any.only': 'Passwords do not match',
-      'any.required': 'Password confirmation is required',
-    }),
+    password: joi.string().trim().optional(),
+    passwordConfirm: joi.string().trim().optional(),
   });
 };
 
@@ -75,6 +47,51 @@ const verifyPasswordResetOTP = async (req, res) => {
     }
 
     const { email, otp, password, passwordConfirm } = value;
+
+    const hasPasswordPayload = typeof password === 'string' || typeof passwordConfirm === 'string';
+
+    if (hasPasswordPayload) {
+      if (!password || !passwordConfirm) {
+        return response(res, 400, false, 'Password and password confirmation are required');
+      }
+
+      let passwordRule = joi.string().trim();
+
+      if (isDev) {
+        passwordRule = passwordRule.min(1).required().messages({
+          'string.min': 'Password must be at least 1 character',
+          'any.required': 'Password is required',
+        });
+      } else {
+        passwordRule = passwordRule
+          .min(minLength)
+          .regex(/[A-Z]/)
+          .regex(/[a-z]/)
+          .regex(/[0-9]/)
+          .regex(/[!@#$%^&*]/)
+          .required()
+          .messages({
+            'string.min': `Password must be at least ${minLength} characters long`,
+            'string.pattern.base':
+              'Password must contain uppercase, lowercase, number, and special character',
+            'any.required': 'Password is required',
+          });
+      }
+
+      const passwordValidation = joi
+        .object({
+          password: passwordRule,
+          passwordConfirm: joi.string().valid(joi.ref('password')).required().messages({
+            'any.only': 'Passwords do not match',
+            'any.required': 'Password confirmation is required',
+          }),
+        })
+        .validate({ password, passwordConfirm });
+
+      if (passwordValidation.error) {
+        return response(res, 400, false, passwordValidation.error.details[0].message.replace(/"/g, ''));
+      }
+    }
 
     // Find user by email
     const user = await User.findOne({ email });
@@ -109,8 +126,12 @@ const verifyPasswordResetOTP = async (req, res) => {
       return response(res, 401, false, 'Invalid password reset code');
     }
 
+    if (!hasPasswordPayload) {
+      return response(res, 200, true, 'Password reset code verified successfully. Continue to create a new password.');
+    }
+
     // Hash new password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password as string, 10);
 
     // Update user password and clear OTP fields
     user.password = hashedPassword;

@@ -10,9 +10,23 @@ vi.mock('@/api/auth', () => ({
   verifyPasswordResetOTP: vi.fn(),
 }));
 
-const renderPage = (initialPath: string) => {
+const renderPage = (initialPath: string, email?: string) => {
+  if (email) {
+    sessionStorage.setItem('password-reset-email', email);
+  }
+
+  const [pathname, search = ''] = initialPath.split('?');
+
   return render(
-    <MemoryRouter initialEntries={[initialPath]}>
+    <MemoryRouter
+      initialEntries={[
+        {
+          pathname,
+          search: search ? `?${search}` : '',
+          state: email ? { email } : undefined,
+        },
+      ]}
+    >
       <Routes>
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
@@ -44,6 +58,7 @@ describe('ResetPasswordPage', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 
   it('uses token-based reset when valid token exists in URL', async () => {
@@ -77,5 +92,28 @@ describe('ResetPasswordPage', () => {
 
     expect(screen.getByText('Invalid reset link', { selector: 'p' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Request new reset link/i })).toBeInTheDocument();
+  });
+
+  it('keeps the user on the OTP step when the reset code is invalid', async () => {
+    vi.mocked(verifyPasswordResetOTP).mockRejectedValueOnce(new Error('Invalid password reset code'));
+
+    renderPage('/reset-password', 'driver@company.com');
+
+    fireEvent.change(screen.getByLabelText(/Reset code/i), {
+      target: { value: '123456' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Verify code/i }));
+
+    await waitFor(() => {
+      expect(verifyPasswordResetOTP).toHaveBeenCalledWith({
+        email: 'driver@company.com',
+        otp: '123456',
+      });
+    });
+
+    expect(screen.getByText(/Enter reset code/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Create new password/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Invalid password reset code/i)).toBeInTheDocument();
   });
 });

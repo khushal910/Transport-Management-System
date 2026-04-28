@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DatePicker from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -391,14 +392,11 @@ export default function EmployeesPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="license-expiry">Expiry Date</Label>
-                        <Input
+                        <DatePicker
                           id="license-expiry"
-                          type="date"
                           value={addForm.licenseExpiry}
-                          onChange={(event) =>
-                            setAddForm((prev) => ({ ...prev, licenseExpiry: event.target.value }))
-                          }
-                          required
+                          onChange={(value) => setAddForm((prev) => ({ ...prev, licenseExpiry: value }))}
+                          placeholder="dd-mm-yyyy"
                         />
                       </div>
                       <div className="space-y-2">
