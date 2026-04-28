@@ -65,3 +65,17 @@ export async function removeVehicleFromDriver(payload: RemoveVehiclePayload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function updateDriverStatus(driverId: string, status: string) {
+  return fetchBackend<{ message: string }>(`/api/driver-status/${driverId}`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function updateDriverStatusSelf(status: string) {
+  return fetchBackend<{ message: string }>(`/api/driver-status/self`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  });
+}

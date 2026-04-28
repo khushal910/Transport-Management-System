@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {
   type EmployeeRecord,
   type EmployeeRole,
 } from '@/api/auth';
+import { updateDriverStatus, updateDriverStatusSelf } from '@/api/driver';
 
 const roleLabels: Record<string, string> = {
   manager: 'Manager',
@@ -193,6 +195,33 @@ export default function EmployeesPage() {
     },
     onError: (error: Error) => {
       setEmailFeedback({ type: 'error', message: error.message || 'Failed to send email.' });
+    },
+  });
+
+  const updateDriverStatusMutation = useMutation({
+    mutationFn: ({ driverId, status }: { driverId: string; status: string }) =>
+      updateDriverStatus(driverId, status),
+    onSuccess: async (result) => {
+      setPageFeedback({ type: 'success', message: result.message });
+      await queryClient.invalidateQueries({ queryKey: ['employees', 'active'] });
+      await queryClient.invalidateQueries({ queryKey: ['employees', 'deleted'] });
+    },
+    onError: (error: Error) => {
+      setPageFeedback({ type: 'error', message: error.message || 'Failed to update driver status.' });
+    },
+  });
+
+  const { user } = useAuth();
+
+  const updateDriverStatusSelfMutation = useMutation({
+    mutationFn: (status: string) => updateDriverStatusSelf(status),
+    onSuccess: async (result) => {
+      setPageFeedback({ type: 'success', message: result.message });
+      await queryClient.invalidateQueries({ queryKey: ['employees', 'active'] });
+      await queryClient.invalidateQueries({ queryKey: ['employees', 'deleted'] });
+    },
+    onError: (error: Error) => {
+      setPageFeedback({ type: 'error', message: error.message || 'Failed to update driver status.' });
     },
   });
 
@@ -584,6 +613,44 @@ export default function EmployeesPage() {
                                   <Mail className="mr-2 h-4 w-4" />
                                   Email
                                 </Button>
+                                {employee.role === 'driver' &&
+                                  employee.lifecycleStatus === 'active' &&
+                                  (employee as any).driverId &&
+                                  (
+                                    // Driver self-toggle when viewing own row
+                                    (user && user.role === 'driver' && (user.id === employee._id || user.email === employee.email) && (
+                                      <Button
+                                        size="sm"
+                                        variant={employee.status === 'available' ? 'outline' : 'secondary'}
+                                        onClick={async () =>
+                                          await updateDriverStatusSelfMutation.mutateAsync(
+                                            employee.status === 'available' ? 'off_duty' : 'available',
+                                          )
+                                        }
+                                        disabled={
+                                          updateDriverStatusSelfMutation.isPending || employee.status === 'on_trip'
+                                        }
+                                      >
+                                        {employee.status === 'available' ? 'Go Off Duty' : 'Go Available'}
+                                      </Button>
+                                    )) ||
+                                    // Manager / dispatcher action to set available
+                                    (employee.status !== 'available' && (
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={async () =>
+                                          await updateDriverStatusMutation.mutateAsync({
+                                            driverId: (employee as any).driverId,
+                                            status: 'available',
+                                          })
+                                        }
+                                        disabled={updateDriverStatusMutation.isPending}
+                                      >
+                                        Set Available
+                                      </Button>
+                                    ))
+                                  )}
                                 <Button
                                   size="sm"
                                   variant="destructive"
