@@ -19,6 +19,15 @@ import maintenanceRouter from './src/routers/maintenance.route';
 import safetyRouter from './src/routers/safety.route';
 import tripRouter from './src/routers/trip.route';
 import vehicleRoute from './src/routers/vehicle.route';
+import {
+  errorHandler,
+  requestIdMiddleware,
+  setupUnhandledErrorHandlers,
+} from './src/middlewares/error.middleware';
+import { errorLogger } from './src/utils/errorLogger';
+
+// Setup unhandled error handlers
+setupUnhandledErrorHandlers();
 
 const app = express();
 
@@ -70,6 +79,9 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Add Request ID middleware early
+app.use(requestIdMiddleware);
 
 app.use(
   helmet({
@@ -143,17 +155,8 @@ app.use((req, res) => {
   });
 });
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Unhandled server error:', err.message);
-  if (!runtimeConfig.isProduction && err.stack) {
-    console.error(err.stack);
-  }
-
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-  });
-});
+// Enhanced Error Handler Middleware (must be last)
+app.use(errorHandler);
 
 const port = runtimeConfig.port;
 let httpServer: ReturnType<typeof app.listen> | null = null;
