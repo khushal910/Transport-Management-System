@@ -19,6 +19,11 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      # Email Configuration (MUST BE SET MANUALLY IN RENDER DASHBOARD)
+      # 1. Set EMAIL_SERVICE to: gmail
+      # 2. Set EMAIL_USER to your Gmail address
+      # 3. Set EMAIL_PASSWORD to your Gmail App-Specific Password (get from https://myaccount.google.com/apppasswords)
+      # App-Specific Passwords are 16 characters with spaces (e.g., xxxx xxxx xxxx xxxx) - paste the entire string including spaces
       - key: EMAIL_SERVICE
         value: gmail
       - key: EMAIL_USER

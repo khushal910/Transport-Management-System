@@ -28,13 +28,38 @@ if (runtimeConfig.isProduction) {
   app.set('trust proxy', 1);
 }
 
-const allowedOrigins = new Set(runtimeConfig.corsOrigins);
+// Separate string origins and regex patterns for efficient matching
+const stringOrigins = new Set<string>();
+const regexOrigins: RegExp[] = [];
+
+for (const origin of runtimeConfig.corsOrigins) {
+  if (origin instanceof RegExp) {
+    regexOrigins.push(origin);
+  } else {
+    stringOrigins.add(origin);
+  }
+}
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.has(origin)) {
+    // Allow no origin (for same-origin requests, scripts)
+    if (!origin) {
       callback(null, true);
       return;
+    }
+
+    // Check exact string matches
+    if (stringOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    // Check regex patterns
+    for (const pattern of regexOrigins) {
+      if (pattern.test(origin)) {
+        callback(null, true);
+        return;
+      }
     }
 
     callback(new Error('Origin not allowed by CORS'));

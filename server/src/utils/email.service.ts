@@ -1,4 +1,5 @@
 import nodemailer, { Transporter, SendMailOptions } from 'nodemailer';
+import runtimeConfig from '../config/runtime';
 
 interface EmailResult {
   success: boolean;
@@ -13,51 +14,121 @@ interface FirstLoginSecurityContext {
   userAgent?: string;
 }
 
-const isProduction = process.env.NODE_ENV === 'production';
-const debugLog = (...args: unknown[]) => {
-  if (!isProduction) {
-    // Debug logging disabled in production
-  }
-};
-
-// Initialize email transporter
-const normalizeEnv = (value?: string) => {
-  if (!value) return undefined;
-  return value.trim().replace(/^['"]|['"]$/g, '');
-};
-
-const transporter: Transporter = nodemailer.createTransport({
-  service: normalizeEnv(process.env.EMAIL_SERVICE) || 'gmail',
-  auth: {
-    user: normalizeEnv(process.env.EMAIL_USER),
-    pass: normalizeEnv(process.env.EMAIL_PASSWORD),
+/**
+ * Production-aware logger - logs everything to console in production for visibility
+ */
+const emailLogger = {
+  error: (...args: unknown[]) => {
+    console.error('[EmailService]', ...args);
   },
-});
+  warn: (...args: unknown[]) => {
+    console.warn('[EmailService]', ...args);
+  },
+  info: (...args: unknown[]) => {
+    if (!runtimeConfig.isProduction) {
+      console.info('[EmailService]', ...args);
+    }
+  },
+  debug: (...args: unknown[]) => {
+    if (!runtimeConfig.isProduction) {
+      console.debug('[EmailService]', ...args);
+    }
+  },
+};
 
-// Verify transporter configuration on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Email Transporter Verification Error:', error.message);
-    console.error('Make sure to use Gmail App-Specific Password (not your regular password)');
-    console.error('Setup: https://myaccount.google.com/apppasswords');
-  } else if (success) {
-    debugLog('Email transporter ready to send emails');
+/**
+ * Initialize email transporter with runtime config
+ * Email credentials must be set in deployment environment variables
+ */
+const initializeTransporter = (): Transporter | null => {
+  try {
+    if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
+      emailLogger.error(
+        'Email credentials not configured.',
+        'EMAIL_USER and EMAIL_PASSWORD must be set in environment variables.',
+      );
+      return null;
+    }
+
+    emailLogger.debug(`Initializing email transporter for service: ${runtimeConfig.emailService}`);
+
+    const transporter: Transporter = nodemailer.createTransport({
+      service: runtimeConfig.emailService,
+      auth: {
+        user: runtimeConfig.emailUser,
+        pass: runtimeConfig.emailPassword,
+      },
+    });
+
+    // Verify transporter configuration on startup
+    transporter.verify((error, success) => {
+      if (error) {
+        emailLogger.error('Email Transporter Verification Failed:', error.message);
+        emailLogger.error(
+          'Gmail requires an App-Specific Password (not your regular password).',
+          'Get it at: https://myaccount.google.com/apppasswords',
+        );
+        if (error.code === 'EAUTH') {
+          emailLogger.error('Authentication error - check EMAIL_USER and EMAIL_PASSWORD are correct');
+        }
+      } else if (success) {
+        emailLogger.info('Email transporter initialized and verified successfully');
+      }
+    });
+
+    return transporter;
+  } catch (error: any) {
+    emailLogger.error('Failed to initialize email transporter:', error.message);
+    return null;
   }
-});
+};
+
+const transporter = initializeTransporter();
+
+/**
+ * Validate email service is configured before sending
+ */
+const validateEmailConfig = (): { valid: boolean; error?: string } => {
+  if (!transporter) {
+    return {
+      valid: false,
+      error: 'Email service not initialized. Check EMAIL_USER and EMAIL_PASSWORD in environment variables.',
+    };
+  }
+
+  if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
+    return {
+      valid: false,
+      error: 'Email credentials not configured in environment variables.',
+    };
+  }
+
+  if (!runtimeConfig.clientUrl) {
+    return {
+      valid: false,
+      error: 'CLIENT_URL not configured in environment variables.',
+    };
+  }
+
+  return { valid: true };
+};
 
 /**
  * Send password reset email
  */
 export const sendPasswordResetEmail = async (email: string, resetToken: string): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send password reset to ${email}: ${error}`);
+      return { success: false, error };
     }
 
-    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    
+    const resetLink = `${runtimeConfig.clientUrl}/reset-password?token=${resetToken}`;
+
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Password Reset Request - Fleet Management System',
       html: `
@@ -73,7 +144,7 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
             <p style="color: #374151; margin-bottom: 20px;">
               Click the button below to reset your password. This link will expire in <strong>24 hours</strong>.
             </p>
-            
+
             <a href="${resetLink}" style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 20px;">
               Reset Password
             </a>
@@ -100,12 +171,14 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Password reset email sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.debug(`Password reset email sent successfully to: ${email}`);
     return { success: true, message: 'Reset email sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send password reset email to ${email}:`, error.message);
+    if (error.code === 'EAUTH') {
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -119,23 +192,25 @@ export const sendDirectEmail = async (
   htmlBody: string
 ): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject,
       html: htmlBody,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Direct email sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.debug(`Email sent successfully to: ${email}`);
     return { success: true, message: 'Email sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Direct email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send direct email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -145,12 +220,15 @@ export const sendDirectEmail = async (
  */
 export const sendPasswordResetSuccessEmail = async (email: string): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send password reset success email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Password Changed Successfully - Fleet Management System',
       html: `
@@ -185,12 +263,11 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Password reset success email sent to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.debug(`Password reset success email sent to: ${email}`);
     return { success: true, message: 'Confirmation email sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Confirmation email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send password reset success email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -200,29 +277,17 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
  */
 export const sendEmployeeSetupEmail = async (email: string, name: string, setupToken: string): Promise<EmailResult> => {
   try {
-    debugLog('[EmailService] Starting sendEmployeeSetupEmail');
-    debugLog('[EmailService] Email recipient:', email);
-    debugLog('[EmailService] Email config - USER set:', !!process.env.EMAIL_USER);
-    debugLog('[EmailService] Email config - PASSWORD set:', !!process.env.EMAIL_PASSWORD);
-    debugLog('[EmailService] Email config - CLIENT_URL set:', !!process.env.CLIENT_URL);
-    
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      const error = 'Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env';
-      console.error('❌ [EmailService]', error);
-      throw new Error(error);
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send employee setup email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
-    if (!process.env.CLIENT_URL) {
-      const error = 'CLIENT_URL not configured. Set CLIENT_URL in .env';
-      console.error('❌ [EmailService]', error);
-      throw new Error(error);
-    }
+    const setupLink = `${runtimeConfig.clientUrl}/auth/setup-password?token=${setupToken}`;
 
-    const setupLink = `${process.env.CLIENT_URL}/auth/setup-password?token=${setupToken}`;
-    debugLog('[EmailService] Setup link generated');
-    
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Welcome to Fleet Management System - Set Your Password',
       html: `
@@ -238,7 +303,7 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
             <p style="color: #374151; margin-bottom: 20px;">
               Click the button below to set your password. This link will expire in <strong>24 hours</strong>.
             </p>
-            
+
             <a href="${setupLink}" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-bottom: 20px;">
               Set Your Password
             </a>
@@ -272,14 +337,11 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
       `,
     };
 
-    debugLog('[EmailService] Attempting to send email via transporter...');
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('[EmailService] Employee setup email sent successfully to:', email);
-    debugLog('[EmailService] Message ID:', result.messageId);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Employee setup email sent successfully to: ${email}`);
     return { success: true, message: 'Setup email sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ [EmailService] Employee setup email sending error:', error.message);
-    console.error('❌ [EmailService] Error details:', error.code || error);
+    emailLogger.error(`Failed to send employee setup email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -293,8 +355,11 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
   context: FirstLoginSecurityContext,
 ): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send first login security email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const loginTime = context.loginAt.toLocaleString('en-US', {
@@ -314,7 +379,7 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
       : 'Unavailable';
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Security Notice: First Login Detected',
       html: `
@@ -347,12 +412,11 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Employee first login security email sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Employee first login security email sent to: ${email}`);
     return { success: true, message: 'First login security email sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Employee first login security email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send first login security email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -366,8 +430,11 @@ export const sendEmployeeDetailsUpdatedEmail = async (
   updatedFields: { name?: string; email?: string; role?: string; password?: boolean }
 ): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send employee details updated email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const fieldsList = [];
@@ -377,7 +444,7 @@ export const sendEmployeeDetailsUpdatedEmail = async (
     if (updatedFields.password) fieldsList.push(`<li style="color: #4b5563; margin: 8px 0;"><strong>Password:</strong> Updated</li>`);
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Your Account Details Have Been Updated',
       html: `
@@ -429,12 +496,11 @@ export const sendEmployeeDetailsUpdatedEmail = async (
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Employee details updated email sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Employee details updated email sent to: ${email}`);
     return { success: true, message: 'Update notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Employee update email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send employee details updated email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -444,12 +510,15 @@ export const sendEmployeeDetailsUpdatedEmail = async (
  */
 export const sendEmployeeDeletedEmail = async (email: string, name: string, companyName: string): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send employee deleted email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Employee Account Deactivated - Fleet Management System',
       html: `
@@ -497,12 +566,11 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Employee deletion email sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Employee deleted email sent to: ${email}`);
     return { success: true, message: 'Deletion notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Employee deletion email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send employee deleted email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -516,12 +584,15 @@ export const sendEmployeeRecoveredEmail = async (
   companyName: string
 ): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send employee recovered email to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Employee Account Restored - Fleet Management System',
       html: `
@@ -562,12 +633,11 @@ export const sendEmployeeRecoveredEmail = async (
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Employee recovery email sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Employee recovered email sent to: ${email}`);
     return { success: true, message: 'Recovery notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Employee recovery email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send employee recovered email to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -577,15 +647,18 @@ export const sendEmployeeRecoveredEmail = async (
  */
 export const sendEmailVerificationOTP = async (newEmail: string, otp: string, verificationToken: string, userName: string): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send email verification OTP to ${newEmail}: ${error}`);
+      return { success: false, error };
     }
 
     // Use the 6-character OTP directly
     const displayOTP = otp.toUpperCase();
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: newEmail,
       subject: 'Email Verification Code - Fleet Management System',
       html: `
@@ -601,7 +674,7 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
             <p style="color: #374151; margin-bottom: 20px;">
               Your email verification code is (expires in <strong>30 minutes</strong>):
             </p>
-            
+
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; text-align: center; margin-bottom: 25px; border: 2px solid #e5e7eb;">
               <p style="font-size: 40px; font-weight: bold; color: #1f2937; margin: 0; letter-spacing: 8px;">
                 ${displayOTP}
@@ -637,12 +710,11 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Email verification code sent successfully to:', newEmail);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Email verification code sent to: ${newEmail}`);
     return { success: true, message: 'Verification code sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Email verification sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send email verification OTP to ${newEmail}:`, error.message);
     return { success: false, error: error.message };
   }
 };
@@ -652,12 +724,15 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
  */
 export const sendPasswordResetOTP = async (email: string, otp: string): Promise<EmailResult> => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      throw new Error('Email credentials not configured. Set EMAIL_USER and EMAIL_PASSWORD in .env');
+    const validation = validateEmailConfig();
+    if (!validation.valid) {
+      const error = validation.error || 'Email service not configured';
+      emailLogger.error(`Failed to send password reset OTP to ${email}: ${error}`);
+      return { success: false, error };
     }
 
     const mailOptions: SendMailOptions = {
-      from: process.env.EMAIL_USER,
+      from: runtimeConfig.emailUser!,
       to: email,
       subject: 'Password Reset Code - Fleet Management System',
       html: `
@@ -673,7 +748,7 @@ export const sendPasswordResetOTP = async (email: string, otp: string): Promise<
             <p style="color: #374151; margin-bottom: 20px;">
               Your password reset code is (expires in <strong>15 minutes</strong>):
             </p>
-            
+
             <div style="background-color: #f3f4f6; padding: 25px; border-radius: 6px; text-align: center; margin-bottom: 25px; border: 2px solid #e5e7eb;">
               <p style="font-size: 48px; font-weight: bold; color: #1f2937; margin: 0; letter-spacing: 10px;">
                 ${otp}
@@ -716,12 +791,11 @@ export const sendPasswordResetOTP = async (email: string, otp: string): Promise<
       `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    debugLog('Password reset code sent successfully to:', email);
+    const result = await transporter!.sendMail(mailOptions);
+    emailLogger.info(`Password reset code sent to: ${email}`);
     return { success: true, message: 'Reset code sent successfully', messageId: result.messageId };
   } catch (error: any) {
-    console.error('❌ Password reset email sending error:', error.message);
-    console.error('Error details:', error.code || error);
+    emailLogger.error(`Failed to send password reset OTP to ${email}:`, error.message);
     return { success: false, error: error.message };
   }
 };
