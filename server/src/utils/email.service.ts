@@ -58,7 +58,16 @@ const initializeTransporter = (): Transporter | null => {
         user: runtimeConfig.emailUser,
         pass: runtimeConfig.emailPassword,
       },
-    });
+      connectionTimeout: 5000,
+      socketTimeout: 5000,
+      greetingTimeout: 5000,
+      pool: {
+        maxConnections: 1,
+        maxMessages: 1,
+        rateDelta: 1000,
+        rateLimit: 3,
+      },
+    } as any);
 
     // Verify transporter configuration on startup
     transporter.verify((error, success) => {
@@ -123,6 +132,17 @@ const validateEmailConfig = (): { valid: boolean; error?: string } => {
 export const sendPasswordResetEmail = async (email: string, resetToken: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting password reset email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE PASSWORD RESET');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR PASSWORD RESET');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for password reset');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR PASSWORD RESET');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for password reset:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -177,13 +197,22 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
       `,
     };
 
+    console.log('[EmailService-SEND] Sending PASSWORD RESET email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ PASSWORD RESET email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Password reset email sent successfully to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Reset email sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send PASSWORD RESET email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send password reset email to ${email}:`, error.message);
     if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
       emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
     }
     return { success: false, error: error.message };
   }
@@ -199,6 +228,17 @@ export const sendDirectEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting direct email flow for: ${email} | subject: ${subject}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE DIRECT EMAIL');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR DIRECT EMAIL');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for direct email');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR DIRECT EMAIL');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for direct email:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -214,11 +254,23 @@ export const sendDirectEmail = async (
       html: htmlBody,
     };
 
+    console.log('[EmailService-SEND] Sending DIRECT email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ DIRECT email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Direct email sent successfully to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Email sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send DIRECT email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send direct email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -229,6 +281,17 @@ export const sendDirectEmail = async (
 export const sendPasswordResetSuccessEmail = async (email: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting password reset success email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE PASSWORD RESET SUCCESS');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR PASSWORD RESET SUCCESS');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for password reset success');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR PASSWORD RESET SUCCESS');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for password reset success:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -273,11 +336,23 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
       `,
     };
 
+    console.log('[EmailService-SEND] Sending PASSWORD RESET SUCCESS email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ PASSWORD RESET SUCCESS email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Password reset success email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Confirmation email sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send PASSWORD RESET SUCCESS email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send password reset success email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -288,6 +363,17 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
 export const sendEmployeeSetupEmail = async (email: string, name: string, setupToken: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee setup email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE SETUP EMAIL');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE SETUP EMAIL');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee setup');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE SETUP EMAIL');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee setup:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -349,11 +435,23 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
       `,
     };
 
+    console.log('[EmailService-SEND] Sending EMPLOYEE SETUP email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ EMPLOYEE SETUP email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Employee setup email sent successfully to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Setup email sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE SETUP email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send employee setup email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -368,6 +466,17 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting first login security email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE FIRST LOGIN SECURITY EMAIL');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR FIRST LOGIN SECURITY EMAIL');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for first login security');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR FIRST LOGIN SECURITY EMAIL');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for first login security:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -426,11 +535,23 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
       `,
     };
 
+    console.log('[EmailService-SEND] Sending FIRST LOGIN SECURITY email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ FIRST LOGIN SECURITY email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Employee first login security email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'First login security email sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send FIRST LOGIN SECURITY email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send first login security email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -445,6 +566,17 @@ export const sendEmployeeDetailsUpdatedEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee details updated email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE DETAILS UPDATED EMAIL');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE DETAILS UPDATED EMAIL');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee details updated');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE DETAILS UPDATED EMAIL');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee details updated:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -512,11 +644,23 @@ export const sendEmployeeDetailsUpdatedEmail = async (
       `,
     };
 
+    console.log('[EmailService-SEND] Sending EMPLOYEE DETAILS UPDATED email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ EMPLOYEE DETAILS UPDATED email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Employee details updated email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Update notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE DETAILS UPDATED email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send employee details updated email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -527,6 +671,17 @@ export const sendEmployeeDetailsUpdatedEmail = async (
 export const sendEmployeeDeletedEmail = async (email: string, name: string, companyName: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee deleted email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE DELETED EMAIL');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE DELETED EMAIL');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee deleted');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE DELETED EMAIL');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee deleted:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -584,11 +739,23 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
       `,
     };
 
+    console.log('[EmailService-SEND] Sending EMPLOYEE DELETED email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ EMPLOYEE DELETED email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Employee deleted email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Deletion notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE DELETED email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send employee deleted email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -603,6 +770,17 @@ export const sendEmployeeRecoveredEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee recovered email flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE RECOVERED EMAIL');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE RECOVERED EMAIL');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee recovered');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE RECOVERED EMAIL');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee recovered:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -653,11 +831,23 @@ export const sendEmployeeRecoveredEmail = async (
       `,
     };
 
+    console.log('[EmailService-SEND] Sending EMPLOYEE RECOVERED email to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ EMPLOYEE RECOVERED email sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Employee recovered email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Recovery notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE RECOVERED email');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send employee recovered email to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -668,6 +858,17 @@ export const sendEmployeeRecoveredEmail = async (
 export const sendEmailVerificationOTP = async (newEmail: string, otp: string, verificationToken: string, userName: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting email verification OTP flow for: ${newEmail}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMAIL VERIFICATION OTP');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMAIL VERIFICATION OTP');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for email verification OTP');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMAIL VERIFICATION OTP');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for email verification OTP:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -732,11 +933,23 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
       `,
     };
 
+    console.log('[EmailService-SEND] Sending EMAIL VERIFICATION OTP to:', newEmail);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ EMAIL VERIFICATION OTP sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Email verification code sent to: ${newEmail} (messageId: ${result.messageId})`);
     return { success: true, message: 'Verification code sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send EMAIL VERIFICATION OTP');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send email verification OTP to ${newEmail}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
@@ -747,6 +960,17 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
 export const sendPasswordResetOTP = async (email: string, otp: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting password reset OTP flow for: ${email}`);
+    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE PASSWORD RESET OTP');
+    try {
+      await transporter!.verify();
+      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR PASSWORD RESET OTP');
+      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for password reset OTP');
+    } catch (verifyError: any) {
+      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR PASSWORD RESET OTP');
+      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
+      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for password reset OTP:', verifyError?.message);
+      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    }
 
     const validation = validateEmailConfig();
     if (!validation.valid) {
@@ -815,11 +1039,23 @@ export const sendPasswordResetOTP = async (email: string, otp: string): Promise<
       `,
     };
 
+    console.log('[EmailService-SEND] Sending PASSWORD RESET OTP to:', email);
     const result = await transporter!.sendMail(mailOptions);
+    console.log('[EmailService-SEND] ✅ PASSWORD RESET OTP sent successfully');
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
     emailLogger.info(`Password reset code sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Reset code sent successfully', messageId: result.messageId };
   } catch (error: any) {
+    console.log('[EmailService-SEND] ❌ FAILED to send PASSWORD RESET OTP');
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
     emailLogger.error(`Failed to send password reset OTP to ${email}:`, error.message);
+    if (error?.code === 'EAUTH') {
+      console.log('[EmailService-AUTH] Authentication failed - check EMAIL_USER and EMAIL_PASSWORD');
+      emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.log('[EmailService-TIMEOUT] SMTP connection timeout - server not responding');
+    }
     return { success: false, error: error.message };
   }
 };
