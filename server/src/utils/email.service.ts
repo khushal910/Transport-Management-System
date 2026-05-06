@@ -25,9 +25,7 @@ const emailLogger = {
     console.warn('[EmailService]', ...args);
   },
   info: (...args: unknown[]) => {
-    if (!runtimeConfig.isProduction) {
-      console.info('[EmailService]', ...args);
-    }
+    console.info('[EmailService]', ...args);
   },
   debug: (...args: unknown[]) => {
     if (!runtimeConfig.isProduction) {
@@ -42,6 +40,8 @@ const emailLogger = {
  */
 const initializeTransporter = (): Transporter | null => {
   try {
+    emailLogger.info('Initializing email transporter');
+
     if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
       emailLogger.error(
         'Email credentials not configured.',
@@ -90,6 +90,7 @@ const transporter = initializeTransporter();
  */
 const validateEmailConfig = (): { valid: boolean; error?: string } => {
   if (!transporter) {
+    emailLogger.error('Email service validation failed: transporter not initialized');
     return {
       valid: false,
       error: 'Email service not initialized. Check EMAIL_USER and EMAIL_PASSWORD in environment variables.',
@@ -97,6 +98,7 @@ const validateEmailConfig = (): { valid: boolean; error?: string } => {
   }
 
   if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
+    emailLogger.error('Email service validation failed: missing EMAIL_USER or EMAIL_PASSWORD');
     return {
       valid: false,
       error: 'Email credentials not configured in environment variables.',
@@ -104,12 +106,14 @@ const validateEmailConfig = (): { valid: boolean; error?: string } => {
   }
 
   if (!runtimeConfig.clientUrl) {
+    emailLogger.error('Email service validation failed: CLIENT_URL is missing');
     return {
       valid: false,
       error: 'CLIENT_URL not configured in environment variables.',
     };
   }
 
+  emailLogger.info('Email service validation passed');
   return { valid: true };
 };
 
@@ -118,6 +122,8 @@ const validateEmailConfig = (): { valid: boolean; error?: string } => {
  */
 export const sendPasswordResetEmail = async (email: string, resetToken: string): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting password reset email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -172,7 +178,7 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.debug(`Password reset email sent successfully to: ${email}`);
+    emailLogger.info(`Password reset email sent successfully to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Reset email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send password reset email to ${email}:`, error.message);
@@ -192,6 +198,8 @@ export const sendDirectEmail = async (
   htmlBody: string
 ): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting direct email flow for: ${email} | subject: ${subject}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -207,7 +215,7 @@ export const sendDirectEmail = async (
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.debug(`Email sent successfully to: ${email}`);
+    emailLogger.info(`Direct email sent successfully to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send direct email to ${email}:`, error.message);
@@ -220,6 +228,8 @@ export const sendDirectEmail = async (
  */
 export const sendPasswordResetSuccessEmail = async (email: string): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting password reset success email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -264,7 +274,7 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.debug(`Password reset success email sent to: ${email}`);
+    emailLogger.info(`Password reset success email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Confirmation email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send password reset success email to ${email}:`, error.message);
@@ -277,6 +287,8 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
  */
 export const sendEmployeeSetupEmail = async (email: string, name: string, setupToken: string): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting employee setup email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -338,7 +350,7 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Employee setup email sent successfully to: ${email}`);
+    emailLogger.info(`Employee setup email sent successfully to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Setup email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send employee setup email to ${email}:`, error.message);
@@ -355,6 +367,8 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
   context: FirstLoginSecurityContext,
 ): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting first login security email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -413,7 +427,7 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Employee first login security email sent to: ${email}`);
+    emailLogger.info(`Employee first login security email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'First login security email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send first login security email to ${email}:`, error.message);
@@ -430,6 +444,8 @@ export const sendEmployeeDetailsUpdatedEmail = async (
   updatedFields: { name?: string; email?: string; role?: string; password?: boolean }
 ): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting employee details updated email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -497,7 +513,7 @@ export const sendEmployeeDetailsUpdatedEmail = async (
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Employee details updated email sent to: ${email}`);
+    emailLogger.info(`Employee details updated email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Update notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send employee details updated email to ${email}:`, error.message);
@@ -510,6 +526,8 @@ export const sendEmployeeDetailsUpdatedEmail = async (
  */
 export const sendEmployeeDeletedEmail = async (email: string, name: string, companyName: string): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting employee deleted email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -567,7 +585,7 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Employee deleted email sent to: ${email}`);
+    emailLogger.info(`Employee deleted email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Deletion notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send employee deleted email to ${email}:`, error.message);
@@ -584,6 +602,8 @@ export const sendEmployeeRecoveredEmail = async (
   companyName: string
 ): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting employee recovered email flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -634,7 +654,7 @@ export const sendEmployeeRecoveredEmail = async (
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Employee recovered email sent to: ${email}`);
+    emailLogger.info(`Employee recovered email sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Recovery notification sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send employee recovered email to ${email}:`, error.message);
@@ -647,6 +667,8 @@ export const sendEmployeeRecoveredEmail = async (
  */
 export const sendEmailVerificationOTP = async (newEmail: string, otp: string, verificationToken: string, userName: string): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting email verification OTP flow for: ${newEmail}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -711,7 +733,7 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Email verification code sent to: ${newEmail}`);
+    emailLogger.info(`Email verification code sent to: ${newEmail} (messageId: ${result.messageId})`);
     return { success: true, message: 'Verification code sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send email verification OTP to ${newEmail}:`, error.message);
@@ -724,6 +746,8 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
  */
 export const sendPasswordResetOTP = async (email: string, otp: string): Promise<EmailResult> => {
   try {
+    emailLogger.info(`Starting password reset OTP flow for: ${email}`);
+
     const validation = validateEmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
@@ -792,7 +816,7 @@ export const sendPasswordResetOTP = async (email: string, otp: string): Promise<
     };
 
     const result = await transporter!.sendMail(mailOptions);
-    emailLogger.info(`Password reset code sent to: ${email}`);
+    emailLogger.info(`Password reset code sent to: ${email} (messageId: ${result.messageId})`);
     return { success: true, message: 'Reset code sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send password reset OTP to ${email}:`, error.message);
