@@ -88,7 +88,13 @@ const requestEmailVerification = async (req, res) => {
       user.emailVerificationExpires = null;
       await user.save();
 
-      return response(res, 500, false, 'Failed to send verification email. Please try again later.');
+      return response(
+        res,
+        emailResult.statusCode || 503,
+        false,
+        emailResult.error || 'Failed to send verification email. Please try again later.',
+        emailResult.details || null,
+      );
     }
 
     return response(res, 200, true, 'Verification code sent to your new email address. Please check your inbox.');

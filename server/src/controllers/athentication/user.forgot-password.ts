@@ -59,7 +59,13 @@ const userForgotPassword = async (req, res) => {
       user.passwordResetExpires = null;
       await user.save();
 
-      return response(res, 500, false, 'Failed to send reset email. Please try again later.');
+      return response(
+        res,
+        emailResult.statusCode || 503,
+        false,
+        emailResult.error || 'Failed to send reset email. Please try again later.',
+        emailResult.details || null,
+      );
     }
 
     return response(res, 200, true, 'Password reset link sent to your email. Please check your inbox.');

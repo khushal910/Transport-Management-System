@@ -6,6 +6,9 @@ interface EmailResult {
   message?: string;
   messageId?: string;
   error?: string;
+  statusCode?: number;
+  errorCode?: string;
+  details?: Record<string, unknown>;
 }
 
 interface FirstLoginSecurityContext {
@@ -34,6 +37,56 @@ const emailLogger = {
   },
 };
 
+const SMTP_HOST = runtimeConfig.smtpHost;
+const SMTP_PORT = runtimeConfig.smtpPort;
+const SMTP_TIMEOUT_MS = 5000;
+
+const buildSmtpFailure = (operation: string, error: any): EmailResult => {
+  const errorCode = error?.code as string | undefined;
+  const message = error?.message || 'SMTP request failed';
+
+  if (errorCode === 'ETIMEDOUT') {
+    return {
+      success: false,
+      error: `${operation} timed out while connecting to Gmail SMTP: ${message}`,
+      statusCode: 504,
+      errorCode,
+      details: {
+        command: error?.command,
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        timeoutMs: SMTP_TIMEOUT_MS,
+      },
+    };
+  }
+
+  if (errorCode === 'EAUTH') {
+    return {
+      success: false,
+      error: `${operation} authentication failed: ${message}`,
+      statusCode: 503,
+      errorCode,
+      details: {
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        hint: 'Use a Gmail App Password, not your normal Google password.',
+      },
+    };
+  }
+
+  return {
+    success: false,
+    error: `${operation} failed: ${message}`,
+    statusCode: 503,
+    errorCode,
+    details: {
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      command: error?.command,
+    },
+  };
+};
+
 /**
  * Initialize email transporter with runtime config
  * Email credentials must be set in deployment environment variables
@@ -50,28 +103,36 @@ const initializeTransporter = (): Transporter | null => {
       return null;
     }
 
-    emailLogger.debug(`Initializing email transporter for service: ${runtimeConfig.emailService}`);
+    emailLogger.debug(`Initializing email transporter for service: gmail on ${SMTP_HOST}:${SMTP_PORT}`);
 
     const transporter: Transporter = nodemailer.createTransport({
-      service: runtimeConfig.emailService,
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: runtimeConfig.smtpSecure,
       auth: {
         user: runtimeConfig.emailUser,
         pass: runtimeConfig.emailPassword,
       },
-      connectionTimeout: 5000,
-      socketTimeout: 5000,
-      greetingTimeout: 5000,
-      pool: {
-        maxConnections: 1,
-        maxMessages: 1,
-        rateDelta: 1000,
-        rateLimit: 3,
+      connectionTimeout: SMTP_TIMEOUT_MS,
+      greetingTimeout: SMTP_TIMEOUT_MS,
+      socketTimeout: SMTP_TIMEOUT_MS,
+      logger: true,
+      debug: true,
+      pool: true,
+      tls: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true,
       },
     } as any);
 
-    // Verify transporter configuration on startup
+    console.log('[EmailService] VERIFYING SMTP TRANSPORTER ON STARTUP');
     transporter.verify((error, success) => {
       if (error) {
+        console.error('[EmailService] SMTP VERIFY ERROR', {
+          message: error.message,
+          code: (error as any)?.code,
+          command: (error as any)?.command,
+        });
         emailLogger.error('Email Transporter Verification Failed:', error.message);
         emailLogger.error(
           'Gmail requires an App-Specific Password (not your regular password).',
@@ -81,6 +142,7 @@ const initializeTransporter = (): Transporter | null => {
           emailLogger.error('Authentication error - check EMAIL_USER and EMAIL_PASSWORD are correct');
         }
       } else if (success) {
+        console.log('[EmailService] SMTP TRANSPORTER VERIFIED ON STARTUP');
         emailLogger.info('Email transporter initialized and verified successfully');
       }
     });
@@ -124,6 +186,85 @@ const validateEmailConfig = (): { valid: boolean; error?: string } => {
 
   emailLogger.info('Email service validation passed');
   return { valid: true };
+};
+
+export const verifySmtpConnection = async (operation = 'SMTP verification'): Promise<EmailResult> => {
+  if (!transporter) {
+    return {
+      success: false,
+      error: 'SMTP transporter is not initialized. Check EMAIL_USER and EMAIL_PASSWORD.',
+      statusCode: 503,
+      details: {
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+      },
+    };
+  }
+
+  try {
+    console.log(`[EmailService-VERIFY] VERIFYING SMTP FOR ${operation}`);
+    await transporter.verify();
+    console.log(`[EmailService-VERIFY] SMTP VERIFIED FOR ${operation}`);
+    return {
+      success: true,
+      message: `SMTP verified for ${operation}`,
+      statusCode: 200,
+      details: {
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        secure: true,
+        smtpSecure: runtimeConfig.smtpSecure,
+        timeoutMs: SMTP_TIMEOUT_MS,
+      },
+    };
+  } catch (error: any) {
+    console.error(`[EmailService-VERIFY] SMTP VERIFICATION FAILED FOR ${operation}`, {
+      message: error?.message,
+      code: error?.code,
+      command: error?.command,
+    });
+    return buildSmtpFailure(operation, error);
+  }
+};
+
+const sendMailWithDebug = async (mailOptions: SendMailOptions, operation: string): Promise<EmailResult> => {
+  if (!transporter) {
+    return {
+      success: false,
+      error: 'SMTP transporter is not initialized. Check EMAIL_USER and EMAIL_PASSWORD.',
+      statusCode: 503,
+    };
+  }
+
+  try {
+    console.log(`[EmailService-SEND] Sending ${operation}`);
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`[EmailService-SEND] ✅ ${operation} sent successfully`);
+    console.log('[EmailService-SEND] Message ID:', result.messageId);
+    return {
+      success: true,
+      message: `${operation} sent successfully`,
+      messageId: result.messageId,
+      statusCode: 200,
+    };
+  } catch (error: any) {
+    const failure = buildSmtpFailure(operation, error);
+    console.error(`[EmailService-SEND] ❌ FAILED to send ${operation}`, {
+      message: error?.message,
+      code: error?.code,
+      command: error?.command,
+    });
+    if (error?.code === 'EAUTH') {
+      console.error('[EmailService-AUTH] Gmail authentication failed - use a valid App Password');
+    }
+    if (error?.code === 'ETIMEDOUT') {
+      console.error('[EmailService-TIMEOUT] SMTP connection timeout while sending', {
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+      });
+    }
+    return failure;
+  }
 };
 
 /**

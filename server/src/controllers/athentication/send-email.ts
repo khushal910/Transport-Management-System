@@ -86,7 +86,13 @@ const sendEmail = async (req, res) => {
 
     const result = await sendDirectEmail(recipient.email, emailSubject, emailBody);
     if (!result.success) {
-      return response(res, 500, false, 'Failed to send email', result.error);
+      return response(
+        res,
+        result.statusCode || 503,
+        false,
+        result.error || 'Failed to send email',
+        result.details || null,
+      );
     }
 
     return response(res, 200, true, 'Email successfully sent');

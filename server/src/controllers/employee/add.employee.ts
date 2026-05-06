@@ -119,7 +119,13 @@ const addEmployee = async (req, res) => {
           debugLog('[AddEmployee Recovery] Email result:', emailResult);
           if (!emailResult.success) {
             console.warn('❌ Failed to send employee recovery email:', emailResult.error);
-            return response(res, 500, false, 'Employee recovered but failed to send setup email. Check email configuration.');
+            return response(
+              res,
+              emailResult.statusCode || 503,
+              false,
+              emailResult.error || 'Employee recovered but failed to send setup email. Check email configuration.',
+              emailResult.details || null,
+            );
           }
           console.info('✅ Recovery email sent successfully');
         } else if (environmentConfig.isDevelopment) {
@@ -227,7 +233,13 @@ const addEmployee = async (req, res) => {
 
       if (!emailResult.success) {
         console.warn('❌ Failed to send employee setup email:', emailResult.error);
-        return response(res, 500, false, 'Employee created but failed to send setup email. Please check email configuration.');
+        return response(
+          res,
+          emailResult.statusCode || 503,
+          false,
+          emailResult.error || 'Employee created but failed to send setup email. Please check email configuration.',
+          emailResult.details || null,
+        );
       }
 
       console.info('✅ Setup email sent successfully');

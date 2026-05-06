@@ -28,6 +28,17 @@ const parsePositiveNumber = (value: string | undefined, fallback: number): numbe
   return Math.floor(parsed);
 };
 
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  const normalized = normalizeEnvValue(value)?.toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+    return true;
+  }
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+    return false;
+  }
+  return fallback;
+};
+
 const parseNodeEnv = (value: string | undefined): NodeEnv => {
   const lifecycleEvent = normalizeEnvValue(process.env.npm_lifecycle_event)?.toLowerCase();
   if (lifecycleEvent === 'dev') {
@@ -111,6 +122,9 @@ export const runtimeConfig = {
   passwordResetExpiryHours: parsePositiveNumber(process.env.PASSWORD_RESET_EXPIRY, 24),
   // Email configuration (must be manually set in deployment environment)
   emailService: normalizeEnvValue(process.env.EMAIL_SERVICE) ?? 'gmail',
+  smtpHost: normalizeEnvValue(process.env.EMAIL_SMTP_HOST) ?? 'smtp.gmail.com',
+  smtpPort: parsePositiveNumber(process.env.EMAIL_SMTP_PORT, 465),
+  smtpSecure: parseBoolean(process.env.EMAIL_SMTP_SECURE, true),
   emailUser: normalizeEnvValue(process.env.EMAIL_USER),
   emailPassword: parseEmailPassword(process.env.EMAIL_PASSWORD),
 };

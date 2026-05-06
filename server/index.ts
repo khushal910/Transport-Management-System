@@ -16,6 +16,7 @@ import driverStatusRouter from './src/routers/driverStatus.route';
 import expenseRouter from './src/routers/expense.route';
 import gpsRouter from './src/routers/gps.route';
 import maintenanceRouter from './src/routers/maintenance.route';
+import debugRouter from './src/routers/debug.route';
 import safetyRouter from './src/routers/safety.route';
 import tripRouter from './src/routers/trip.route';
 import vehicleRoute from './src/routers/vehicle.route';
@@ -119,6 +120,8 @@ app.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use('/api/debug', debugRouter);
 
 const requireDatabaseConnection = (req: Request, res: Response, next: NextFunction) => {
   if (isDatabaseConnected()) {
