@@ -48,9 +48,9 @@ const parseNodeEnv = (value: string | undefined): NodeEnv => {
  * Parse CORS origins from environment variable
  * In development mode, also allow all localhost/local network addresses on port 5173 for Vite
  */
-const parseOrigins = (value: string | undefined, fallbackOrigin: string, isDev: boolean): string[] => {
+const parseOrigins = (value: string | undefined, fallbackOrigin: string, isDev: boolean): (string | RegExp)[] => {
   const normalized = normalizeEnvValue(value) ?? fallbackOrigin;
-  const origins = Array.from(
+  const origins: (string | RegExp)[] = Array.from(
     new Set(
       normalized
         .split(',')

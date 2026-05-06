@@ -33,10 +33,10 @@ const stringOrigins = new Set<string>();
 const regexOrigins: RegExp[] = [];
 
 for (const origin of runtimeConfig.corsOrigins) {
-  if (origin instanceof RegExp) {
-    regexOrigins.push(origin);
-  } else {
+  if (typeof origin === 'string') {
     stringOrigins.add(origin);
+  } else if (origin instanceof RegExp) {
+    regexOrigins.push(origin);
   }
 }
 

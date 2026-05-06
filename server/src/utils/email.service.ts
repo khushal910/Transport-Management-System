@@ -68,7 +68,7 @@ const initializeTransporter = (): Transporter | null => {
           'Gmail requires an App-Specific Password (not your regular password).',
           'Get it at: https://myaccount.google.com/apppasswords',
         );
-        if (error.code === 'EAUTH') {
+        if ((error as any).code === 'EAUTH') {
           emailLogger.error('Authentication error - check EMAIL_USER and EMAIL_PASSWORD are correct');
         }
       } else if (success) {
@@ -176,7 +176,7 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
     return { success: true, message: 'Reset email sent successfully', messageId: result.messageId };
   } catch (error: any) {
     emailLogger.error(`Failed to send password reset email to ${email}:`, error.message);
-    if (error.code === 'EAUTH') {
+    if (error?.code === 'EAUTH') {
       emailLogger.error('Authentication failed - verify EMAIL_USER and EMAIL_PASSWORD');
     }
     return { success: false, error: error.message };
