@@ -119,6 +119,7 @@ const initializeTransporter = (): Transporter | null => {
       logger: true,
       debug: true,
       pool: true,
+      family: 4,
       tls: {
         minVersion: 'TLSv1.2',
         rejectUnauthorized: true,
