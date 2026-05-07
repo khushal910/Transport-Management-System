@@ -1,4 +1,6 @@
 import nodemailer, { Transporter, SendMailOptions } from 'nodemailer';
+import { gmail_v1, google } from 'googleapis';
+import gmailOAuth2Manager from './gmail-oauth2';
 import runtimeConfig from '../config/runtime';
 
 interface EmailResult {
@@ -35,6 +37,188 @@ const emailLogger = {
       console.debug('[EmailService]', ...args);
     }
   },
+};
+
+/**
+ * Gmail API client - initialized on-demand with OAuth2 credentials
+ */
+let gmailClient: gmail_v1.Gmail | null = null;
+
+/**
+ * Initialize Gmail API client with OAuth2 credentials
+ */
+const initializeGmailClient = async (): Promise<boolean> => {
+  try {
+    if (gmailClient) {
+      return true; // Already initialized
+    }
+
+    const tokenResult = await gmailOAuth2Manager.getAccessToken();
+    if (!tokenResult.success) {
+      emailLogger.error(`Failed to get Gmail OAuth2 token: ${tokenResult.error}`);
+      return false;
+    }
+
+    const auth = new google.auth.OAuth2(
+      runtimeConfig.googleClientId,
+      runtimeConfig.googleClientSecret,
+      runtimeConfig.googleRedirectUrl,
+    );
+
+    auth.setCredentials({
+      access_token: tokenResult.accessToken,
+    });
+
+    gmailClient = google.gmail({ version: 'v1', auth });
+    return true;
+  } catch (error: any) {
+    emailLogger.error(`Failed to initialize Gmail client: ${error.message}`);
+    return false;
+  }
+};
+
+/**
+ * Encode email message to RFC 5322 base64 format required by Gmail API
+ */
+const encodeMessage = (message: string): string => {
+  return Buffer.from(message)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+};
+
+/**
+ * Build RFC 5322 formatted email message
+ */
+const buildRFC5322Message = (from: string, to: string, subject: string, htmlBody: string): string => {
+  const headers = [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset="UTF-8"',
+    'Content-Transfer-Encoding: 7bit',
+  ].join('\r\n');
+
+  return `${headers}\r\n\r\n${htmlBody}`;
+};
+
+/**
+ * Send email via Gmail API
+ * Replaces transporter.sendMail() for OAuth2-based Gmail sending
+ */
+const sendMailViaGmailAPI = async (
+  to: string,
+  subject: string,
+  htmlBody: string,
+  operationName: string,
+): Promise<EmailResult> => {
+  try {
+    // Initialize Gmail client if needed
+    const initialized = await initializeGmailClient();
+    if (!initialized) {
+      return {
+        success: false,
+        error: 'Failed to initialize Gmail API client',
+        statusCode: 503,
+      };
+    }
+
+    const from = runtimeConfig.emailUser!;
+    const message = buildRFC5322Message(from, to, subject, htmlBody);
+    const encodedMessage = encodeMessage(message);
+
+    console.log(`[EmailService-GMAIL] Sending ${operationName} email via Gmail API to: ${to}`);
+
+    const result = await gmailClient!.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage,
+      },
+    });
+
+    console.log(`[EmailService-GMAIL] ✅ ${operationName} email sent successfully via Gmail API`);
+    console.log(`[EmailService-GMAIL] Message ID: ${result.data.id}`);
+    emailLogger.info(`${operationName} email sent successfully to: ${to} (messageId: ${result.data.id})`);
+
+    return {
+      success: true,
+      message: `${operationName} email sent successfully`,
+      messageId: result.data.id ?? undefined,
+    };
+  } catch (error: any) {
+    console.log(`[EmailService-GMAIL] ❌ FAILED to send ${operationName} email via Gmail API`);
+    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
+    emailLogger.error(`Failed to send ${operationName} email via Gmail API to ${to}:`, error.message);
+
+    return {
+      success: false,
+      error: error.message || `Failed to send ${operationName} email`,
+      statusCode: 503,
+    };
+  }
+};
+
+/**
+ * Validate Gmail API email configuration
+ */
+const validateGmailConfig = (): { valid: boolean; error?: string } => {
+  if (!runtimeConfig.emailUser) {
+    return { valid: false, error: 'EMAIL_USER not configured' };
+  }
+
+  if (!runtimeConfig.googleClientId || !runtimeConfig.googleClientSecret) {
+    return { valid: false, error: 'Gmail OAuth2 credentials not configured' };
+  }
+
+  if (!gmailClient) {
+    return { valid: false, error: 'Gmail API client not initialized' };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Verify Gmail API connection and OAuth2 token validity
+ * Replaces transporter.verify() for Gmail API
+ */
+const verifyGmailConnection = async (operationName: string): Promise<EmailResult> => {
+  try {
+    const authVerification = await gmailOAuth2Manager.verifyAuthentication();
+    if (!authVerification.success) {
+      return {
+        success: false,
+        error: authVerification.error || 'Failed to verify Gmail OAuth2 authentication',
+        statusCode: 503,
+      };
+    }
+
+    // Initialize the Gmail API client without calling a read-scoped endpoint.
+    const initialized = await initializeGmailClient();
+    if (!initialized) {
+      return {
+        success: false,
+        error: 'Failed to initialize Gmail API client',
+        statusCode: 503,
+      };
+    }
+
+    console.log(`[EmailService-VERIFY] ✅ Gmail OAuth2 verified for ${operationName}`);
+    return {
+      success: true,
+      message: `Gmail API connection verified for ${operationName}`,
+    };
+  } catch (error: any) {
+    console.log(`[EmailService-VERIFY] ❌ Gmail API verification failed: ${error.message}`);
+    emailLogger.error(`Gmail API verification failed for ${operationName}:`, error.message);
+
+    return {
+      success: false,
+      error: `Gmail API verification failed: ${error.message}`,
+      statusCode: 503,
+    };
+  }
 };
 
 const SMTP_HOST = runtimeConfig.smtpHost;
@@ -92,67 +276,8 @@ const buildSmtpFailure = (operation: string, error: any): EmailResult => {
  * Email credentials must be set in deployment environment variables
  */
 const initializeTransporter = (): Transporter | null => {
-  try {
-    emailLogger.info('Initializing email transporter');
-
-    if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
-      emailLogger.error(
-        'Email credentials not configured.',
-        'EMAIL_USER and EMAIL_PASSWORD must be set in environment variables.',
-      );
-      return null;
-    }
-
-    emailLogger.debug(`Initializing email transporter for service: gmail on ${SMTP_HOST}:${SMTP_PORT}`);
-
-    const transporter: Transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: runtimeConfig.smtpSecure,
-      auth: {
-        user: runtimeConfig.emailUser,
-        pass: runtimeConfig.emailPassword,
-      },
-      connectionTimeout: SMTP_TIMEOUT_MS,
-      greetingTimeout: SMTP_TIMEOUT_MS,
-      socketTimeout: SMTP_TIMEOUT_MS,
-      logger: true,
-      debug: true,
-      pool: true,
-      family: 4,
-      tls: {
-        minVersion: 'TLSv1.2',
-        rejectUnauthorized: true,
-      },
-    } as any);
-
-    console.log('[EmailService] VERIFYING SMTP TRANSPORTER ON STARTUP');
-    transporter.verify((error, success) => {
-      if (error) {
-        console.error('[EmailService] SMTP VERIFY ERROR', {
-          message: error.message,
-          code: (error as any)?.code,
-          command: (error as any)?.command,
-        });
-        emailLogger.error('Email Transporter Verification Failed:', error.message);
-        emailLogger.error(
-          'Gmail requires an App-Specific Password (not your regular password).',
-          'Get it at: https://myaccount.google.com/apppasswords',
-        );
-        if ((error as any).code === 'EAUTH') {
-          emailLogger.error('Authentication error - check EMAIL_USER and EMAIL_PASSWORD are correct');
-        }
-      } else if (success) {
-        console.log('[EmailService] SMTP TRANSPORTER VERIFIED ON STARTUP');
-        emailLogger.info('Email transporter initialized and verified successfully');
-      }
-    });
-
-    return transporter;
-  } catch (error: any) {
-    emailLogger.error('Failed to initialize email transporter:', error.message);
-    return null;
-  }
+  emailLogger.debug('SMTP transporter bootstrap disabled; Gmail API is used for all outbound email');
+  return null;
 };
 
 const transporter = initializeTransporter();
@@ -161,71 +286,11 @@ const transporter = initializeTransporter();
  * Validate email service is configured before sending
  */
 const validateEmailConfig = (): { valid: boolean; error?: string } => {
-  if (!transporter) {
-    emailLogger.error('Email service validation failed: transporter not initialized');
-    return {
-      valid: false,
-      error: 'Email service not initialized. Check EMAIL_USER and EMAIL_PASSWORD in environment variables.',
-    };
-  }
-
-  if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
-    emailLogger.error('Email service validation failed: missing EMAIL_USER or EMAIL_PASSWORD');
-    return {
-      valid: false,
-      error: 'Email credentials not configured in environment variables.',
-    };
-  }
-
-  if (!runtimeConfig.clientUrl) {
-    emailLogger.error('Email service validation failed: CLIENT_URL is missing');
-    return {
-      valid: false,
-      error: 'CLIENT_URL not configured in environment variables.',
-    };
-  }
-
-  emailLogger.info('Email service validation passed');
-  return { valid: true };
+  return validateGmailConfig();
 };
 
 export const verifySmtpConnection = async (operation = 'SMTP verification'): Promise<EmailResult> => {
-  if (!transporter) {
-    return {
-      success: false,
-      error: 'SMTP transporter is not initialized. Check EMAIL_USER and EMAIL_PASSWORD.',
-      statusCode: 503,
-      details: {
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-      },
-    };
-  }
-
-  try {
-    console.log(`[EmailService-VERIFY] VERIFYING SMTP FOR ${operation}`);
-    await transporter.verify();
-    console.log(`[EmailService-VERIFY] SMTP VERIFIED FOR ${operation}`);
-    return {
-      success: true,
-      message: `SMTP verified for ${operation}`,
-      statusCode: 200,
-      details: {
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        secure: true,
-        smtpSecure: runtimeConfig.smtpSecure,
-        timeoutMs: SMTP_TIMEOUT_MS,
-      },
-    };
-  } catch (error: any) {
-    console.error(`[EmailService-VERIFY] SMTP VERIFICATION FAILED FOR ${operation}`, {
-      message: error?.message,
-      code: error?.code,
-      command: error?.command,
-    });
-    return buildSmtpFailure(operation, error);
-  }
+  return verifyGmailConnection(operation);
 };
 
 const sendMailWithDebug = async (mailOptions: SendMailOptions, operation: string): Promise<EmailResult> => {
@@ -274,19 +339,12 @@ const sendMailWithDebug = async (mailOptions: SendMailOptions, operation: string
 export const sendPasswordResetEmail = async (email: string, resetToken: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting password reset email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE PASSWORD RESET');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR PASSWORD RESET');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for password reset');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR PASSWORD RESET');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for password reset:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    const verification = await verifyGmailConnection('Gmail API verification for password reset');
+    if (!verification.success) {
+      return verification;
     }
 
-    const validation = validateEmailConfig();
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send password reset to ${email}: ${error}`);
@@ -340,11 +398,7 @@ export const sendPasswordResetEmail = async (email: string, resetToken: string):
     };
 
     console.log('[EmailService-SEND] Sending PASSWORD RESET email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ PASSWORD RESET email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Password reset email sent successfully to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Reset email sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Password Reset Request - Fleet Management System', String(mailOptions.html ?? ''), 'PASSWORD RESET');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send PASSWORD RESET email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -370,38 +424,20 @@ export const sendDirectEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting direct email flow for: ${email} | subject: ${subject}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE DIRECT EMAIL');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR DIRECT EMAIL');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for direct email');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR DIRECT EMAIL');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for direct email:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    const verification = await verifyGmailConnection('Gmail API verification for direct email');
+    if (!verification.success) {
+      return verification;
     }
 
-    const validation = validateEmailConfig();
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send email to ${email}: ${error}`);
       return { success: false, error };
     }
 
-    const mailOptions: SendMailOptions = {
-      from: runtimeConfig.emailUser!,
-      to: email,
-      subject,
-      html: htmlBody,
-    };
-
     console.log('[EmailService-SEND] Sending DIRECT email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ DIRECT email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Direct email sent successfully to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Email sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, subject, htmlBody, 'DIRECT EMAIL');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send DIRECT email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -423,19 +459,12 @@ export const sendDirectEmail = async (
 export const sendPasswordResetSuccessEmail = async (email: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting password reset success email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE PASSWORD RESET SUCCESS');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR PASSWORD RESET SUCCESS');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for password reset success');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR PASSWORD RESET SUCCESS');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for password reset success:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    const verification = await verifyGmailConnection('Gmail API verification for password reset success');
+    if (!verification.success) {
+      return verification;
     }
 
-    const validation = validateEmailConfig();
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send password reset success email to ${email}: ${error}`);
@@ -479,11 +508,7 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
     };
 
     console.log('[EmailService-SEND] Sending PASSWORD RESET SUCCESS email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ PASSWORD RESET SUCCESS email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Password reset success email sent to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Confirmation email sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Password Changed Successfully - Fleet Management System', String(mailOptions.html ?? ''), 'PASSWORD RESET SUCCESS');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send PASSWORD RESET SUCCESS email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -505,19 +530,23 @@ export const sendPasswordResetSuccessEmail = async (email: string): Promise<Emai
 export const sendEmployeeSetupEmail = async (email: string, name: string, setupToken: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee setup email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE SETUP EMAIL');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE SETUP EMAIL');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee setup');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE SETUP EMAIL');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee setup:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    console.log('[EmailService-VERIFY] VERIFYING GMAIL API BEFORE EMPLOYEE SETUP EMAIL');
+
+    // Verify Gmail API is accessible
+    const verification = await verifyGmailConnection('Gmail API verification for employee setup');
+    if (!verification.success) {
+      emailLogger.error(`Gmail API verification failed: ${verification.error}`);
+      return {
+        success: false,
+        error: verification.error,
+        statusCode: verification.statusCode,
+      };
     }
 
-    const validation = validateEmailConfig();
+    console.log('[EmailService-VERIFY] ✅ GMAIL API VERIFIED FOR EMPLOYEE SETUP EMAIL');
+    emailLogger.info('[EmailService-VERIFY] Gmail API verified for employee setup');
+
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send employee setup email to ${email}: ${error}`);
@@ -578,11 +607,7 @@ export const sendEmployeeSetupEmail = async (email: string, name: string, setupT
     };
 
     console.log('[EmailService-SEND] Sending EMPLOYEE SETUP email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ EMPLOYEE SETUP email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Employee setup email sent successfully to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Setup email sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Welcome to Fleet Management System - Set Your Password', mailOptions.html as string, 'EMPLOYEE SETUP');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE SETUP email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -608,19 +633,23 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting first login security email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE FIRST LOGIN SECURITY EMAIL');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR FIRST LOGIN SECURITY EMAIL');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for first login security');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR FIRST LOGIN SECURITY EMAIL');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for first login security:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    console.log('[EmailService-VERIFY] VERIFYING GMAIL API BEFORE FIRST LOGIN SECURITY EMAIL');
+
+    // Verify Gmail API is accessible
+    const verification = await verifyGmailConnection('Gmail API verification for first login security');
+    if (!verification.success) {
+      emailLogger.error(`Gmail API verification failed: ${verification.error}`);
+      return {
+        success: false,
+        error: verification.error,
+        statusCode: verification.statusCode,
+      };
     }
 
-    const validation = validateEmailConfig();
+    console.log('[EmailService-VERIFY] ✅ GMAIL API VERIFIED FOR FIRST LOGIN SECURITY EMAIL');
+    emailLogger.info('[EmailService-VERIFY] Gmail API verified for first login security');
+
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send first login security email to ${email}: ${error}`);
@@ -678,11 +707,7 @@ export const sendEmployeeFirstLoginSecurityEmail = async (
     };
 
     console.log('[EmailService-SEND] Sending FIRST LOGIN SECURITY email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ FIRST LOGIN SECURITY email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Employee first login security email sent to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'First login security email sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Security Notice: First Login Detected', mailOptions.html as string, 'FIRST LOGIN SECURITY');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send FIRST LOGIN SECURITY email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -708,19 +733,23 @@ export const sendEmployeeDetailsUpdatedEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee details updated email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE DETAILS UPDATED EMAIL');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE DETAILS UPDATED EMAIL');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee details updated');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE DETAILS UPDATED EMAIL');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee details updated:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    console.log('[EmailService-VERIFY] VERIFYING GMAIL API BEFORE EMPLOYEE DETAILS UPDATED EMAIL');
+
+    // Verify Gmail API is accessible
+    const verification = await verifyGmailConnection('Gmail API verification for employee details updated');
+    if (!verification.success) {
+      emailLogger.error(`Gmail API verification failed: ${verification.error}`);
+      return {
+        success: false,
+        error: verification.error,
+        statusCode: verification.statusCode,
+      };
     }
 
-    const validation = validateEmailConfig();
+    console.log('[EmailService-VERIFY] ✅ GMAIL API VERIFIED FOR EMPLOYEE DETAILS UPDATED EMAIL');
+    emailLogger.info('[EmailService-VERIFY] Gmail API verified for employee details updated');
+
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send employee details updated email to ${email}: ${error}`);
@@ -787,11 +816,7 @@ export const sendEmployeeDetailsUpdatedEmail = async (
     };
 
     console.log('[EmailService-SEND] Sending EMPLOYEE DETAILS UPDATED email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ EMPLOYEE DETAILS UPDATED email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Employee details updated email sent to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Update notification sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Your Account Details Have Been Updated', mailOptions.html as string, 'EMPLOYEE DETAILS UPDATED');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE DETAILS UPDATED email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -813,19 +838,23 @@ export const sendEmployeeDetailsUpdatedEmail = async (
 export const sendEmployeeDeletedEmail = async (email: string, name: string, companyName: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee deleted email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE DELETED EMAIL');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE DELETED EMAIL');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee deleted');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE DELETED EMAIL');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee deleted:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    console.log('[EmailService-VERIFY] VERIFYING GMAIL API BEFORE EMPLOYEE DELETED EMAIL');
+
+    // Verify Gmail API is accessible
+    const verification = await verifyGmailConnection('Gmail API verification for employee deleted');
+    if (!verification.success) {
+      emailLogger.error(`Gmail API verification failed: ${verification.error}`);
+      return {
+        success: false,
+        error: verification.error,
+        statusCode: verification.statusCode,
+      };
     }
 
-    const validation = validateEmailConfig();
+    console.log('[EmailService-VERIFY] ✅ GMAIL API VERIFIED FOR EMPLOYEE DELETED EMAIL');
+    emailLogger.info('[EmailService-VERIFY] Gmail API verified for employee deleted');
+
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send employee deleted email to ${email}: ${error}`);
@@ -882,11 +911,7 @@ export const sendEmployeeDeletedEmail = async (email: string, name: string, comp
     };
 
     console.log('[EmailService-SEND] Sending EMPLOYEE DELETED email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ EMPLOYEE DELETED email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Employee deleted email sent to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Deletion notification sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Employee Account Deactivated - Fleet Management System', mailOptions.html as string, 'EMPLOYEE DELETED');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE DELETED email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -912,19 +937,23 @@ export const sendEmployeeRecoveredEmail = async (
 ): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting employee recovered email flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMPLOYEE RECOVERED EMAIL');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMPLOYEE RECOVERED EMAIL');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for employee recovered');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMPLOYEE RECOVERED EMAIL');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for employee recovered:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    console.log('[EmailService-VERIFY] VERIFYING GMAIL API BEFORE EMPLOYEE RECOVERED EMAIL');
+
+    // Verify Gmail API is accessible
+    const verification = await verifyGmailConnection('Gmail API verification for employee recovered');
+    if (!verification.success) {
+      emailLogger.error(`Gmail API verification failed: ${verification.error}`);
+      return {
+        success: false,
+        error: verification.error,
+        statusCode: verification.statusCode,
+      };
     }
 
-    const validation = validateEmailConfig();
+    console.log('[EmailService-VERIFY] ✅ GMAIL API VERIFIED FOR EMPLOYEE RECOVERED EMAIL');
+    emailLogger.info('[EmailService-VERIFY] Gmail API verified for employee recovered');
+
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send employee recovered email to ${email}: ${error}`);
@@ -974,11 +1003,7 @@ export const sendEmployeeRecoveredEmail = async (
     };
 
     console.log('[EmailService-SEND] Sending EMPLOYEE RECOVERED email to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ EMPLOYEE RECOVERED email sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Employee recovered email sent to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Recovery notification sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Employee Account Restored - Fleet Management System', mailOptions.html as string, 'EMPLOYEE RECOVERED');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send EMPLOYEE RECOVERED email');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -1000,19 +1025,12 @@ export const sendEmployeeRecoveredEmail = async (
 export const sendEmailVerificationOTP = async (newEmail: string, otp: string, verificationToken: string, userName: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting email verification OTP flow for: ${newEmail}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE EMAIL VERIFICATION OTP');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR EMAIL VERIFICATION OTP');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for email verification OTP');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR EMAIL VERIFICATION OTP');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for email verification OTP:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    const verification = await verifyGmailConnection('Gmail API verification for email verification OTP');
+    if (!verification.success) {
+      return verification;
     }
 
-    const validation = validateEmailConfig();
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send email verification OTP to ${newEmail}: ${error}`);
@@ -1076,11 +1094,7 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
     };
 
     console.log('[EmailService-SEND] Sending EMAIL VERIFICATION OTP to:', newEmail);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ EMAIL VERIFICATION OTP sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Email verification code sent to: ${newEmail} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Verification code sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(newEmail, 'Email Verification Code - Fleet Management System', String(mailOptions.html ?? ''), 'EMAIL VERIFICATION OTP');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send EMAIL VERIFICATION OTP');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
@@ -1102,19 +1116,12 @@ export const sendEmailVerificationOTP = async (newEmail: string, otp: string, ve
 export const sendPasswordResetOTP = async (email: string, otp: string): Promise<EmailResult> => {
   try {
     emailLogger.info(`Starting password reset OTP flow for: ${email}`);
-    console.log('[EmailService-VERIFY] VERIFYING SMTP BEFORE PASSWORD RESET OTP');
-    try {
-      await transporter!.verify();
-      console.log('[EmailService-VERIFY] ✅ SMTP VERIFIED FOR PASSWORD RESET OTP');
-      emailLogger.info('[EmailService-VERIFY] SMTP connection verified successfully for password reset OTP');
-    } catch (verifyError: any) {
-      console.log('[EmailService-VERIFY] ❌ SMTP VERIFICATION FAILED FOR PASSWORD RESET OTP');
-      console.log('[EmailService-ERROR]', verifyError?.message || JSON.stringify(verifyError));
-      emailLogger.error('[EmailService-VERIFY] SMTP verification failed for password reset OTP:', verifyError?.message);
-      return { success: false, error: `SMTP verification failed: ${verifyError?.message}` };
+    const verification = await verifyGmailConnection('Gmail API verification for password reset OTP');
+    if (!verification.success) {
+      return verification;
     }
 
-    const validation = validateEmailConfig();
+    const validation = validateGmailConfig();
     if (!validation.valid) {
       const error = validation.error || 'Email service not configured';
       emailLogger.error(`Failed to send password reset OTP to ${email}: ${error}`);
@@ -1182,11 +1189,7 @@ export const sendPasswordResetOTP = async (email: string, otp: string): Promise<
     };
 
     console.log('[EmailService-SEND] Sending PASSWORD RESET OTP to:', email);
-    const result = await transporter!.sendMail(mailOptions);
-    console.log('[EmailService-SEND] ✅ PASSWORD RESET OTP sent successfully');
-    console.log('[EmailService-SEND] Message ID:', result.messageId);
-    emailLogger.info(`Password reset code sent to: ${email} (messageId: ${result.messageId})`);
-    return { success: true, message: 'Reset code sent successfully', messageId: result.messageId };
+    return await sendMailViaGmailAPI(email, 'Password Reset Code - Fleet Management System', String(mailOptions.html ?? ''), 'PASSWORD RESET OTP');
   } catch (error: any) {
     console.log('[EmailService-SEND] ❌ FAILED to send PASSWORD RESET OTP');
     console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));

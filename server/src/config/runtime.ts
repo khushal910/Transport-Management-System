@@ -127,6 +127,13 @@ export const runtimeConfig = {
   smtpSecure: parseBoolean(process.env.EMAIL_SMTP_SECURE, true),
   emailUser: normalizeEnvValue(process.env.EMAIL_USER),
   emailPassword: parseEmailPassword(process.env.EMAIL_PASSWORD),
+
+  // Gmail OAuth2 configuration (newer, recommended approach for cloud hosting)
+  emailAuthMethod: normalizeEnvValue(process.env.EMAIL_AUTH_METHOD) ?? 'oauth2', // 'oauth2' or 'smtp' for fallback
+  googleClientId: normalizeEnvValue(process.env.GOOGLE_CLIENT_ID),
+  googleClientSecret: normalizeEnvValue(process.env.GOOGLE_CLIENT_SECRET),
+  googleRedirectUrl: normalizeEnvValue(process.env.GOOGLE_REDIRECT_URL) ?? 'http://localhost:3000/auth/google/callback',
+  gmailOAuthToken: normalizeEnvValue(process.env.GMAIL_OAUTH_TOKEN),
 };
 
 export default runtimeConfig;
