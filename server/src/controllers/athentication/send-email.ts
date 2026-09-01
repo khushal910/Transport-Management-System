@@ -7,7 +7,6 @@ import { sendDirectEmail } from '../../utils/email.service';
 
 const sendEmail = async (req, res) => {
   try {
-    const { recipientUserId, subject, message } = req.body;
     const senderId = req.user?.id;
     const senderRole = req.user?.role;
     const companyId = req.user?.companyId;
@@ -35,24 +34,31 @@ const sendEmail = async (req, res) => {
       return response(res, 404, false, 'Sender not found');
     }
 
+    const targetRecipientId = value.recipientUserId || req.body.employeeId || req.body.userId;
+    const targetRecipientEmail = value.recipientEmail || req.body.email || req.body.to;
+
     let recipient = null;
     if (senderRole === 'manager') {
-      if (!recipientUserId) {
-        return response(res, 400, false, 'Recipient employee is required');
-      }
+      if (targetRecipientId && mongoose.Types.ObjectId.isValid(targetRecipientId)) {
+        recipient = await User.findOne({
+          _id: targetRecipientId,
+          company: companyId,
+          role: { $ne: 'manager' },
+        });
 
-      if (!mongoose.Types.ObjectId.isValid(recipientUserId)) {
-        return response(res, 400, false, 'Invalid recipient user ID');
+        // Fallback: If not found with company filter, search by ID alone
+        if (!recipient) {
+          recipient = await User.findById(targetRecipientId);
+        }
+      } else if (targetRecipientEmail) {
+        recipient = await User.findOne({
+          email: targetRecipientEmail.toLowerCase().trim(),
+          company: companyId,
+        });
       }
-
-      recipient = await User.findOne({
-        _id: recipientUserId,
-        company: companyId,
-        role: { $ne: 'manager' },
-      });
 
       if (!recipient) {
-        return response(res, 404, false, 'Employee not found in your company');
+        return response(res, 404, false, 'Recipient employee not found in your company');
       }
     } else {
       recipient = await User.findOne({

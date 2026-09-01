@@ -51,14 +51,22 @@ class GmailOAuth2Manager {
   private loadToken(): void {
     try {
       // First, try to load from environment variable
-      const envToken = process.env.GMAIL_OAUTH_TOKEN;
+      let envToken = process.env.GMAIL_OAUTH_TOKEN || runtimeConfig.gmailOAuthToken;
       if (envToken) {
+        envToken = envToken.trim();
+        if (
+          (envToken.startsWith("'") && envToken.endsWith("'")) ||
+          (envToken.startsWith('"') && envToken.endsWith('"'))
+        ) {
+          envToken = envToken.slice(1, -1).trim();
+        }
         try {
           this.currentToken = JSON.parse(envToken) as TokenData;
+          this.oAuth2Client.setCredentials(this.currentToken);
           console.log('[GmailOAuth2] Token loaded from environment variable');
           return;
         } catch (e) {
-          console.warn('[GmailOAuth2] Failed to parse token from environment variable');
+          console.warn('[GmailOAuth2] Failed to parse token from environment variable:', e);
         }
       }
 
@@ -66,6 +74,7 @@ class GmailOAuth2Manager {
       if (fs.existsSync(this.tokenCachePath)) {
         const tokenJson = fs.readFileSync(this.tokenCachePath, 'utf-8');
         this.currentToken = JSON.parse(tokenJson) as TokenData;
+        this.oAuth2Client.setCredentials(this.currentToken);
         console.log('[GmailOAuth2] Token loaded from cache file');
       }
     } catch (error) {
@@ -81,6 +90,7 @@ class GmailOAuth2Manager {
   private saveToken(token: TokenData): void {
     try {
       this.currentToken = token;
+      this.oAuth2Client.setCredentials(token);
 
       // Always try to save to cache file (helpful for development)
       try {

@@ -40,40 +40,21 @@ const emailLogger = {
 };
 
 /**
- * Gmail API client - initialized on-demand with OAuth2 credentials
+ * Get Gmail API client with refreshed OAuth2 credentials
  */
-let gmailClient: gmail_v1.Gmail | null = null;
-
-/**
- * Initialize Gmail API client with OAuth2 credentials
- */
-const initializeGmailClient = async (): Promise<boolean> => {
+const getGmailClient = async (): Promise<gmail_v1.Gmail | null> => {
   try {
-    if (gmailClient) {
-      return true; // Already initialized
-    }
-
     const tokenResult = await gmailOAuth2Manager.getAccessToken();
     if (!tokenResult.success) {
-      emailLogger.error(`Failed to get Gmail OAuth2 token: ${tokenResult.error}`);
-      return false;
+      emailLogger.warn(`Gmail OAuth2 token not available: ${tokenResult.error}`);
+      return null;
     }
 
-    const auth = new google.auth.OAuth2(
-      runtimeConfig.googleClientId,
-      runtimeConfig.googleClientSecret,
-      runtimeConfig.googleRedirectUrl,
-    );
-
-    auth.setCredentials({
-      access_token: tokenResult.accessToken,
-    });
-
-    gmailClient = google.gmail({ version: 'v1', auth });
-    return true;
+    const auth = gmailOAuth2Manager.getOAuth2Client();
+    return google.gmail({ version: 'v1', auth });
   } catch (error: any) {
-    emailLogger.error(`Failed to initialize Gmail client: ${error.message}`);
-    return false;
+    emailLogger.warn(`Failed to initialize Gmail API client: ${error.message}`);
+    return null;
   }
 };
 
@@ -105,8 +86,35 @@ const buildRFC5322Message = (from: string, to: string, subject: string, htmlBody
 };
 
 /**
- * Send email via Gmail API
- * Replaces transporter.sendMail() for OAuth2-based Gmail sending
+ * Initialize email transporter with runtime config for SMTP fallback
+ */
+const getSmtpTransporter = (): Transporter | null => {
+  if (!runtimeConfig.emailUser || !runtimeConfig.emailPassword) {
+    return null;
+  }
+
+  const port = runtimeConfig.smtpPort || 465;
+  const isSecure = port === 465;
+
+  return nodemailer.createTransport({
+    host: runtimeConfig.smtpHost || 'smtp.gmail.com',
+    port: port,
+    secure: isSecure,
+    auth: {
+      user: runtimeConfig.emailUser,
+      pass: runtimeConfig.emailPassword,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+};
+
+/**
+ * Send email using Gmail API with automatic fallback to SMTP
  */
 const sendMailViaGmailAPI = async (
   to: string,
@@ -114,111 +122,121 @@ const sendMailViaGmailAPI = async (
   htmlBody: string,
   operationName: string,
 ): Promise<EmailResult> => {
-  try {
-    // Initialize Gmail client if needed
-    const initialized = await initializeGmailClient();
-    if (!initialized) {
-      return {
-        success: false,
-        error: 'Failed to initialize Gmail API client',
-        statusCode: 503,
-      };
+  const from = runtimeConfig.emailUser || 'noreply@fleetflow.com';
+
+  // Strategy 1: Try Gmail REST API (Recommended for Render and cloud hosts)
+  if (runtimeConfig.emailAuthMethod !== 'smtp') {
+    const gmailClientInstance = await getGmailClient();
+    if (gmailClientInstance) {
+      try {
+        console.log(`[EmailService-GMAIL] Sending ${operationName} email via Gmail API to: ${to}`);
+        const message = buildRFC5322Message(from, to, subject, htmlBody);
+        const encodedMessage = encodeMessage(message);
+
+        const result = await gmailClientInstance.users.messages.send({
+          userId: 'me',
+          requestBody: {
+            raw: encodedMessage,
+          },
+        });
+
+        console.log(`[EmailService-GMAIL] ✅ ${operationName} email sent successfully via Gmail API (ID: ${result.data.id})`);
+        emailLogger.info(`${operationName} email sent successfully to: ${to} (messageId: ${result.data.id})`);
+
+        return {
+          success: true,
+          message: `${operationName} email sent successfully`,
+          messageId: result.data.id ?? undefined,
+        };
+      } catch (gmailError: any) {
+        console.warn(`[EmailService-GMAIL] ⚠️ Gmail API send failed (${gmailError?.message || gmailError}). Falling back to SMTP...`);
+        emailLogger.warn(`Gmail API failed for ${operationName}, falling back to SMTP:`, gmailError.message);
+      }
     }
-
-    const from = runtimeConfig.emailUser!;
-    const message = buildRFC5322Message(from, to, subject, htmlBody);
-    const encodedMessage = encodeMessage(message);
-
-    console.log(`[EmailService-GMAIL] Sending ${operationName} email via Gmail API to: ${to}`);
-
-    const result = await gmailClient!.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: encodedMessage,
-      },
-    });
-
-    console.log(`[EmailService-GMAIL] ✅ ${operationName} email sent successfully via Gmail API`);
-    console.log(`[EmailService-GMAIL] Message ID: ${result.data.id}`);
-    emailLogger.info(`${operationName} email sent successfully to: ${to} (messageId: ${result.data.id})`);
-
-    return {
-      success: true,
-      message: `${operationName} email sent successfully`,
-      messageId: result.data.id ?? undefined,
-    };
-  } catch (error: any) {
-    console.log(`[EmailService-GMAIL] ❌ FAILED to send ${operationName} email via Gmail API`);
-    console.log('[EmailService-ERROR]', error?.message || JSON.stringify(error));
-    emailLogger.error(`Failed to send ${operationName} email via Gmail API to ${to}:`, error.message);
-
-    return {
-      success: false,
-      error: error.message || `Failed to send ${operationName} email`,
-      statusCode: 503,
-    };
   }
+
+  // Strategy 2: Try SMTP Transporter (Fallback or primary if EMAIL_AUTH_METHOD=smtp)
+  const transporterInstance = getSmtpTransporter();
+  if (transporterInstance) {
+    try {
+      console.log(`[EmailService-SMTP] Sending ${operationName} email via SMTP to: ${to}`);
+      const info = await transporterInstance.sendMail({
+        from,
+        to,
+        subject,
+        html: htmlBody,
+      });
+
+      console.log(`[EmailService-SMTP] ✅ ${operationName} email sent successfully via SMTP (ID: ${info.messageId})`);
+      emailLogger.info(`${operationName} email sent successfully to: ${to} (messageId: ${info.messageId})`);
+
+      return {
+        success: true,
+        message: `${operationName} email sent successfully`,
+        messageId: info.messageId,
+      };
+    } catch (smtpError: any) {
+      console.error(`[EmailService-SMTP] ❌ SMTP send failed:`, smtpError?.message || smtpError);
+      emailLogger.error(`SMTP send failed for ${operationName} to ${to}:`, smtpError.message);
+      return buildSmtpFailure(operationName, smtpError);
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Email delivery failed. No active email provider (Gmail API OAuth2 or SMTP App Password) could be authenticated.',
+    statusCode: 503,
+  };
 };
 
 /**
- * Validate Gmail API email configuration
+ * Validate email service configuration
  */
 const validateGmailConfig = (): { valid: boolean; error?: string } => {
   if (!runtimeConfig.emailUser) {
     return { valid: false, error: 'EMAIL_USER not configured' };
   }
 
-  if (!runtimeConfig.googleClientId || !runtimeConfig.googleClientSecret) {
-    return { valid: false, error: 'Gmail OAuth2 credentials not configured' };
-  }
+  const hasOAuth2 = Boolean(runtimeConfig.googleClientId && runtimeConfig.googleClientSecret);
+  const hasSmtp = Boolean(runtimeConfig.emailPassword);
 
-  if (!gmailClient) {
-    return { valid: false, error: 'Gmail API client not initialized' };
+  if (!hasOAuth2 && !hasSmtp) {
+    return { valid: false, error: 'Neither Gmail OAuth2 nor SMTP password configured' };
   }
 
   return { valid: true };
 };
 
 /**
- * Verify Gmail API connection and OAuth2 token validity
- * Replaces transporter.verify() for Gmail API
+ * Verify email connection across OAuth2 and SMTP
  */
 const verifyGmailConnection = async (operationName: string): Promise<EmailResult> => {
-  try {
+  // Check OAuth2 first
+  if (runtimeConfig.emailAuthMethod !== 'smtp') {
     const authVerification = await gmailOAuth2Manager.verifyAuthentication();
-    if (!authVerification.success) {
+    if (authVerification.success) {
+      console.log(`[EmailService-VERIFY] ✅ Gmail OAuth2 verified for ${operationName}`);
       return {
-        success: false,
-        error: authVerification.error || 'Failed to verify Gmail OAuth2 authentication',
-        statusCode: 503,
+        success: true,
+        message: `Gmail API connection verified for ${operationName}`,
       };
     }
+  }
 
-    // Initialize the Gmail API client without calling a read-scoped endpoint.
-    const initialized = await initializeGmailClient();
-    if (!initialized) {
-      return {
-        success: false,
-        error: 'Failed to initialize Gmail API client',
-        statusCode: 503,
-      };
-    }
-
-    console.log(`[EmailService-VERIFY] ✅ Gmail OAuth2 verified for ${operationName}`);
+  // Check SMTP if OAuth2 is not working
+  if (runtimeConfig.emailPassword && runtimeConfig.emailUser) {
+    console.log(`[EmailService-VERIFY] ✅ SMTP credentials available for ${operationName}`);
     return {
       success: true,
-      message: `Gmail API connection verified for ${operationName}`,
-    };
-  } catch (error: any) {
-    console.log(`[EmailService-VERIFY] ❌ Gmail API verification failed: ${error.message}`);
-    emailLogger.error(`Gmail API verification failed for ${operationName}:`, error.message);
-
-    return {
-      success: false,
-      error: `Gmail API verification failed: ${error.message}`,
-      statusCode: 503,
+      message: `SMTP credentials available for ${operationName}`,
     };
   }
+
+  return {
+    success: false,
+    error: 'No email service authenticated. Provide valid Gmail OAuth2 tokens or EMAIL_PASSWORD.',
+    statusCode: 503,
+  };
 };
 
 const SMTP_HOST = runtimeConfig.smtpHost;
@@ -271,30 +289,13 @@ const buildSmtpFailure = (operation: string, error: any): EmailResult => {
   };
 };
 
-/**
- * Initialize email transporter with runtime config
- * Email credentials must be set in deployment environment variables
- */
-const initializeTransporter = (): Transporter | null => {
-  emailLogger.debug('SMTP transporter bootstrap disabled; Gmail API is used for all outbound email');
-  return null;
-};
-
-const transporter = initializeTransporter();
-
-/**
- * Validate email service is configured before sending
- */
-const validateEmailConfig = (): { valid: boolean; error?: string } => {
-  return validateGmailConfig();
-};
-
 export const verifySmtpConnection = async (operation = 'SMTP verification'): Promise<EmailResult> => {
   return verifyGmailConnection(operation);
 };
 
 const sendMailWithDebug = async (mailOptions: SendMailOptions, operation: string): Promise<EmailResult> => {
-  if (!transporter) {
+  const transporterInstance = getSmtpTransporter();
+  if (!transporterInstance) {
     return {
       success: false,
       error: 'SMTP transporter is not initialized. Check EMAIL_USER and EMAIL_PASSWORD.',
@@ -304,7 +305,7 @@ const sendMailWithDebug = async (mailOptions: SendMailOptions, operation: string
 
   try {
     console.log(`[EmailService-SEND] Sending ${operation}`);
-    const result = await transporter.sendMail(mailOptions);
+    const result = await transporterInstance.sendMail(mailOptions);
     console.log(`[EmailService-SEND] ✅ ${operation} sent successfully`);
     console.log('[EmailService-SEND] Message ID:', result.messageId);
     return {
