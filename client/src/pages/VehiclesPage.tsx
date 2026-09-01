@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Search, Truck, AlertCircle, Check } from 'lucide-react';
+import { Plus, Search, Truck, AlertCircle, Check, Loader2, RefreshCw } from 'lucide-react';
 import { getVehicleList, createVehicle } from '@/api/vehicle';
 import { useAuth } from '@/context/AuthContext';
 import type { Vehicle, VehicleType } from '@/types/fleet';
@@ -17,18 +17,19 @@ export default function VehiclesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const canManage = user?.role === 'manager';
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['vehicles'],
     queryFn: async () => {
-      const result = await getVehicleList();
+      const result = await getVehicleList(1, 100);
       return result.data;
     },
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 10 * 60 * 1000,
     retry: 1,
   });
 
@@ -52,34 +53,58 @@ export default function VehiclesPage() {
     });
   }, [vehicles, search, statusFilter]);
 
+  const handleVehicleCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles-trip-form'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles-maintenance-form'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    refetch();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="page-header">
+        <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="page-title">Vehicles</h1>
             <p className="page-description">Manage your fleet vehicles</p>
           </div>
-          {canManage && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="mr-2 h-4 w-4" />Add Vehicle</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Register Vehicle</DialogTitle>
-                  <DialogDescription className="sr-only">
-                    Enter vehicle details including plate, model, type, and capacity to register a new fleet vehicle.
-                  </DialogDescription>
-                </DialogHeader>
-                <VehicleForm onClose={() => setDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-2"
+            >
+              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            {canManage && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="mr-2 h-4 w-4" />Add Vehicle</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Register Vehicle</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Enter vehicle details including plate, model, type, and capacity to register a new fleet vehicle.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <VehicleForm
+                    onClose={() => setDialogOpen(false)}
+                    onCreated={handleVehicleCreated}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
-        <div className="filter-bar">
-          <div className="relative flex-1 max-w-sm">
+        <div className="filter-bar flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search vehicles..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -96,12 +121,17 @@ export default function VehiclesPage() {
           </Select>
         </div>
 
-        <div className="rounded-xl border bg-card overflow-x-auto">
+        <div className="rounded-xl border bg-card overflow-x-auto relative">
           {isLoading && !vehicles.length ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <div className="inline-flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading vehicles…
+            <div className="p-6 space-y-3">
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span>Loading fleet vehicles...</span>
+              </div>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 w-full animate-pulse bg-muted/60 rounded-md" />
+                ))}
               </div>
             </div>
           ) : isError ? (
@@ -113,11 +143,15 @@ export default function VehiclesPage() {
               </div>
             </div>
           ) : vehicles.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No vehicles found</div>
+            <div className="p-12 text-center text-muted-foreground">
+              <Truck className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="font-medium">No vehicles found</p>
+              <p className="text-xs mt-1">Register a vehicle to start tracking your fleet.</p>
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
+                <tr className="border-b text-left text-muted-foreground bg-muted/20">
                   <th className="px-6 py-3 font-medium">Name</th>
                   <th className="px-6 py-3 font-medium">License Plate</th>
                   <th className="px-6 py-3 font-medium">Model</th>
@@ -151,11 +185,12 @@ export default function VehiclesPage() {
   );
 }
 
-function VehicleForm({ onClose }: { onClose: () => void }) {
+function VehicleForm({ onClose, onCreated }: { onClose: () => void; onCreated?: () => void }) {
   const [form, setForm] = useState({ name: '', licensePlate: '', model: '', vehicleType: 'truck' as VehicleType, maxCapacity: '', odometer: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,7 +202,7 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
     if (!form.model.trim()) newErrors.model = 'Model is required';
     if (!form.maxCapacity) newErrors.maxCapacity = 'Max capacity is required';
     else if (isNaN(Number(form.maxCapacity)) || Number(form.maxCapacity) <= 0) newErrors.maxCapacity = 'Must be a positive number';
-    if (!form.odometer) newErrors.odometer = 'Odometer is required';
+    if (!form.odometer && form.odometer !== '0') newErrors.odometer = 'Odometer is required';
     else if (isNaN(Number(form.odometer)) || Number(form.odometer) < 0) newErrors.odometer = 'Must be a valid number';
 
     if (Object.keys(newErrors).length > 0) {
@@ -188,7 +223,19 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
       });
 
       setSubmitMessage({ type: 'success', text: 'Vehicle registered successfully' });
-      setTimeout(() => onClose(), 1500);
+
+      // Invalidate queries immediately so the list updates without manual refresh
+      await queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      await queryClient.invalidateQueries({ queryKey: ['vehicles-trip-form'] });
+      await queryClient.invalidateQueries({ queryKey: ['vehicles-maintenance-form'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['analytics'] });
+
+      if (onCreated) {
+        onCreated();
+      }
+
+      setTimeout(() => onClose(), 800);
     } catch (error) {
       setSubmitMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to register vehicle' });
     } finally {
@@ -216,6 +263,7 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
               if (errors.name) setErrors({ ...errors, name: '' });
             }}
             className={errors.name ? 'border-destructive' : ''}
+            disabled={isSubmitting}
           />
           {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
         </div>
@@ -229,6 +277,7 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
               if (errors.licensePlate) setErrors({ ...errors, licensePlate: '' });
             }}
             className={errors.licensePlate ? 'border-destructive' : ''}
+            disabled={isSubmitting}
           />
           {errors.licensePlate && <p className="text-xs text-destructive">{errors.licensePlate}</p>}
         </div>
@@ -245,12 +294,17 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
               if (errors.model) setErrors({ ...errors, model: '' });
             }}
             className={errors.model ? 'border-destructive' : ''}
+            disabled={isSubmitting}
           />
           {errors.model && <p className="text-xs text-destructive">{errors.model}</p>}
         </div>
         <div className="space-y-2">
           <Label>Vehicle Type</Label>
-          <Select value={form.vehicleType} onValueChange={(value) => setForm({ ...form, vehicleType: value as VehicleType })}>
+          <Select
+            value={form.vehicleType}
+            onValueChange={(value) => setForm({ ...form, vehicleType: value as VehicleType })}
+            disabled={isSubmitting}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -275,6 +329,7 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
               if (errors.maxCapacity) setErrors({ ...errors, maxCapacity: '' });
             }}
             className={errors.maxCapacity ? 'border-destructive' : ''}
+            disabled={isSubmitting}
           />
           {errors.maxCapacity && <p className="text-xs text-destructive">{errors.maxCapacity}</p>}
         </div>
@@ -289,6 +344,7 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
               if (errors.odometer) setErrors({ ...errors, odometer: '' });
             }}
             className={errors.odometer ? 'border-destructive' : ''}
+            disabled={isSubmitting}
           />
           {errors.odometer && <p className="text-xs text-destructive">{errors.odometer}</p>}
         </div>
@@ -299,9 +355,17 @@ function VehicleForm({ onClose }: { onClose: () => void }) {
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Registering...' : 'Register Vehicle'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Registering...
+            </>
+          ) : (
+            'Register Vehicle'
+          )}
         </Button>
       </div>
     </form>
   );
 }
+

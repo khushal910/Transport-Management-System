@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { assignVehicleToDriver, removeVehicleFromDriver } from '@/api/driver';
 import { getVehicleList } from '@/api/vehicle';
-import { AlertCircle, Trash2, X } from 'lucide-react';
+import { AlertCircle, Trash2, X, Loader2 } from 'lucide-react';
 import type { EmployeeRecord } from '@/api/auth';
 
 interface VehicleAssignmentDialogProps {
@@ -49,7 +49,7 @@ export function VehicleAssignmentDialog({
     refetchOnWindowFocus: false,
   });
 
-  const availableVehicles = vehiclesData?.filter((v) => v.status === 'active') ?? [];
+  const availableVehicles = vehiclesData?.filter((v) => v.status === 'available') ?? [];
   const assignedVehicle = (employee as any)?.assignedVehicle;
 
   // Assign vehicle mutation
@@ -63,7 +63,10 @@ export function VehicleAssignmentDialog({
     },
     onSuccess: () => {
       setFeedback({ type: 'success', message: 'Vehicle assigned successfully!' });
-      queryClient.invalidateQueries({ queryKey: ['employees', 'active'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setSelectedVehicleId('');
       setTimeout(() => {
         onOpenChange(false);
@@ -85,7 +88,10 @@ export function VehicleAssignmentDialog({
     },
     onSuccess: () => {
       setFeedback({ type: 'success', message: 'Vehicle removed successfully!' });
-      queryClient.invalidateQueries({ queryKey: ['employees', 'active'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setTimeout(() => {
         onOpenChange(false);
       }, 1000);
@@ -108,7 +114,7 @@ export function VehicleAssignmentDialog({
 
   const handleRemove = () => {
     const confirmed = window.confirm(
-      `Remove ${assignedVehicle?.registrationNumber} from ${employee?.name}?`
+      `Remove ${assignedVehicle?.registrationNumber || assignedVehicle?.licensePlate} from ${employee?.name}?`
     );
     if (confirmed) {
       removeVehicleMutation.mutate();
@@ -131,7 +137,7 @@ export function VehicleAssignmentDialog({
                 <div className="mt-2 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
                     <span className="font-semibold">Currently assigned:</span>{' '}
-                    {assignedVehicle.registrationNumber}
+                    {assignedVehicle.registrationNumber || assignedVehicle.licensePlate || assignedVehicle.name}
                   </p>
                 </div>
               ) : (
@@ -178,7 +184,7 @@ export function VehicleAssignmentDialog({
                   ) : (
                     availableVehicles.map((vehicle) => (
                       <SelectItem key={vehicle._id} value={vehicle._id}>
-                        {vehicle.registrationNumber} - {vehicle.model} ({vehicle.make})
+                        {vehicle.name} ({vehicle.licensePlate}) - {vehicle.model}
                       </SelectItem>
                     ))
                   )}
@@ -196,8 +202,17 @@ export function VehicleAssignmentDialog({
                   disabled={removeVehicleMutation.isPending}
                   className="flex-1"
                 >
-                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                  Remove Current
+                  {removeVehicleMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      Removing...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      Remove Current
+                    </>
+                  )}
                 </Button>
               )}
               <Button
@@ -210,7 +225,14 @@ export function VehicleAssignmentDialog({
                 }
                 className="flex-1"
               >
-                {assignVehicleMutation.isPending ? 'Assigning...' : 'Assign Vehicle'}
+                {assignVehicleMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  'Assign Vehicle'
+                )}
               </Button>
               <Button
                 size="sm"

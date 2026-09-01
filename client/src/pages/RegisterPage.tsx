@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Truck, Eye, EyeOff } from 'lucide-react';
+import { Truck, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { register } from '@/api/auth';
 
 export default function RegisterPage() {
@@ -149,7 +149,14 @@ export default function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Registering...' : 'Register Company'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                'Register Company'
+              )}
             </Button>
           </form>
 

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Truck, Eye, EyeOff } from 'lucide-react';
+import { Truck, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { login } from '@/api/auth';
 import { useAuth } from '@/context/AuthContext';
 import type { UserRole } from '@/types/fleet';
@@ -145,7 +145,14 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
             </Button>
           </form>
 

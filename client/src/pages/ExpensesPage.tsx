@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Search, AlertCircle, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, Search, AlertCircle, Check, ChevronsUpDown, Loader2, RefreshCw, Receipt } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +24,7 @@ export default function ExpensesPage() {
   const { user } = useAuth();
   const canCreate = user?.role === 'manager' || user?.role === 'dispatcher' || user?.role === 'driver';
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['expenses', statusFilter],
     queryFn: async () => {
       const result = await getExpenseList();
@@ -32,7 +32,8 @@ export default function ExpensesPage() {
     },
     refetchOnWindowFocus: false,
     retry: 1,
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Use API data only - no mock fallback
@@ -81,47 +82,61 @@ export default function ExpensesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="page-header">
+        <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="page-title">Expenses</h1>
             <p className="page-description">Track fuel and miscellaneous trip expenses</p>
           </div>
-          {canCreate && (
-            <Dialog
-              open={dialogOpen}
-              onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (!open) {
-                  setSelectedExpenseId('');
-                }
-              }}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-2"
             >
-              <DialogTrigger asChild>
-                <Button type="button" onClick={() => openExpenseDialog()} disabled={!pendingExpenses.length}>
-                  <Plus className="mr-2 h-4 w-4" />Fill Pending Expense
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Submit Trip Expense</DialogTitle>
-                  <DialogDescription className="sr-only">
-                    Select a pending expense created from a completed trip and submit fuel, misc, and distance values.
-                  </DialogDescription>
-                </DialogHeader>
-                <ExpenseForm
-                  pendingExpenses={pendingExpenses}
-                  selectedExpenseId={selectedExpenseId}
-                  onSelectExpense={setSelectedExpenseId}
-                  onClose={() => setDialogOpen(false)}
-                  onSubmitted={() => {
-                    queryClient.invalidateQueries({ queryKey: ['expenses'] });
-                    setDialogOpen(false);
+              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            {canCreate && (
+              <Dialog
+                open={dialogOpen}
+                onOpenChange={(open) => {
+                  setDialogOpen(open);
+                  if (!open) {
                     setSelectedExpenseId('');
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
+                  }
+                }}
+              >
+                <DialogTrigger asChild>
+                  <Button type="button" onClick={() => openExpenseDialog()} disabled={!pendingExpenses.length}>
+                    <Plus className="mr-2 h-4 w-4" />Fill Pending Expense
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Submit Trip Expense</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Select a pending expense created from a completed trip and submit fuel, misc, and distance values.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ExpenseForm
+                    pendingExpenses={pendingExpenses}
+                    selectedExpenseId={selectedExpenseId}
+                    onSelectExpense={setSelectedExpenseId}
+                    onClose={() => setDialogOpen(false)}
+                    onSubmitted={() => {
+                      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+                      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+                      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+                      setDialogOpen(false);
+                      setSelectedExpenseId('');
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {pendingExpenses.length > 0 && (
@@ -131,8 +146,8 @@ export default function ExpensesPage() {
           </div>
         )}
 
-        <div className="filter-bar">
-          <div className="relative flex-1 max-w-sm">
+        <div className="filter-bar flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search expenses..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -149,10 +164,15 @@ export default function ExpensesPage() {
 
         <div className="rounded-xl border bg-card overflow-x-auto">
           {isLoading && expenses.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <div className="inline-flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading expenses...
+            <div className="p-6 space-y-3">
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span>Loading expenses...</span>
+              </div>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 w-full animate-pulse bg-muted/60 rounded-md" />
+                ))}
               </div>
             </div>
           ) : isError ? (
@@ -164,11 +184,15 @@ export default function ExpensesPage() {
               </div>
             </div>
           ) : expenses.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No expenses found</div>
+            <div className="p-12 text-center text-muted-foreground">
+              <Receipt className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="font-medium">No expenses found</p>
+              <p className="text-xs mt-1">Completed trips will appear here for expense logging.</p>
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left text-muted-foreground">
+                <tr className="border-b text-left text-muted-foreground bg-muted/20">
                   <th className="px-6 py-3 font-medium">Trip Route</th>
                   <th className="px-6 py-3 font-medium">Driver</th>
                   <th className="px-6 py-3 font-medium">Vehicle</th>
@@ -188,7 +212,9 @@ export default function ExpensesPage() {
 
                   return (
                   <tr key={e._id} className="data-table-row">
-                    <td className="px-6 py-3 font-medium">{startLocation} → {endLocation}</td>
+                    <td className="px-6 py-3 font-medium">
+                      {startLocation} → {endLocation}
+                    </td>
                     <td className="px-6 py-3">{driverName}</td>
                     <td className="px-6 py-3">{vehicleName}</td>
                     <td className="px-6 py-3 font-mono">₹{(e.fuelCost ?? 0).toLocaleString('en-IN')}</td>
@@ -196,7 +222,7 @@ export default function ExpensesPage() {
                     <td className="px-6 py-3">{e.distance ?? 0} km</td>
                     <td className="px-6 py-3"><StatusBadge status={e.status ?? 'pending'} /></td>
                     <td className="px-6 py-3">
-                      {canCreate && (e.status ?? 'pending') === 'pending' ? (
+                      {(e.status ?? 'pending') === 'pending' ? (
                         <Button type="button" size="sm" variant="outline" onClick={() => openExpenseDialog(e._id)}>
                           Fill Expense
                         </Button>
@@ -207,9 +233,6 @@ export default function ExpensesPage() {
                   </tr>
                   );
                 })}
-                {filtered.length === 0 && expenses.length > 0 && (
-                  <tr><td colSpan={8} className="px-6 py-12 text-center text-muted-foreground">No expenses match your filters</td></tr>
-                )}
               </tbody>
             </table>
           )}
@@ -446,7 +469,14 @@ function ExpenseForm({
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
         <Button type="submit" disabled={isSubmitting || pendingExpenses.length === 0 || !selectedExpenseId}>
-          {isSubmitting ? 'Submitting...' : 'Submit Expense'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            'Submit Expense'
+          )}
         </Button>
       </div>
     </form>

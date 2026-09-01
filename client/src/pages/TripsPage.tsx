@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Search, ArrowRight, AlertCircle, Check, ChevronsUpDown, ExternalLink, Loader2, MapPin } from 'lucide-react';
+import { Plus, Search, ArrowRight, AlertCircle, Check, ChevronsUpDown, ExternalLink, Loader2, MapPin, RefreshCw, Route } from 'lucide-react';
 import { getTripList, createTrip, getTripAddressSuggestions, type TripLocationSuggestion } from '@/api/trip';
 import { getVehicleList } from '@/api/vehicle';
 import { getDriverList } from '@/api/driver';
@@ -35,16 +35,19 @@ export default function TripsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['trips', statusFilter],
     queryFn: async () => {
       const result = await getTripList(statusFilter === 'all' ? undefined : statusFilter);
       return result.data;
     },
     refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 1,
   });
 
@@ -63,34 +66,60 @@ export default function TripsPage() {
     });
   }, [trips, search, statusFilter]);
 
+  const handleTripCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles-trip-form'] });
+    queryClient.invalidateQueries({ queryKey: ['drivers-trip-form'] });
+    queryClient.invalidateQueries({ queryKey: ['gps-active-trips'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    refetch();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="page-header">
+        <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="page-title">Trips</h1>
             <p className="page-description">Manage trip assignments and tracking</p>
           </div>
-          {canCreate && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="mr-2 h-4 w-4" />Create Trip</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Create Trip</DialogTitle>
-                  <DialogDescription className="sr-only">
-                    Select vehicle and driver, then provide route and cargo details to create a trip.
-                  </DialogDescription>
-                </DialogHeader>
-                <TripForm onClose={() => setDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-2"
+            >
+              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            {canCreate && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="mr-2 h-4 w-4" />Create Trip</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Create Trip</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Select vehicle and driver, then provide route and cargo details to create a trip.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <TripForm
+                    onClose={() => setDialogOpen(false)}
+                    onCreated={handleTripCreated}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
-        <div className="filter-bar">
-          <div className="relative flex-1 max-w-sm">
+        <div className="filter-bar flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search trips..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -108,10 +137,15 @@ export default function TripsPage() {
 
         <div className="rounded-xl border bg-card overflow-x-auto">
           {isLoading && !trips.length ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <div className="inline-flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading trips…
+            <div className="p-6 space-y-3">
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span>Loading trips...</span>
+              </div>
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 w-full animate-pulse bg-muted/60 rounded-md" />
+                ))}
               </div>
             </div>
           ) : isError ? (
@@ -123,39 +157,43 @@ export default function TripsPage() {
               </div>
             </div>
           ) : trips.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No trips found</div>
+            <div className="p-12 text-center text-muted-foreground">
+              <Route className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="font-medium">No trips found</p>
+              <p className="text-xs mt-1">Create a trip to dispatch vehicles and drivers.</p>
+            </div>
           ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="px-6 py-3 font-medium">Vehicle</th>
-                    <th className="px-6 py-3 font-medium">Driver</th>
-                    <th className="px-6 py-3 font-medium">Route</th>
-                    <th className="px-6 py-3 font-medium">Cargo</th>
-                    <th className="px-6 py-3 font-medium">Revenue</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                    <th className="px-6 py-3 font-medium">Date</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground bg-muted/20">
+                  <th className="px-6 py-3 font-medium">Vehicle</th>
+                  <th className="px-6 py-3 font-medium">Driver</th>
+                  <th className="px-6 py-3 font-medium">Route</th>
+                  <th className="px-6 py-3 font-medium">Cargo</th>
+                  <th className="px-6 py-3 font-medium">Revenue</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t) => (
+                  <tr key={t._id} className="data-table-row border-b hover:bg-muted/50 transition-colors">
+                    <td className="px-6 py-3 font-medium">{t.vehicle?.name ?? 'Unknown Vehicle'}</td>
+                    <td className="px-6 py-3">{t.driver?.user?.name ?? 'Unknown Driver'}</td>
+                    <td className="px-6 py-3">
+                      <span className="flex items-center gap-1">{t.startLocation} <ArrowRight className="h-3 w-3 text-muted-foreground" /> {t.endLocation}</span>
+                    </td>
+                    <td className="px-6 py-3">{t.cargoWeight?.toLocaleString?.() ?? t.cargoWeight} kg</td>
+                    <td className="px-6 py-3 font-mono">₹{t.revenue?.toLocaleString?.('en-IN') ?? t.revenue}</td>
+                    <td className="px-6 py-3"><StatusBadge status={t.status} /></td>
+                    <td className="px-6 py-3 text-muted-foreground">{new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((t) => (
-                    <tr key={t._id} className="data-table-row border-b hover:bg-muted/50 transition-colors">
-                      <td className="px-6 py-3 font-medium">{t.vehicle?.name ?? 'Unknown Vehicle'}</td>
-                      <td className="px-6 py-3">{t.driver?.user?.name ?? 'Unknown Driver'}</td>
-                      <td className="px-6 py-3">
-                        <span className="flex items-center gap-1">{t.startLocation} <ArrowRight className="h-3 w-3 text-muted-foreground" /> {t.endLocation}</span>
-                      </td>
-                      <td className="px-6 py-3">{t.cargoWeight?.toLocaleString?.() ?? t.cargoWeight} kg</td>
-                      <td className="px-6 py-3 font-mono">₹{t.revenue?.toLocaleString?.('en-IN') ?? t.revenue}</td>
-                      <td className="px-6 py-3"><StatusBadge status={t.status} /></td>
-                      <td className="px-6 py-3 text-muted-foreground">{new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && trips.length > 0 && (
-                    <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No trips match your filters</td></tr>
-                  )}
-                </tbody>
-              </table>
+                ))}
+                {filtered.length === 0 && trips.length > 0 && (
+                  <tr><td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">No trips match your filters</td></tr>
+                )}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
@@ -163,7 +201,7 @@ export default function TripsPage() {
   );
 }
 
-function TripForm({ onClose }: { onClose: () => void }) {
+function TripForm({ onClose, onCreated }: { onClose: () => void; onCreated?: () => void }) {
   const [form, setForm] = useState<TripFormState>({
     vehicleId: '',
     driverId: '',
@@ -181,6 +219,7 @@ function TripForm({ onClose }: { onClose: () => void }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: vehiclesData, isLoading: vehiclesLoading } = useQuery({
     queryKey: ['vehicles-trip-form'],
@@ -205,22 +244,13 @@ function TripForm({ onClose }: { onClose: () => void }) {
   const vehicles = (vehiclesData ?? []) as Vehicle[];
   const drivers = useMemo<DriverOption[]>(() => {
     const rawDrivers = Array.isArray(driversData) ? driversData : [];
-
     return rawDrivers
       .map((driver) => {
         const item = driver as { _id?: string; name?: string; email?: string; user?: { name?: string; email?: string } };
         const name = item.user?.name ?? item.name ?? '';
         const email = item.user?.email ?? item.email ?? '';
-
-        if (!item._id || !name) {
-          return null;
-        }
-
-        return {
-          _id: item._id,
-          name,
-          email,
-        };
+        if (!item._id || !name) return null;
+        return { _id: item._id, name, email };
       })
       .filter((driver): driver is DriverOption => Boolean(driver));
   }, [driversData]);
@@ -244,23 +274,21 @@ function TripForm({ onClose }: { onClose: () => void }) {
     (weight: string) => {
       setErrors((prev) => {
         const next = { ...prev };
-
         if (!weight) {
           next.cargoWeight = 'Cargo weight is required';
         } else if (Number.isNaN(Number(weight))) {
-          next.cargoWeight = 'Cargo weight must be a number';
+          next.cargoWeight = 'Cargo weight must be a valid number';
         } else if (Number(weight) <= 0) {
           next.cargoWeight = 'Cargo weight must be greater than 0';
         } else if (selectedVehicle && Number(weight) > selectedVehicle.maxCapacity) {
-          next.cargoWeight = `Exceeds max capacity: ${selectedVehicle.maxCapacity} kg`;
+          next.cargoWeight = `Weight exceeds vehicle capacity (${selectedVehicle.maxCapacity.toLocaleString()} kg)`;
         } else {
           delete next.cargoWeight;
         }
-
         return next;
       });
     },
-    [selectedVehicle],
+    [selectedVehicle]
   );
 
   const handleCargoWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,45 +297,20 @@ function TripForm({ onClose }: { onClose: () => void }) {
     validateCargoWeight(value);
   };
 
-  const handleStartLocationInputChange = (value: string) => {
-    setForm((prev) => ({ ...prev, startLocation: value }));
-    setSelectedStartLocation((prev) => (prev?.displayName === value ? prev : null));
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.startLocation;
-      return next;
-    });
-  };
-
-  const handleEndLocationInputChange = (value: string) => {
-    setForm((prev) => ({ ...prev, endLocation: value }));
-    setSelectedEndLocation((prev) => (prev?.displayName === value ? prev : null));
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.endLocation;
-      return next;
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const newErrors: Record<string, string> = {};
-    if (!form.vehicleId) newErrors.vehicleId = 'Vehicle is required';
-    if (!form.driverId) newErrors.driverId = 'Driver is required';
-    if (!selectedStartLocation) newErrors.startLocation = 'Select a start address from suggestions';
-    if (!selectedEndLocation) newErrors.endLocation = 'Select a destination address from suggestions';
+    if (!form.vehicleId) newErrors.vehicleId = 'Please select a vehicle';
+    if (!form.driverId) newErrors.driverId = 'Please select a driver';
     if (!form.cargoWeight) newErrors.cargoWeight = 'Cargo weight is required';
+    else if (Number.isNaN(Number(form.cargoWeight)) || Number(form.cargoWeight) <= 0) newErrors.cargoWeight = 'Must be a positive number';
+    else if (selectedVehicle && Number(form.cargoWeight) > selectedVehicle.maxCapacity) {
+      newErrors.cargoWeight = `Exceeds max capacity (${selectedVehicle.maxCapacity.toLocaleString()} kg)`;
+    }
+    if (!selectedStartLocation) newErrors.startLocation = 'Select a valid start address from suggestions';
+    if (!selectedEndLocation) newErrors.endLocation = 'Select a valid destination address from suggestions';
     if (!form.revenue) newErrors.revenue = 'Revenue is required';
-    if (Number(form.revenue) <= 0) newErrors.revenue = 'Revenue must be greater than 0';
-
-    if (selectedVehicle && Number(form.cargoWeight) > selectedVehicle.maxCapacity) {
-      newErrors.cargoWeight = `Exceeds max capacity: ${selectedVehicle.maxCapacity} kg`;
-    }
-
-    if (selectedStartLocation && selectedEndLocation && selectedStartLocation.placeId === selectedEndLocation.placeId) {
-      newErrors.endLocation = 'Destination must be different from start location';
-    }
+    else if (Number.isNaN(Number(form.revenue)) || Number(form.revenue) < 0) newErrors.revenue = 'Must be a valid number';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -316,26 +319,8 @@ function TripForm({ onClose }: { onClose: () => void }) {
 
     setIsSubmitting(true);
     setSubmitMessage(null);
-
     try {
-      if (!selectedVehicle || !selectedDriver) {
-        setSubmitMessage({ type: 'error', text: 'Please select a valid vehicle and driver' });
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!selectedDriver.email) {
-        setSubmitMessage({ type: 'error', text: 'Selected driver does not have a valid email' });
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!selectedStartLocation || !selectedEndLocation) {
-        setSubmitMessage({ type: 'error', text: 'Please select valid addresses from suggestions' });
-        setIsSubmitting(false);
-        return;
-      }
-
+      if (!selectedVehicle || !selectedDriver || !selectedStartLocation || !selectedEndLocation) return;
       await createTrip({
         vehiclePlateNumber: selectedVehicle.licensePlate,
         driverEmail: selectedDriver.email,
@@ -346,7 +331,16 @@ function TripForm({ onClose }: { onClose: () => void }) {
       });
 
       setSubmitMessage({ type: 'success', text: 'Trip created successfully' });
-      setTimeout(() => onClose(), 1500);
+      await queryClient.invalidateQueries({ queryKey: ['trips'] });
+      await queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      await queryClient.invalidateQueries({ queryKey: ['vehicles-trip-form'] });
+      await queryClient.invalidateQueries({ queryKey: ['drivers-trip-form'] });
+      await queryClient.invalidateQueries({ queryKey: ['gps-active-trips'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['analytics'] });
+
+      if (onCreated) onCreated();
+      setTimeout(() => onClose(), 800);
     } catch (error) {
       setSubmitMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to create trip' });
     } finally {
@@ -376,41 +370,20 @@ function TripForm({ onClose }: { onClose: () => void }) {
             <div className="p-2">
               <Input placeholder="Search by name or plate..." value={vehicleSearch} onChange={(e) => setVehicleSearch(e.target.value)} className="mb-2" />
               <div className="max-h-48 overflow-y-auto">
-                {vehiclesLoading ? (
-                  <div className="px-2 py-8 text-center text-sm text-muted-foreground">Loading vehicles...</div>
-                ) : filteredVehicles.length === 0 ? (
-                  <div className="px-2 py-8 text-center text-sm text-muted-foreground">No vehicles found</div>
-                ) : (
-                  filteredVehicles.map((v) => (
-                    <Button
-                      type="button"
-                      key={v._id}
-                      variant="ghost"
-                      className="w-full justify-start mb-1 font-normal"
-                      onClick={() => {
-                        setForm((prev) => ({ ...prev, vehicleId: v._id }));
-                        setErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.vehicleId;
-                          return next;
-                        });
-                        setVehicleOpen(false);
-                      }}
-                    >
-                      <Check className={cn('mr-2 h-4 w-4', form.vehicleId === v._id ? 'opacity-100' : 'opacity-0')} />
-                      <div className="flex-1 text-left">
-                        <div className="font-medium">{v.name}</div>
-                        <div className="text-xs text-muted-foreground">{v.licensePlate} • {v.maxCapacity} kg</div>
-                      </div>
-                    </Button>
-                  ))
-                )}
+                {vehiclesLoading ? <div className="px-2 py-8 text-center text-sm text-muted-foreground">Loading vehicles...</div> : filteredVehicles.length === 0 ? <div className="px-2 py-8 text-center text-sm text-muted-foreground">No vehicles found</div> : filteredVehicles.map((v) => (
+                  <Button type="button" key={v._id} variant="ghost" className="w-full justify-start mb-1" onClick={() => { setForm((prev) => ({ ...prev, vehicleId: v._id })); setVehicleOpen(false); setErrors((prev) => { const next = { ...prev }; delete next.vehicleId; return next; }); validateCargoWeight(form.cargoWeight); }}>
+                    <Check className={cn('mr-2 h-4 w-4', form.vehicleId === v._id ? 'opacity-100' : 'opacity-0')} />
+                    <div className="text-left">
+                      <div className="font-medium">{v.name}</div>
+                      <div className="text-xs text-muted-foreground">{v.licensePlate} • Max: {v.maxCapacity?.toLocaleString()} kg</div>
+                    </div>
+                  </Button>
+                ))}
               </div>
             </div>
           </PopoverContent>
         </Popover>
         {errors.vehicleId && <p className="text-xs text-destructive">{errors.vehicleId}</p>}
-        {selectedVehicle && <p className="text-xs text-muted-foreground">Max capacity: {selectedVehicle.maxCapacity} kg</p>}
       </div>
 
       <div className="space-y-2">
@@ -418,7 +391,7 @@ function TripForm({ onClose }: { onClose: () => void }) {
         <Popover open={driverOpen} onOpenChange={setDriverOpen}>
           <PopoverTrigger asChild>
             <Button type="button" variant="outline" role="combobox" className={cn('w-full justify-between', errors.driverId && 'border-destructive')}>
-              {selectedDriver ? `${selectedDriver.name}${selectedDriver.email ? ` (${selectedDriver.email})` : ''}` : 'Select driver...'}
+              {selectedDriver ? `${selectedDriver.name} (${selectedDriver.email})` : 'Select driver...'}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -426,35 +399,15 @@ function TripForm({ onClose }: { onClose: () => void }) {
             <div className="p-2">
               <Input placeholder="Search by name or email..." value={driverSearch} onChange={(e) => setDriverSearch(e.target.value)} className="mb-2" />
               <div className="max-h-48 overflow-y-auto">
-                {driversLoading ? (
-                  <div className="px-2 py-8 text-center text-sm text-muted-foreground">Loading drivers...</div>
-                ) : filteredDrivers.length === 0 ? (
-                  <div className="px-2 py-8 text-center text-sm text-muted-foreground">No drivers found</div>
-                ) : (
-                  filteredDrivers.map((d) => (
-                    <Button
-                      type="button"
-                      key={d._id}
-                      variant="ghost"
-                      className="w-full justify-start mb-1 font-normal"
-                      onClick={() => {
-                        setForm((prev) => ({ ...prev, driverId: d._id }));
-                        setErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.driverId;
-                          return next;
-                        });
-                        setDriverOpen(false);
-                      }}
-                    >
-                      <Check className={cn('mr-2 h-4 w-4', form.driverId === d._id ? 'opacity-100' : 'opacity-0')} />
-                      <div className="flex-1 text-left">
-                        <div className="font-medium">{d.name}</div>
-                        <div className="text-xs text-muted-foreground">{d.email || 'No email'}</div>
-                      </div>
-                    </Button>
-                  ))
-                )}
+                {driversLoading ? <div className="px-2 py-8 text-center text-sm text-muted-foreground">Loading drivers...</div> : filteredDrivers.length === 0 ? <div className="px-2 py-8 text-center text-sm text-muted-foreground">No drivers found</div> : filteredDrivers.map((d) => (
+                  <Button type="button" key={d._id} variant="ghost" className="w-full justify-start mb-1" onClick={() => { setForm((prev) => ({ ...prev, driverId: d._id })); setDriverOpen(false); setErrors((prev) => { const next = { ...prev }; delete next.driverId; return next; }); }}>
+                    <Check className={cn('mr-2 h-4 w-4', form.driverId === d._id ? 'opacity-100' : 'opacity-0')} />
+                    <div className="text-left">
+                      <div className="font-medium">{d.name}</div>
+                      <div className="text-xs text-muted-foreground">{d.email}</div>
+                    </div>
+                  </Button>
+                ))}
               </div>
             </div>
           </PopoverContent>
@@ -462,83 +415,35 @@ function TripForm({ onClose }: { onClose: () => void }) {
         {errors.driverId && <p className="text-xs text-destructive">{errors.driverId}</p>}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <LocationAutocompleteField
-          label="Start Location"
-          placeholder="Type pickup address"
-          value={form.startLocation}
-          selectedLocation={selectedStartLocation}
-          onInputChange={handleStartLocationInputChange}
-          onSelect={(location) => {
-            setSelectedStartLocation(location);
-            setForm((prev) => ({ ...prev, startLocation: location.displayName }));
-            setErrors((prev) => {
-              const next = { ...prev };
-              delete next.startLocation;
-              return next;
-            });
-          }}
-          error={errors.startLocation}
-        />
-
-        <LocationAutocompleteField
-          label="End Location"
-          placeholder="Type destination address"
-          value={form.endLocation}
-          selectedLocation={selectedEndLocation}
-          onInputChange={handleEndLocationInputChange}
-          onSelect={(location) => {
-            setSelectedEndLocation(location);
-            setForm((prev) => ({ ...prev, endLocation: location.displayName }));
-            setErrors((prev) => {
-              const next = { ...prev };
-              delete next.endLocation;
-              return next;
-            });
-          }}
-          error={errors.endLocation}
-        />
+      <div className="space-y-4">
+        <LocationAutocompleteField label="Start Location Address" placeholder="Type start city, road, or landmark..." value={form.startLocation} selectedLocation={selectedStartLocation} onInputChange={(value) => { setForm((prev) => ({ ...prev, startLocation: value })); setSelectedStartLocation(null); if (errors.startLocation) { setErrors((prev) => { const next = { ...prev }; delete next.startLocation; return next; }); } }} onSelect={(suggestion) => { setSelectedStartLocation(suggestion); setForm((prev) => ({ ...prev, startLocation: suggestion.displayName })); setErrors((prev) => { const next = { ...prev }; delete next.startLocation; return next; }); }} error={errors.startLocation} />
+        <LocationAutocompleteField label="Destination Address" placeholder="Type destination city, road, or landmark..." value={form.endLocation} selectedLocation={selectedEndLocation} onInputChange={(value) => { setForm((prev) => ({ ...prev, endLocation: value })); setSelectedEndLocation(null); if (errors.endLocation) { setErrors((prev) => { const next = { ...prev }; delete next.endLocation; return next; }); } }} onSelect={(suggestion) => { setSelectedEndLocation(suggestion); setForm((prev) => ({ ...prev, endLocation: suggestion.displayName })); setErrors((prev) => { const next = { ...prev }; delete next.endLocation; return next; }); }} error={errors.endLocation} />
       </div>
 
       <TripRouteMapPreview startLocation={selectedStartLocation} endLocation={selectedEndLocation} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Cargo Weight (kg) {errors.cargoWeight && <span className="text-destructive">*</span>}</Label>
-          <Input type="number" placeholder="e.g., 2500" value={form.cargoWeight} onChange={handleCargoWeightChange} className={cn('transition-colors', errors.cargoWeight && 'border-destructive bg-destructive/5')} disabled={!selectedVehicle} />
-          {errors.cargoWeight ? (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> {errors.cargoWeight}
-            </p>
-          ) : selectedVehicle && form.cargoWeight && (
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <Check className="h-3 w-3" /> Weight valid
-            </p>
-          )}
+          <Label>Cargo Weight (kg)</Label>
+          <Input type="number" placeholder="e.g., 2500" value={form.cargoWeight} onChange={handleCargoWeightChange} className={cn(errors.cargoWeight && 'border-destructive')} />
+          {errors.cargoWeight && <p className="text-xs text-destructive">{errors.cargoWeight}</p>}
         </div>
-
         <div className="space-y-2">
           <Label>Revenue (₹)</Label>
-          <Input
-            type="number"
-            placeholder="e.g., 15000"
-            value={form.revenue}
-            onChange={(e) => setForm((prev) => ({ ...prev, revenue: e.target.value }))}
-            className={errors.revenue ? 'border-destructive' : ''}
-          />
+          <Input type="number" placeholder="e.g., 15000" value={form.revenue} onChange={(e) => setForm((prev) => ({ ...prev, revenue: e.target.value }))} className={cn(errors.revenue && 'border-destructive')} />
           {errors.revenue && <p className="text-xs text-destructive">{errors.revenue}</p>}
         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSubmitting || !form.vehicleId || !form.driverId || !selectedStartLocation || !selectedEndLocation}
-        >
-          {isSubmitting ? 'Creating...' : 'Create Trip'}
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+        <Button type="submit" disabled={isSubmitting || !form.vehicleId || !form.driverId || !selectedStartLocation || !selectedEndLocation}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating Trip...
+            </>
+          ) : 'Create Trip'}
         </Button>
       </div>
     </form>

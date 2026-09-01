@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Truck, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Truck, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { requestPasswordResetOTP } from '@/api/auth';
 
 export default function ForgotPasswordPage() {
@@ -133,7 +133,14 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading || !email}>
-                  {loading ? 'Sending reset code...' : 'Send reset code'}
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending reset code...
+                    </>
+                  ) : (
+                    'Send reset code'
+                  )}
                 </Button>
               </form>
 

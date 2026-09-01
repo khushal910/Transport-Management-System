@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, AlertCircle, Lock, Loader2 } from 'lucide-react';
 import { setupPassword } from '@/api/auth';
 
 const RESET_TOKEN_REGEX = /^[a-f0-9]{64}$/i;
@@ -241,9 +241,16 @@ export default function SetupPasswordPage() {
             <button
               type="submit"
               disabled={!isFormValid || loading || !isSetupTokenValid}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800 flex items-center justify-center"
             >
-              {loading ? 'Setting up your password...' : 'Set Password & Activate Account'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Setting up your password...
+                </>
+              ) : (
+                'Set Password & Activate Account'
+              )}
             </button>
 
             {/* Back to Login Link */}

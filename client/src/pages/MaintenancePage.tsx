@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Search, Wrench, AlertCircle, Check } from 'lucide-react';
+import { Plus, Search, Wrench, AlertCircle, Check, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import type { MaintenanceLog, Vehicle } from '@/types/fleet';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export default function MaintenancePage() {
   const { user } = useAuth();
   const canCreate = user?.role === 'manager' || user?.role === 'dispatcher';
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['maintenance', statusFilter],
     queryFn: async () => {
       const result = await getMaintenanceList();
@@ -31,7 +31,8 @@ export default function MaintenancePage() {
     },
     refetchOnWindowFocus: false,
     retry: 1,
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Use API data only - no mock fallback
@@ -57,40 +58,58 @@ export default function MaintenancePage() {
     });
   }, [maintenance, search, statusFilter]);
 
+  const handleMaintenanceCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+    queryClient.invalidateQueries({ queryKey: ['vehicles-maintenance-form'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    refetch();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="page-header">
+        <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="page-title">Maintenance</h1>
             <p className="page-description">Track vehicle maintenance logs</p>
           </div>
-          {canCreate && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="mr-2 h-4 w-4" />Log Maintenance</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Create Maintenance Log</DialogTitle>
-                  <DialogDescription className="sr-only">
-                    Search and select a vehicle, then enter maintenance details to log a service record.
-                  </DialogDescription>
-                </DialogHeader>
-                <MaintenanceForm
-                  onClose={() => setDialogOpen(false)}
-                  onCreated={() => {
-                    queryClient.invalidateQueries({ queryKey: ['maintenance'] });
-                    queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-2"
+            >
+              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            {canCreate && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="mr-2 h-4 w-4" />Log Maintenance</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Create Maintenance Log</DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Search and select a vehicle, then enter maintenance details to log a service record.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <MaintenanceForm
+                    onClose={() => setDialogOpen(false)}
+                    onCreated={handleMaintenanceCreated}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
-        <div className="filter-bar">
-          <div className="relative flex-1 max-w-sm">
+        <div className="filter-bar flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search maintenance..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -107,10 +126,15 @@ export default function MaintenancePage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {isLoading && maintenance.length === 0 ? (
-            <div className="col-span-full p-8 text-center text-muted-foreground">
-              <div className="inline-flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                Loading maintenance logs...
+            <div className="col-span-full space-y-4">
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span>Loading maintenance logs...</span>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-44 w-full animate-pulse bg-muted/60 rounded-xl" />
+                ))}
               </div>
             </div>
           ) : isError ? (
@@ -427,7 +451,16 @@ function MaintenanceForm({ onClose, onCreated }: { onClose: () => void; onCreate
 
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Log'}</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Log'
+          )}
+        </Button>
       </div>
     </form>
   );

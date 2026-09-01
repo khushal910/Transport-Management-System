@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams, Link } from 'react-router-do
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Truck, Eye, EyeOff, CheckCircle, AlertCircle, X, Clock } from 'lucide-react';
+import { Truck, Eye, EyeOff, CheckCircle, AlertCircle, X, Clock, Loader2 } from 'lucide-react';
 import { requestPasswordResetOTP, resetPassword, verifyPasswordResetOTP } from '@/api/auth';
 
 interface PasswordRequirementRule {
@@ -341,7 +341,14 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={resendLoading || otpLoading || !resetEmail || otp.length !== 6}>
-                  {otpLoading ? 'Verifying...' : 'Verify code'}
+                  {otpLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify code'
+                  )}
                 </Button>
               </form>
 
@@ -479,7 +486,14 @@ export default function ResetPasswordPage() {
                   className="w-full"
                   disabled={passwordLoading || !allRequirementsMet || !passwordsMatch || (hasTokenInUrl && !isTokenFormatValid)}
                 >
-                  {passwordLoading ? 'Resetting password...' : 'Reset password'}
+                  {passwordLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Resetting password...
+                    </>
+                  ) : (
+                    'Reset password'
+                  )}
                 </Button>
               </form>
 
